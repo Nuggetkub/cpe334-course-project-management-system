@@ -7,7 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial baseline draft (Issue #1) |
-| 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | Review on PR #14: zero-team students (DEC-02), milestone status model (§4.3.1, DEC-13), late-window scope (DEC-14), NFR-09 method, DEC-11/12 referenced |
+| 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | Review on PR #14: zero-team students (DEC-02), milestone status model (§4.3.1, DEC-13; team status by deadline, independent of manual close), late-window scope (DEC-14), NFR-09 method, DEC-11/12 referenced |
 
 ---
 
@@ -128,10 +128,20 @@ and how far **this team** got (team status). All times are server time (BR-06).
 |---|---|---|
 | Late | The team's latest submission version is marked Late | 2 |
 | Submitted | The team has a submission and its latest version is on time; stays Submitted after the deadline passes | 1 |
-| Not submitted | No submission, and the window is Open | 1 |
-| Overdue | No submission, and the window is not Open (late window or closed) | 1 |
+| Not submitted | No submission, and now ≤ `due_at` | 1 |
+| Overdue | No submission, and now > `due_at` | 1 |
 
-A manual close (FR-11) changes only the window; it does not change the team status.
+Team status depends only on the team's submissions and the deadline, never on the window. A manual
+close (FR-11) therefore changes the window but not the team status; recorded submissions are kept.
+
+| Example | Window | Team status |
+|---|---|---|
+| No submission, deadline in the future, supervisor closes the milestone | Closed | Not submitted |
+| No submission, deadline passed | Closed (or Late window, S2) | Overdue |
+| On-time submission, supervisor closes the milestone | Closed | Submitted |
+| On-time submission, deadline passed | Closed | Submitted |
+
+Every row of both tables and every example above is covered by a status test (F-04/F-05 test plans).
 
 ### 4.4 Submissions
 
