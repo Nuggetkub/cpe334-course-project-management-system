@@ -13,6 +13,8 @@ Status: **Proposed** until both students agree (and the instructor/TA where need
 | DEC-06 | Feedback / grade visibility | Members of a team see feedback on their own team's submissions; grades hidden until the supervisor releases them (Sprint 2) | Proposed | 2026-11-03 |
 | DEC-07 | Roles | Student and Supervisor (one role per account) in Sprint 1 | Proposed | 2026-11-03 |
 | DEC-08 | Repository visibility | Public, so branch protection and grader/UAT-partner access work | Accepted | 2026-11-03 |
+| DEC-09 | Who manages teams | Supervisors create teams (auto-assigned to themselves) and manage membership of their supervised teams; no separate admin role | Proposed | 2026-11-03 |
+| DEC-10 | Response to cross-team access | Return 404 (not 403) for another team's records so their existence is not confirmed; wrong-role operations return 403 | Proposed | 2026-11-03 |
 
 ## Open questions for instructor/TA
 
