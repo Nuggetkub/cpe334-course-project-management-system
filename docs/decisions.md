@@ -15,6 +15,8 @@ Status: **Proposed** until both students agree (and the instructor/TA where need
 | DEC-08 | Repository visibility | Public, so branch protection and grader/UAT-partner access work | Accepted | 2026-11-03 |
 | DEC-09 | Who manages teams | Supervisors create teams (auto-assigned to themselves) and manage membership of their supervised teams; no separate admin role | Proposed | 2026-11-03 |
 | DEC-10 | Response to cross-team access | Return 404 (not 403) for another team's records so their existence is not confirmed; wrong-role operations return 403 | Proposed | 2026-11-03 |
+| DEC-11 | Staging branches | Keep one staging branch per sprint (`staging/sprint-1`, `-2`, `-3`) instead of the Student Guide's single `staging`. CI runs on PRs into `[main, 'staging/**']`; the Lab 5 ruleset targets `main` and pattern `staging/**`; the sprint staging branch is synced with `main` (via PR) after each release | Accepted | 2026-11-03 |
+| DEC-12 | Cloud-ready Sprint 1 | Build Student Guide Ep. 2 requirements into Sprint 1: DB-stored sessions, `PORT` from env, `/api/health` + `/api/ready`, env-sourced idempotent seed, auth endpoints `/api/auth/login`, `/api/auth/me`, `/api/auth/logout` (match the Lab 5 kit smoke test) | Accepted | 2026-11-03 |
 
 ## Open questions for instructor/TA
 
