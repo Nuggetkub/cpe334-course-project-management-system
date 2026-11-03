@@ -15,6 +15,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
     "test": "vitest run",
+    "e2e:server": "tsx scripts/e2e-prepare.ts && tsx src/index.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "express": "^4.21.2"
   },
