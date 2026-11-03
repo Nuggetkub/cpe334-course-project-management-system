@@ -6,6 +6,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial matrix: 25 FR, 16 BR, 12 NFR |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 review: F-03 increments (F-03.1 / F-03.2); NFR-10 server-error and loading/empty ACs with per-sprint allocation |
+| 0.3 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 re-review: Login form UI checks (AC-01.8, AC-01.9); feedback field error shown in the form (AC-06.2) |
 
 ## ID conventions
 
@@ -31,6 +32,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-01.5 | A session is rejected after 8 h (expiry computed at login) | NFR-04 |
 | AC-01.6 | Stored password is a bcrypt hash (cost ≥ 10); no response contains a `password`/`passwordHash` field | NFR-01 |
 | AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 |
+| AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 |
+| AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 |
 | AC-02.1 | Every protected endpoint without a valid token → 401, no data | NFR-02 |
 | AC-02.2 | A Student calling a Supervisor-only operation → 403 | BR-01, NFR-03 |
 | AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404 | BR-02, NFR-03 |
@@ -56,7 +59,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 |
 | AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 |
 | AC-06.1 | An assigned Supervisor records feedback on a submission version → 201 | FR-18, BR-10 |
-| AC-06.2 | Feedback text outside 1–2000 chars → 400 | BR-10 |
+| AC-06.2 | Feedback text outside 1–2000 chars → 400, and the feedback form shows the field error next to the text box | BR-10, NFR-10 |
 | AC-06.3 | Team members see the feedback together with the version it refers to | FR-19 |
 | AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404 | BR-01, BR-02 |
 | AC-06.5 | The feedback list shows a loading state and "No feedback yet" when empty; the feedback form shows server errors and keeps the text | FR-19, NFR-10 |
@@ -70,7 +73,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 
 | Req | Feature | Sprint | Verification |
 |---|---|---|---|
-| FR-01 | F-01 Authentication and session | 1 | AC-01.1, AC-01.2 / TEST-01.1, TEST-01.2 |
+| FR-01 | F-01 Authentication and session | 1 | AC-01.1, AC-01.2, AC-01.8, AC-01.9 / TEST-01.1, TEST-01.2, TEST-01.8, TEST-01.9 |
 | FR-02 | F-01 | 1 | AC-01.4 / TEST-01.4 |
 | FR-03 | F-01 | 1 | AC-01.3 / TEST-01.3 |
 | FR-04 | F-01 | 1 | AC-01.7 / TEST-01.7 (E2E) |
@@ -130,7 +133,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | NFR-07 | SR-03 | 2 (Lab 5) | Persistence check, Issue #22 |
 | NFR-08 | SR-02 | 1 (local) → 2 (Docker) | AC-SR2.2 / TEST-SR2.2 (timed manual walkthrough); Docker in #17 |
 | NFR-09 | F-12, SR-03 | 3 | Sprint 3 performance script against GCP |
-| NFR-10 | Each feature's forms and lists; SR-01 audit | 1 (S1 forms + lists) → 2 (S2 features) → 3 (S3 lists + audit) | **Field errors:** AC-01.2, AC-04.2, AC-05.2 · **Server errors:** AC-04.5, AC-05.6, AC-06.5 · **Loading/empty:** AC-03.7, AC-04.6, AC-05.7, AC-06.5 / matching TEST IDs (E2E). Sprint 2: an NFR-10 AC in each F-07–F-10 contract. Sprint 3: F-11–F-13 lists + SR-01 audit of every form and list (features.md, "UI feedback states") |
+| NFR-10 | Each feature's forms and lists; SR-01 audit | 1 (S1 forms + lists) → 2 (S2 features) → 3 (S3 lists + audit) | **Field errors:** AC-01.8, AC-04.2, AC-05.2, AC-06.2 · **Server errors:** AC-01.8 (401), AC-01.9, AC-04.5, AC-05.6, AC-06.5 · **Loading/empty:** AC-03.7, AC-04.6, AC-05.7, AC-06.5 / matching TEST IDs (E2E). Sprint 2: an NFR-10 AC in each F-07–F-10 contract. Sprint 3: F-11–F-13 lists + SR-01 audit of every form and list (features.md, "UI feedback states") |
 | NFR-11 | SR-03 | 2 (Lab 5) | CI required check `test-and-docker`, Issues #18, #20 |
 | NFR-12 | SR-02 | 1 (manual) → 2 (CI scan) | AC-03.1, AC-SR2.1 / TEST-03.1, TEST-SR2.1; CI secret scan in Sprint 2 |
 
@@ -166,6 +169,7 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-03 | NFR-09 measurement method fixed | PR #14 review | NFR-09 → F-12 + SR-03, Sprint 3 |
 | 2026-11-03 | Cloud-ready Sprint 1; per-sprint staging branches | DEC-12, DEC-11 | SR-02 / SR-03 established; `/api/health`, `/api/ready` done in #5 |
 | planned S2 | BR-07 (one submission) replaced by BR-08 (versions) | DEC-04 | TEST-05.4 retired and replaced by F-09 tests in Sprint 2 |
+| 2026-11-03 | Login and feedback validation checked in the UI, not only the API | PR #26 re-review | AC-01.8, AC-01.9 added; AC-06.2 extended; NFR-10 mapping updated |
 | 2026-11-03 | F-03 delivered as F-03.1 (data, seed) then F-03.2 (protected team views) | PR #26 review | FR-05, FR-06 and AC-03.3/03.4/03.6/03.7 land after F-02; no dependency cycle |
 | 2026-11-03 | NFR-10 server-error and loading/empty checks made explicit | PR #26 review | AC-03.7, AC-04.5, AC-04.6, AC-05.6, AC-05.7, AC-06.5 added; S2/S3 allocation stated |
 

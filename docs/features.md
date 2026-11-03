@@ -6,6 +6,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial inventory from SRS v0.2 |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 review: F-03 delivered as F-03.1 (data, seed) then F-03.2 (protected team views); NFR-10 allocated per feature |
+| 0.3 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 re-review: Login and feedback form checks referenced in the UI feedback-state table |
 
 Feature IDs are stable: a feature keeps its ID even if it moves sprint. Each feature has one GitHub
 Issue; Sprint 1 features also have a contract in `docs/sprints/sprint-1/` committed before code.
@@ -60,6 +61,6 @@ and lands before any team-scoped endpoint (F-03.2, F-04 onward).
 
 | Sprint | Forms (field + server errors) | Lists (loading + empty) | Verified by |
 |---|---|---|---|
-| 1 | Login (F-01), milestone (F-04), submission (F-05), feedback (F-06) | Team view / team list (F-03.2), milestones (F-04), submission view (F-05), feedback (F-06) | AC-01.2, AC-03.7, AC-04.2, AC-04.5, AC-04.6, AC-05.2, AC-05.6, AC-05.7, AC-06.5 |
+| 1 | Login (F-01), milestone (F-04), submission (F-05), feedback (F-06) | Team view / team list (F-03.2), milestones (F-04), submission view (F-05), feedback (F-06) | Login: AC-01.8, AC-01.9 · team views: AC-03.7 · milestones: AC-04.2, AC-04.5, AC-04.6 · submission: AC-05.2, AC-05.6, AC-05.7 · feedback: AC-06.2, AC-06.5 |
 | 2 | Team membership (F-07), milestone edit/close/late window (F-08), resubmission (F-09), grade (F-10) | Members (F-07), version history (F-09), grades (F-10) | An NFR-10 AC in each Sprint 2 contract |
 | 3 | — | Progress board (F-11), overview + filters (F-12), export (F-13) | Sprint 3 contracts + SR-01 E2E audit of every form and list |
