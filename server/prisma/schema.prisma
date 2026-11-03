@@ -32,5 +32,21 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
+  sessions Session[]
+
   @@map("users")
+}
+
+// F-01 / DEC-12: one row per signed-in browser. Only SHA-256(token) is stored;
+// expires_at is fixed at login (8 h, NFR-04). Logout deletes the row.
+model Session {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique @map("token_hash")
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@index([userId])
+  @@map("sessions")
 }
