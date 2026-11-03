@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
-import { SESSION_TTL_HOURS } from "../config.js";
 
-// NFR-04: a session lasts a fixed SESSION_TTL_HOURS (8) from login; it is never extended.
+// NFR-04: a session lasts exactly 8 hours from login and is never extended. Fixed in
+// code, not configuration, so no environment value can contradict the requirement.
+export const SESSION_TTL_HOURS = 8;
 const SESSION_TTL_MS = SESSION_TTL_HOURS * 60 * 60 * 1000;
 
 export function computeExpiry(createdAt: Date): Date {

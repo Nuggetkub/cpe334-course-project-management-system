@@ -2,7 +2,7 @@ import { Router } from "express";
 import { HttpError, asyncHandler } from "../errors.js";
 import { prisma } from "../prisma.js";
 import { requireAuth } from "./middleware.js";
-import { verifyAgainstDummy, verifyPassword } from "./password.js";
+import { MAX_PASSWORD_BYTES, passwordTooLong, verifyAgainstDummy, verifyPassword } from "./password.js";
 import { computeExpiry, generateToken, hashToken } from "./session.js";
 
 // F-01 contract §2.1: POST /login, GET /me, POST /logout under /api/auth.
@@ -20,8 +20,8 @@ function parseLogin(body: unknown): { email: string; password: string } {
   }
   if (typeof password !== "string" || password.length === 0) {
     fields.password = "Enter your password.";
-  } else if (password.length > 128) {
-    fields.password = "Password must be at most 128 characters.";
+  } else if (passwordTooLong(password)) {
+    fields.password = `Password must be at most ${MAX_PASSWORD_BYTES} bytes.`;
   }
 
   if (Object.keys(fields).length > 0) {

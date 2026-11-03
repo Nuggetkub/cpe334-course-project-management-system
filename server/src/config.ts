@@ -33,9 +33,3 @@ export const BCRYPT_COST = Number(process.env.BCRYPT_COST ?? 12);
 if (!Number.isInteger(BCRYPT_COST) || BCRYPT_COST < 10) {
   throw new Error(`BCRYPT_COST must be an integer ≥ 10, got "${process.env.BCRYPT_COST}"`);
 }
-
-// NFR-04: session lifetime, fixed at login.
-export const SESSION_TTL_HOURS = Number(process.env.SESSION_TTL_HOURS ?? 8);
-if (!(SESSION_TTL_HOURS > 0)) {
-  throw new Error(`SESSION_TTL_HOURS must be a positive number, got "${process.env.SESSION_TTL_HOURS}"`);
-}
