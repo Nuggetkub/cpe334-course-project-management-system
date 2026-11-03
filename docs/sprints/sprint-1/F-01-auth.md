@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Contract committed before implementation |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | During implementation: added TEST-01.1b (client stores token, shows nav after login) and E2E TEST-01.8b (generic 401 message in a real browser); client routing uses `react-router-dom` **7** (v6 has two moderate advisories, GHSA-wrjc-x8rr-h8h6 / GHSA-337j-9hxr-rhxg); E2E users come from `server/scripts/e2e-prepare.ts` in a separate `cpms_e2e` schema. No behaviour or AC changed |
+| 0.3 | 2026-11-04 | @Nuggetkub | @Earth2509 | Review on PR #27: **password limit is 72 UTF-8 bytes**, not 128 characters (bcrypt ignores later bytes, so longer passwords are rejected, never truncated) in login validation, `hashPassword()` and `verifyPassword()`; **session lifetime fixed at 8 h in code** (`SESSION_TTL_HOURS` setting removed, NFR-04). AC-01.2 and AC-01.6 wording extended; TEST-01.2d, TEST-01.5c, TEST-01.6c added. STS now has 23 rows (see §4 count) |
 
 ---
 
@@ -58,11 +59,11 @@ Logout button → POST /api/auth/logout → DELETE session → 204 → client cl
 | Rule | Detail |
 |---|---|
 | Email | Required; trimmed and lower-cased before lookup; must match `^[^\s@]+@[^\s@]+\.[^\s@]+$`; ≤ 254 chars |
-| Password | Required; 1–128 chars; never trimmed, logged or returned |
+| Password | Required; at most **72 UTF-8 bytes** (bcrypt uses only the first 72 bytes, so longer input is rejected with a field error, never silently truncated; that is 72 ASCII characters, 36 two-byte or 24 Thai characters); never trimmed, logged or returned. The same limit is enforced in `hashPassword()` (so the F-03.1 seed cannot store such a password) and `verifyPassword()` |
 | Wrong password / unknown email | Same status (401), same code, same message — no account enumeration. An unknown email still runs one `bcrypt.compare` against a fixed dummy hash so response time does not reveal it either |
 | Password storage (NFR-01) | bcrypt, cost from `BCRYPT_COST` (default 12, rejected below 10). Helper `hashPassword()` is exported for the F-03.1 seed |
 | Token | 32 bytes from `crypto.randomBytes`, base64url (43 chars). Only `SHA-256(token)` is stored, so a DB leak does not leak usable tokens |
-| Expiry (NFR-04) | `expires_at = created_at + 8 h`, fixed at login. A request is valid while `now < expires_at`; at `now ≥ expires_at` it is rejected and the row is deleted |
+| Expiry (NFR-04) | `expires_at = created_at + 8 h`, fixed at login. The 8 h is a constant in code, not a setting, so no environment value can change it. A request is valid while `now < expires_at`; at `now ≥ expires_at` it is rejected and the row is deleted |
 | Logout | Deletes only the presented session (other sessions of the same user stay valid). Logging out with an already-invalid token → 401 |
 | Header format | Exactly `Authorization: Bearer <token>`; missing, other scheme, empty or unknown token → 401 |
 | Clock | Server clock only (AS-02); the client never computes expiry |
@@ -142,9 +143,8 @@ Client routing uses `react-router-dom` 7 (declarative `<Routes>`).
 | Variable | Default | Purpose |
 |---|---|---|
 | `BCRYPT_COST` | `12` | bcrypt work factor; startup fails if < 10 (NFR-01) |
-| `SESSION_TTL_HOURS` | `8` | Session lifetime (NFR-04); tests override the clock, not this value |
 
-Both are added to `server/.env.example`.
+It is listed in `server/.env.example`. The session lifetime is deliberately **not** configurable (NFR-04 fixes 8 h).
 
 ---
 
@@ -155,11 +155,11 @@ IDs are fixed in [traceability.md](../../traceability.md).
 | AC | Given / When | Then (observable) | Req |
 |---|---|---|---|
 | AC-01.1 | A user exists; valid email + password are posted (email in any letter case, surrounding spaces) | 200 with `token` and `user {id,name,email,role}`; exactly one new `sessions` row for that user with `expires_at = created_at + 8 h` | FR-01 |
-| AC-01.2 | Wrong password for an existing email, **or** an email that does not exist | 401 `INVALID_CREDENTIALS`, identical body in both cases; no session row created | FR-01, NFR-05 |
+| AC-01.2 | Wrong password for an existing email, **or** an email that does not exist; and a password over 72 UTF-8 bytes | 401 `INVALID_CREDENTIALS`, identical body in both cases, no session row created; a password over 72 bytes → 400 `VALIDATION_ERROR` on `password` | FR-01, NFR-05 |
 | AC-01.3 | A valid token | `GET /api/auth/me` → 200 with the same user as at login; no password fields | FR-03 |
 | AC-01.4 | Logged in, then `POST /api/auth/logout` | 204; the session row is gone; the same token on `/me` → 401 | FR-02, NFR-04 |
 | AC-01.5 | A session created at T | Accepted at T + 8 h − 1 s; rejected (401) at T + 8 h and at T + 8 h + 1 s | NFR-04 |
-| AC-01.6 | Any user created through `hashPassword` | `password_hash` matches `^\$2[aby]\$(\d\d)\$` with cost ≥ 10; no API response body contains `password` or `passwordHash` | NFR-01 |
+| AC-01.6 | Any user created through `hashPassword` | `password_hash` matches `^\$2[aby]\$(\d\d)\$` with cost ≥ 10; passwords over 72 UTF-8 bytes are refused, so two passwords differing only after byte 72 never match; no API response body contains `password` or `passwordHash` | NFR-01 |
 | AC-01.7 | Signed in as Student / as Supervisor | The matching navigation is shown with the user's name; **Log out** returns to `/login`, and reloading a protected page then redirects to `/login` | FR-04 |
 | AC-01.8 | Login form: empty/malformed email, empty password; then a wrong password | Field messages appear and no request is sent; after the 401 the banner "Email or password is incorrect" appears | FR-01, NFR-10 |
 | AC-01.9 | Login request fails with 5xx or a network error | Banner "Could not sign in. Please try again."; email kept, password cleared, user can retry | FR-01, NFR-10 |
@@ -182,12 +182,15 @@ Levels: **U** = unit (Vitest, no DB) · **I** = API + DB integration (Vitest + S
 | TEST-01.2a | AC-01.2 | I | Same user | Login with wrong password | 401 `{error:{code:"INVALID_CREDENTIALS",message:"Email or password is incorrect"}}`; session count unchanged |
 | TEST-01.2b | AC-01.2 | I | No such user | Login with `nobody@example.test` | Body identical to TEST-01.2a |
 | TEST-01.2c | AC-01.2, AC-SR1.1 | I | — | Login with `{}`, with `email:"not-an-email"`, with a 129-char password | 400 `VALIDATION_ERROR` with `fields.email` / `fields.password` |
+| TEST-01.2d | AC-01.2 | I | User whose password is exactly 72 ASCII bytes | Login with it; with it + `X` (73 bytes); with 25 Thai characters (75 bytes) | 200; 400 on `password`; 400 on `password` |
 | TEST-01.3 | AC-01.3 | I | Logged in | `GET /api/auth/me` with Bearer token | 200 `{user}` equal to the login `user` |
 | TEST-01.4 | AC-01.4 | I | Logged in | `POST /api/auth/logout`, then `GET /me` with the same token | 204 with empty body; session row deleted; then 401 `UNAUTHENTICATED` |
 | TEST-01.4b | AC-01.4 | I | Two sessions for one user | Log out session A | Session B still works on `/me` |
 | TEST-01.5a | AC-01.5 | U | `created = 2026-11-08T00:00:00Z` | `computeExpiry(created)`, `isExpired(expiry, now)` at −1 s, 0, +1 s | Expiry `08:00:00Z`; not expired / expired / expired |
 | TEST-01.5b | AC-01.5 | I | Session row with `expires_at` 1 s in the past | `GET /me` | 401; the row is deleted |
+| TEST-01.5c | AC-01.5 | U | `SESSION_TTL_HOURS=24` in the environment | Fresh import of the session module; `computeExpiry(2026-11-08T00:00Z)` | Still `08:00:00Z`: the override is ignored |
 | TEST-01.6a | AC-01.6 | U | — | `hashPassword("x")` with `BCRYPT_COST=10` and default | Hash matches bcrypt pattern with cost 10 / 12; `verifyPassword` true for right, false for wrong; cost 9 throws |
+| TEST-01.6c | AC-01.6 | U | 72-byte passwords: 72 ASCII, 36 × `é`, 24 × `ก`; 73+ byte variants; hash of `a`×72 | `hashPassword`, `verifyPassword` | 72 bytes hash and verify; 73+ bytes throw "72 bytes"; `a`×72+`X` and `a`×72+`Y` both fail to verify |
 | TEST-01.6b | AC-01.6 | I | Logged in | Inspect the JSON of login and `/me` responses (recursively) | No key named `password` or `passwordHash` |
 | TEST-01.7a | AC-01.7 | C | `/me` mocked as Student, then Supervisor | Render the app shell | Student sees *My team*/*Milestones*; Supervisor sees *My teams*/*Milestones*; both see name and **Log out** |
 | TEST-01.1b | AC-01.1, AC-01.7 | C | `fetch` returns 200 `{token,user}` (Student) | Submit valid credentials | Token saved in `sessionStorage`; Student navigation shown |
@@ -198,6 +201,8 @@ Levels: **U** = unit (Vitest, no DB) · **I** = API + DB integration (Vitest + S
 | TEST-01.9 | AC-01.9 | C | `fetch` returns 500, then rejects (network) | Submit | Banner "Could not sign in. Please try again."; email value kept; password empty; button enabled |
 | TEST-02.1-auth | AC-02.1 | I | — | `GET /me` and `POST /logout` with no header, `Basic xyz`, `Bearer ` (empty), `Bearer unknown` | 401 `UNAUTHENTICATED` each; body has no user data |
 | TEST-SR1.1-auth | AC-SR1.1 | I | — | Unknown `/api/x` (404), malformed JSON body on login (400) | `{error:{code,message}}`; no `stack`, no SQL text |
+
+**Count (v0.3):** 23 STS rows: 4 unit (U), 12 API+DB integration (I), 5 client component (C), 2 end-to-end (E). Some rows expand into several executable cases (one per input), so the runner reports more tests than rows.
 
 **TDD evidence:** commit order on this branch is (1) this contract, (2) failing tests TEST-01.x
 (red run recorded in the PR), (3) implementation (green run). Rule-heavy tests (01.2, 01.4, 01.5)
@@ -212,7 +217,7 @@ must be seen failing before the code exists.
       green runs (command, counts, commit SHA) are in the PR.
 - [ ] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
       `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
-- [ ] `server/.env.example` and README updated (`BCRYPT_COST`, `SESSION_TTL_HOURS`, how to sign in).
+- [ ] `server/.env.example` and README updated (`BCRYPT_COST`, how to sign in).
 - [ ] No password, hash or token in logs, responses (except the login `token`), commits or screenshots.
 - [ ] Kit smoke-test contract holds: login → `{token}`, `/me` and `/logout` with Bearer.
 - [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`.
