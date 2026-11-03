@@ -10,7 +10,7 @@ The product manages teams, milestones, submissions, feedback, and progress.
 | Student ID | GitHub |
 |---|---|
 | 67070501046 | [@Nuggetkub](https://github.com/Nuggetkub) |
-| 6707050xxxx (…1069) | [@Earth2509](https://github.com/Earth2509) |
+| 67070501069 | [@Earth2509](https://github.com/Earth2509) |
 
 ## Stack (same as Labs 1–4 / TokTickIT)
 
