@@ -55,4 +55,52 @@ docs/
 
 ## Setup
 
-_To be completed with the Sprint 1 scaffold (dependencies, `.env` from `.env.example`, migrate, seed, run, test)._
+Prerequisites: **Node.js 24**, and **PostgreSQL 16** — either Docker Desktop (recommended, needed for Lab 5 anyway) or your own install.
+
+```bash
+# 1. Database (Docker: throw-away local Postgres on port 5433)
+docker compose up -d db
+
+# 2. API
+cd server
+cp .env.example .env          # defaults match docker-compose.yml; edit DATABASE_URL for your own Postgres
+npm install                   # also runs `prisma generate`
+npx prisma migrate deploy     # apply committed migrations
+npm run prisma:seed           # idempotent; safe to re-run
+npm run dev                   # http://localhost:3000/api/health
+
+# 3. UI (second terminal)
+cd client
+cp .env.example .env
+npm install
+npm run dev                   # http://localhost:5173
+```
+
+### Tests
+
+| Command (folder) | What it runs |
+|---|---|
+| `npm test` (`server/`) | Vitest + Supertest against an isolated `cpms_test` schema (reset and migrated each run; never touches `public`) |
+| `npm run typecheck` (`server/`) | `tsc` over source and tests |
+| `npm test` (`client/`) | Vitest + Testing Library (jsdom) |
+| `npm install && npm run e2e:install && npm run e2e` (root) | Playwright: starts the API on 3101 and the UI on 4173, then drives Chromium |
+
+### Endpoints available in the scaffold
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/health` | Liveness — `200 {"status":"ok"}`, never touches the DB |
+| `GET /api/ready` | Readiness — `200 {"status":"ready","db":"connected"}`, or `503` when the DB is unreachable |
+
+### Production mode (what the Lab 5 container runs)
+
+```bash
+cd client && npm run build
+cd ../server && npm run build && NODE_ENV=production npm start
+# one process on $PORT serves the API under /api and the built UI (SPA fallback) everywhere else
+```
+
+### Database changes
+
+Change `server/prisma/schema.prisma`, then `npx prisma migrate dev --name <what-changed>` and commit the new folder under `prisma/migrations/`.
+Migrations must be **additive** (add tables/columns; no drop/rename in the same release) so the previous image still works after a Cloud Run rollback.

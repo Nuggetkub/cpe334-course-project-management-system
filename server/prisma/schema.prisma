@@ -1,0 +1,36 @@
+// Prisma schema for the Course Project Management System.
+// Only the account table exists in the scaffold (Prisma cannot generate a client
+// from an empty schema). Team, Milestone, Submission, Feedback and Session arrive
+// with their features — see Issue #8 (schema + seed), #6 (sessions) and the SDS.
+//
+// Migrations must stay additive (add tables/columns, never drop or rename in the
+// same release) so the previous image still works after a Cloud Run rollback.
+
+generator client {
+  provider = "prisma-client-js"
+  // Native target for local dev/CI plus the musl build used by node:24-alpine.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SRS §2 / DEC-07: exactly one role per account.
+enum Role {
+  STUDENT
+  SUPERVISOR
+}
+
+// SRS FR-01..03, NFR-01: accounts are seeded; only a bcrypt hash is stored.
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  role         Role
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
