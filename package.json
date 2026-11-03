@@ -1,0 +1,16 @@
+{
+  "name": "cpms",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Course Project Management System — repository root. Holds only the end-to-end suite; the application lives in client/ and server/.",
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
+    "e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.0.0"
+  }
+}
