@@ -83,14 +83,22 @@ npm run dev                   # http://localhost:5173
 | `npm test` (`server/`) | Vitest + Supertest against an isolated `cpms_test` schema (reset and migrated each run; never touches `public`) |
 | `npm run typecheck` (`server/`) | `tsc` over source and tests |
 | `npm test` (`client/`) | Vitest + Testing Library (jsdom) |
-| `npm install && npm run e2e:install && npm run e2e` (root) | Playwright: starts the API on 3101 and the UI on 4173, then drives Chromium |
+| `npm install && npm run e2e:install && npm run e2e` (root) | Playwright: resets a separate `cpms_e2e` schema with one test Student and Supervisor, starts the API on 3101 and the UI on 4173, then drives Chromium |
 
-### Endpoints available in the scaffold
+### API endpoints
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/health` | Liveness — `200 {"status":"ok"}`, never touches the DB |
 | `GET /api/ready` | Readiness — `200 {"status":"ready","db":"connected"}`, or `503` when the DB is unreachable |
+| `POST /api/auth/login` | `{email, password}` → `200 {token, user}`; `401` for a wrong password or unknown email (same message) |
+| `GET /api/auth/me` | `Authorization: Bearer <token>` → `200 {user}`; `401` when missing, expired (8 h) or logged out |
+| `POST /api/auth/logout` | `Authorization: Bearer <token>` → `204`; the token stops working immediately |
+
+Errors always have the shape `{"error":{"code","message","fields?"}}`.
+
+**Signing in locally:** accounts come from the seed (`npm run prisma:seed`, Issue #8 — F-03.1). Until
+that lands, the development database has no users; the API tests and the E2E run create their own.
 
 ### Production mode (what the Lab 5 container runs)
 

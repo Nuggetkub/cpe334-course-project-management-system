@@ -7,6 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Contract committed before implementation |
+| 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | During implementation: added TEST-01.1b (client stores token, shows nav after login) and E2E TEST-01.8b (generic 401 message in a real browser); client routing uses `react-router-dom` **7** (v6 has two moderate advisories, GHSA-wrjc-x8rr-h8h6 / GHSA-337j-9hxr-rhxg); E2E users come from `server/scripts/e2e-prepare.ts` in a separate `cpms_e2e` schema. No behaviour or AC changed |
 
 ---
 
@@ -134,7 +135,7 @@ Additive migration `add_sessions` (no change to existing columns — safe for Cl
 Token storage choice: `sessionStorage` (cleared when the tab closes) rather than `localStorage`. Both
 are readable by injected script, so the mitigation is React's default escaping and no
 `dangerouslySetInnerHTML`; the server-side 8 h expiry and logout limit the damage of a stolen token.
-Client routing uses `react-router-dom`.
+Client routing uses `react-router-dom` 7 (declarative `<Routes>`).
 
 ### 2.4 Configuration
 
@@ -189,9 +190,11 @@ Levels: **U** = unit (Vitest, no DB) · **I** = API + DB integration (Vitest + S
 | TEST-01.6a | AC-01.6 | U | — | `hashPassword("x")` with `BCRYPT_COST=10` and default | Hash matches bcrypt pattern with cost 10 / 12; `verifyPassword` true for right, false for wrong; cost 9 throws |
 | TEST-01.6b | AC-01.6 | I | Logged in | Inspect the JSON of login and `/me` responses (recursively) | No key named `password` or `passwordHash` |
 | TEST-01.7a | AC-01.7 | C | `/me` mocked as Student, then Supervisor | Render the app shell | Student sees *My team*/*Milestones*; Supervisor sees *My teams*/*Milestones*; both see name and **Log out** |
+| TEST-01.1b | AC-01.1, AC-01.7 | C | `fetch` returns 200 `{token,user}` (Student) | Submit valid credentials | Token saved in `sessionStorage`; Student navigation shown |
 | TEST-01.7b | AC-01.7 | E | Student created in the E2E schema | Sign in through the form → check nav → **Log out** → open `/milestones` | Student nav shown; after logout `/login` is shown and `/milestones` redirects to `/login` |
 | TEST-01.8a | AC-01.8 | C | Login page, `fetch` spied | Submit empty form; then malformed email | Both field messages shown; `fetch` not called |
 | TEST-01.8b | AC-01.8 | C | `fetch` returns 401 | Submit valid-looking credentials | Banner "Email or password is incorrect" |
+| TEST-01.8b (E2E) | AC-01.8 | E | Supervisor exists in the E2E schema | Sign in with a wrong password in the browser | Alert "Email or password is incorrect" |
 | TEST-01.9 | AC-01.9 | C | `fetch` returns 500, then rejects (network) | Submit | Banner "Could not sign in. Please try again."; email value kept; password empty; button enabled |
 | TEST-02.1-auth | AC-02.1 | I | — | `GET /me` and `POST /logout` with no header, `Basic xyz`, `Bearer ` (empty), `Bearer unknown` | 401 `UNAUTHENTICATED` each; body has no user data |
 | TEST-SR1.1-auth | AC-SR1.1 | I | — | Unknown `/api/x` (404), malformed JSON body on login (400) | `{error:{code,message}}`; no `stack`, no SQL text |
