@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { hashPassword, verifyPassword } from "../src/auth/password.js";
 import { computeExpiry, isExpired } from "../src/auth/session.js";
 
@@ -32,5 +32,49 @@ describe("password hashing (NFR-01)", () => {
 
   it("TEST-01.6a refuses a cost below 10", async () => {
     await expect(hashPassword("s3cret-pass", 9)).rejects.toThrow(/cost/i);
+  });
+});
+
+describe("password byte limit (bcrypt uses only the first 72 bytes)", () => {
+  const ascii72 = "a".repeat(72);
+  const twoByte72 = "é".repeat(36); // 2 bytes each in UTF-8
+  const thai72 = "ก".repeat(24); // 3 bytes each in UTF-8
+
+  it("TEST-01.6c accepts passwords of exactly 72 UTF-8 bytes", async () => {
+    for (const password of [ascii72, twoByte72, thai72]) {
+      expect(Buffer.byteLength(password, "utf8")).toBe(72);
+      const hash = await hashPassword(password, 10);
+      expect(await verifyPassword(password, hash)).toBe(true);
+    }
+  });
+
+  it("TEST-01.6c rejects passwords over 72 UTF-8 bytes instead of truncating them", async () => {
+    for (const password of [`${ascii72}X`, `${twoByte72}a`, "ก".repeat(25)]) {
+      expect(Buffer.byteLength(password, "utf8")).toBeGreaterThan(72);
+      await expect(hashPassword(password, 10)).rejects.toThrow(/72 bytes/);
+    }
+  });
+
+  it("TEST-01.6c never treats two passwords that differ only after byte 72 as equal", async () => {
+    const hash = await hashPassword(ascii72, 10);
+
+    expect(await verifyPassword(`${ascii72}X`, hash)).toBe(false);
+    expect(await verifyPassword(`${ascii72}Y`, hash)).toBe(false);
+  });
+});
+
+describe("session lifetime is fixed (NFR-04)", () => {
+  it("TEST-01.5c ignores a SESSION_TTL_HOURS override and still expires after 8 hours", async () => {
+    vi.resetModules();
+    vi.stubEnv("SESSION_TTL_HOURS", "24");
+    try {
+      const session = await import("../src/auth/session.js");
+      const created = new Date("2026-11-08T00:00:00Z");
+
+      expect(session.computeExpiry(created).toISOString()).toBe("2026-11-08T08:00:00.000Z");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
   });
 });

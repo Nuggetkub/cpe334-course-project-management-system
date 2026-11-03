@@ -78,6 +78,29 @@ describe("POST /api/auth/login", () => {
   });
 });
 
+describe("password byte limit at login (AC-01.2, NFR-01)", () => {
+  const ascii72 = "a".repeat(72);
+
+  it("TEST-01.2d accepts a 72-byte password and rejects 73 bytes with a field error", async () => {
+    const user = await createUser("STUDENT", ascii72);
+
+    const ok = await login(user.email, ascii72);
+    expect(ok.status).toBe(200);
+
+    const tooLong = await login(user.email, `${ascii72}X`);
+    expect(tooLong.status).toBe(400);
+    expect(tooLong.body.error.code).toBe("VALIDATION_ERROR");
+    expect(Object.keys(tooLong.body.error.fields)).toEqual(["password"]);
+  });
+
+  it("TEST-01.2d measures bytes, not characters (25 Thai characters = 75 bytes)", async () => {
+    const res = await login("someone@example.test", "ก".repeat(25));
+
+    expect(res.status).toBe(400);
+    expect(Object.keys(res.body.error.fields)).toEqual(["password"]);
+  });
+});
+
 describe("GET /api/auth/me", () => {
   it("TEST-01.3 returns the signed-in user", async () => {
     const user = await createUser("SUPERVISOR");
