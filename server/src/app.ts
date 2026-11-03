@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import cors from "cors";
-import express, { type ErrorRequestHandler } from "express";
+import express from "express";
+import { authRouter } from "./auth/routes.js";
 import { CLIENT_DIST_DIR, CLIENT_ORIGINS, IS_PRODUCTION } from "./config.js";
+import { errorHandler, notFound } from "./errors.js";
 import { prisma } from "./prisma.js";
 
 export interface AppOptions {
@@ -39,10 +41,10 @@ export function createApp(options: AppOptions = {}) {
     }
   });
 
+  app.use("/api/auth", authRouter);
+
   // Unknown API routes answer JSON, never the SPA's index.html.
-  app.use("/api", (_req, res) => {
-    res.status(404).json({ error: "Not found" });
-  });
+  app.use("/api", notFound);
 
   // Production: one container serves the API and the built SPA on the same port.
   if (clientDistDir && existsSync(clientDistDir)) {
@@ -53,13 +55,7 @@ export function createApp(options: AppOptions = {}) {
     });
   }
 
-  const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
-    // Body-parser errors carry a 4xx status; anything else is ours.
-    const status = typeof error?.status === "number" && error.status < 500 ? error.status : 500;
-    if (status === 500) console.error(error);
-    res.status(status).json({ error: status === 500 ? "Internal server error" : "Bad request" });
-  };
-  app.use(handleError);
+  app.use(errorHandler);
 
   return app;
 }
