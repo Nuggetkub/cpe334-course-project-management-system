@@ -1,6 +1,6 @@
 # System-level software design specification
 
-Version 0.2 · 2026-11-04 · D1 Part C · Issue #3 (PR #30 review)
+Version 0.3 · 2026-11-04 · D1 Part C · Issue #3 (PR #30 re-review)
 
 This document describes the system design. The [SRS](srs.md) defines required behavior, the [decision log](decisions.md) records design decisions, and the [traceability matrix](traceability.md) maps requirements to verification. The baseline reviewed here is Sprint 1 staging at `e6fa4c5`: F-01, F-02 and F-03.1 are integrated. F-03.2 and later features below are design scope, not a claim of release. Feature contracts specify concrete endpoints and tests.
 
@@ -49,8 +49,8 @@ The first six rows mirror [the Prisma schema](../server/prisma/schema.prisma) us
 | Team | `id` PK, `course_id` FK, `name`; unique (`course_id`, `name`) |
 | TeamMember | `student_id` PK and User FK, `team_id` FK |
 | SupervisorTeam | `supervisor_id` User FK and `team_id` Team FK; composite PK |
-| Milestone | `id` PK, `team_id` FK, `title` (1–120), `description`, `due_at` (timestamptz, UTC; future on create/extend), `created_by` Supervisor FK, `created_at` |
-| Submission | `id` PK, `milestone_id` FK, `team_id` FK constrained to the milestone's team, `version` (1 in Sprint 1), `title` (1–120), `description` (≤2000), `link` (absolute HTTP/HTTPS), `submitted_by` Student FK, `submitted_at` (server time); unique (`milestone_id`, `version`) |
+| Milestone | `id` PK, `team_id` FK, `title` (1–120), `description`, `due_at` (Prisma `DateTime`, PostgreSQL `timestamp(3)` storing UTC values; future on create/extend), `created_by` Supervisor FK, `created_at` |
+| Submission | `id` PK, `milestone_id` FK (team scope derived from `Milestone.team_id`), `version` (1 in Sprint 1), `title` (1–120), `description` (≤2000), `link` (absolute HTTP/HTTPS), `submitted_by` Student FK, `submitted_at` (server time); unique (`milestone_id`, `version`) |
 | Feedback | `id` PK, `submission_id` FK to a specific version, `supervisor_id` User FK, `text` (1–2000), `created_at` |
 | Grade | Proposed `id`, `team_id`, `milestone_id`, `score` and release timestamp; one grade per team/milestone, with the milestone release operation defined in F-10. |
 
@@ -64,7 +64,6 @@ erDiagram
   TEAM ||--o{ SUPERVISOR_TEAM : has
   TEAM ||--o{ MILESTONE : owns
   MILESTONE ||--o{ SUBMISSION : versions
-  TEAM ||--o{ SUBMISSION : owns
   USER ||--o{ SUBMISSION : submits
   SUBMISSION ||--o{ FEEDBACK : receives
   USER ||--o{ FEEDBACK : authors
