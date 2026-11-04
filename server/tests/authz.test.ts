@@ -5,6 +5,7 @@ import { createApp } from "../src/app.js";
 import { assertTeamAccess, requireRole, requireTeamAccess, teamScope } from "../src/auth/authorize.js";
 import { requireAuth } from "../src/auth/middleware.js";
 import { HttpError, errorHandler, notFound } from "../src/errors.js";
+import { jsonBody } from "../src/json-body.js";
 import { disconnectPrisma, prisma } from "../src/prisma.js";
 import { NOT_FOUND, UNAUTHENTICATED, expectForbidden, expectHidden } from "./support/authz.js";
 import { PROTECTED_ENDPOINTS, concretePath } from "./support/protected-endpoints.js";
@@ -14,7 +15,6 @@ import { cleanDatabase, createTeamsFixture, signIn } from "./support/teams.js";
 // mounted in createApp; the real team-scoped endpoints arrive with F-03.2–F-06.
 let handlerRuns = 0;
 const probe = express();
-probe.use(express.json());
 probe.get("/probe/supervisor-only", requireAuth, requireRole("SUPERVISOR"), (_req, res) => {
   handlerRuns += 1;
   res.json({ ok: true });
@@ -31,6 +31,22 @@ probe.post("/probe/teams/:teamId/supervise", requireAuth, requireRole("SUPERVISO
   handlerRuns += 1;
   res.json({ teamId: req.team!.id });
 });
+// A Supervisor-only write wired like a real endpoint: guards, then JSON parsing, then validation.
+probe.post(
+  "/probe/teams/:teamId/notes",
+  requireAuth,
+  requireRole("SUPERVISOR"),
+  requireTeamAccess,
+  jsonBody,
+  (req, res) => {
+    const title = (req.body ?? {}).title;
+    if (typeof title !== "string" || title.trim().length === 0 || title.length > 120) {
+      throw new HttpError(400, "VALIDATION_ERROR", "Check the highlighted fields.", { title: "Enter a title." });
+    }
+    handlerRuns += 1;
+    res.status(201).json({ teamId: req.team!.id, title });
+  },
+);
 probe.use(notFound);
 probe.use(errorHandler);
 
@@ -80,6 +96,18 @@ describe("authentication on every protected endpoint (AC-02.1)", () => {
       it(`TEST-02.1 ${endpoint.method.toUpperCase()} ${endpoint.path} (${endpoint.feature}) rejects ${label}`, async () => {
         const req = request(app)[endpoint.method](concretePath(endpoint.path));
         const res = await (header ? req.set("Authorization", header) : req);
+
+        expect(res.status).toBe(401);
+        expect(res.body).toEqual(UNAUTHENTICATED);
+      });
+    }
+
+    if (endpoint.method !== "get") {
+      it(`TEST-02.1 ${endpoint.method.toUpperCase()} ${endpoint.path} (${endpoint.feature}) answers 401 before parsing a malformed JSON body`, async () => {
+        const res = await request(app)
+          [endpoint.method](concretePath(endpoint.path))
+          .set("Content-Type", "application/json")
+          .send('{"title":');
 
         expect(res.status).toBe(401);
         expect(res.body).toEqual(UNAUTHENTICATED);
@@ -193,6 +221,46 @@ describe("IDs and check order (AC-02.5)", () => {
 
     expect(res.status).toBe(401);
     expect(res.body).toEqual(UNAUTHENTICATED);
+  });
+
+  it("TEST-02.5e checks ownership before the body: same invalid body, 400 only on an assigned team", async () => {
+    const path = (team: { id: number }) => `/probe/teams/${team.id}/notes`;
+    const invalid = { title: "" };
+
+    const assigned = await request(probe).post(path(fx.teamA)).set("Authorization", `Bearer ${tokens.pA}`).send(invalid);
+    expect(assigned.status).toBe(400);
+    expect(assigned.body.error.code).toBe("VALIDATION_ERROR");
+    expect(Object.keys(assigned.body.error.fields)).toEqual(["title"]);
+
+    const unassigned = await request(probe).post(path(fx.teamA)).set("Authorization", `Bearer ${tokens.pB}`).send(invalid);
+    expectHidden(unassigned);
+
+    // Malformed JSON follows the same order: 401, 403, 404 before 400.
+    const malformed = (token?: string) => {
+      const req = request(probe).post(path(fx.teamA)).set("Content-Type", "application/json");
+      return (token ? req.set("Authorization", `Bearer ${token}`) : req).send('{"title":');
+    };
+    expect((await malformed()).status).toBe(401);
+    expectForbidden(await malformed(tokens.sA));
+    expectHidden(await malformed(tokens.pB));
+    const parsed = await malformed(tokens.pA);
+    expect(parsed.status).toBe(400);
+    expect(parsed.body).toEqual({ error: { code: "BAD_REQUEST", message: "Request body is not valid JSON" } });
+
+    const ok = await request(probe).post(path(fx.teamA)).set("Authorization", `Bearer ${tokens.pA}`).send({ title: "Week 1" });
+    expect(ok.status).toBe(201);
+    expect(handlerRuns).toBe(1);
+  });
+
+  it("TEST-02.5f the real app ignores a malformed body on logout instead of answering 400", async () => {
+    const app = createApp({ clientDistDir: null });
+    const res = await request(app)
+      .post("/api/auth/logout")
+      .set("Authorization", `Bearer ${tokens.sA}`)
+      .set("Content-Type", "application/json")
+      .send('{"title":');
+
+    expect(res.status).toBe(204);
   });
 
   it("TEST-02.5d assertTeamAccess guards nested records directly", async () => {
