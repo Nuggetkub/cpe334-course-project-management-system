@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-const UNAUTHENTICATED = () => new HttpError(401, "UNAUTHENTICATED", "Sign in to continue");
+export const UNAUTHENTICATED = () => new HttpError(401, "UNAUTHENTICATED", "Sign in to continue");
 
 /** Reads `Authorization: Bearer <token>`, loads a live session and sets req.user; else 401. */
 export const requireAuth = asyncHandler(async (req, _res, next) => {
