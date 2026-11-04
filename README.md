@@ -107,6 +107,12 @@ Run only one seed process at a time against a given schema. If concurrent runs r
 Use only synthetic data and inject deployed passwords as secrets; never commit them.
 API and E2E tests create their own fixtures in isolated schemas.
 
+**Checking protected team views (F-03.2):** After starting the API and client, sign in as
+`student1@example.test` and open **My team** to check the team name, members, and assigned supervisors.
+Sign out and use `supervisor1@example.test` to check that **My teams** lists only assigned teams.
+The unassigned `smoke.student@example.test` account can be used to check the student empty state
+if its smoke password is configured. See the [F-03.2 contract and test evidence](docs/sprints/sprint-1/F-03-team-views.md).
+
 **Adding a protected endpoint (F-02):** never write permission logic in a route. Use the helpers in
 `server/src/auth/authorize.ts` in this order: `requireAuth` (401) → `requireRole(...)` (403, wrong role)
 → `requireTeamAccess` or `assertTeamAccess` (404 for another team, no team or a missing record, the

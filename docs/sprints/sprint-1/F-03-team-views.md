@@ -3,6 +3,7 @@
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1 | 2026-11-04 | Initial contract for Issue #8, following F-03.1 and F-02 |
+| 0.2 | 2026-11-04 | Record implementation commits, verification scope, and manual review steps |
 
 ## Scope
 
@@ -47,3 +48,16 @@ Command: `npm --prefix server test -- tests/team-views.test.ts tests/authz.test.
 - Red at `bfd03a1`: all six new team-view tests failed against the placeholder pages.
 - Green after wiring the team pages: `npm --prefix client test` passed 14 tests across two files (six team-view tests and eight authentication regressions); `npm --prefix client run build` passed.
 - The UI tests exercise route and role handling with mocked HTTP responses. The API tests above verify real PostgreSQL-backed access control separately.
+
+## Review handoff
+
+Implementation on `feature/8-f03-team-views`: API `21d91b0`, UI `26f1331`. The server build also passed. The recorded verification does not include a browser E2E run or a full server-suite rerun.
+
+With [local setup and demo seed](../../../README.md) complete:
+
+1. Sign in as a seeded Student and open **My team**. Compare the displayed name, members and assigned supervisors to the seeded membership. Visit `/teams` directly and expect a permission message.
+2. Sign in as a seeded Supervisor and open **My teams**. Compare the list to that account's assignments. Visit `/team` directly and expect a permission message.
+3. With an unassigned Student, expect the no-team message; with an unassigned Supervisor, expect the empty list message. These states are covered by the automated API and UI tests even if the local seed has no unassigned Supervisor.
+4. While signed in, delay or block the team request in browser developer tools. Check the loading or error message, restore the request, and select **Retry** after an error.
+
+Review target: `staging/sprint-1`. Do not treat local verification as peer approval, merge, or release evidence.
