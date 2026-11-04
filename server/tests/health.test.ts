@@ -48,7 +48,7 @@ describe("unknown API routes", () => {
     const res = await request(createApp()).get("/api/does-not-exist");
 
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: "Not found" });
+    expect(res.body).toEqual({ error: { code: "NOT_FOUND", message: "Not found" } });
   });
 });
 
@@ -75,6 +75,6 @@ describe("serving the built client", () => {
     const res = await request(app).get("/api/nope");
 
     expect(res.status).toBe(404);
-    expect(res.body).toEqual({ error: "Not found" });
+    expect(res.body).toEqual({ error: { code: "NOT_FOUND", message: "Not found" } });
   });
 });

@@ -26,3 +26,10 @@ export const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS ?? "http://localhost:5
 // /app/server/dist) and to <repo>/client/dist locally — the same relative layout.
 export const CLIENT_DIST_DIR =
   process.env.CLIENT_DIST_DIR ?? fileURLToPath(new URL("../../client/dist", import.meta.url));
+
+// NFR-01: bcrypt work factor. Refuse to start with a weak value rather than
+// silently storing weak hashes.
+export const BCRYPT_COST = Number(process.env.BCRYPT_COST ?? 12);
+if (!Number.isInteger(BCRYPT_COST) || BCRYPT_COST < 10) {
+  throw new Error(`BCRYPT_COST must be an integer ≥ 10, got "${process.env.BCRYPT_COST}"`);
+}

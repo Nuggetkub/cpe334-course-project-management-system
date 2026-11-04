@@ -7,6 +7,7 @@
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial matrix: 25 FR, 16 BR, 12 NFR |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 review: F-03 increments (F-03.1 / F-03.2); NFR-10 server-error and loading/empty ACs with per-sprint allocation |
 | 0.3 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 re-review: Login form UI checks (AC-01.8, AC-01.9); feedback field error shown in the form (AC-06.2) |
+| 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
 
 ## ID conventions
 
@@ -26,11 +27,11 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC | Criterion | Requirements |
 |---|---|---|
 | AC-01.1 | Valid email + password → 200 `{ token, user: { id, name, email, role } }` and a DB session row | FR-01 |
-| AC-01.2 | Wrong password or unknown email → 401 with the same message (no account enumeration) | FR-01, NFR-05 |
+| AC-01.2 | Wrong password or unknown email → 401 with the same message (no account enumeration); a password over 72 UTF-8 bytes → 400 on `password` | FR-01, NFR-05 |
 | AC-01.3 | `GET /api/auth/me` with a valid token → the caller's id, name, email, role | FR-03 |
 | AC-01.4 | After `POST /api/auth/logout`, the same token → 401 | FR-02, NFR-04 |
-| AC-01.5 | A session is rejected after 8 h (expiry computed at login) | NFR-04 |
-| AC-01.6 | Stored password is a bcrypt hash (cost ≥ 10); no response contains a `password`/`passwordHash` field | NFR-01 |
+| AC-01.5 | A session is rejected after 8 h (expiry computed at login); the 8 h is fixed in code, not configurable | NFR-04 |
+| AC-01.6 | Stored password is a bcrypt hash (cost ≥ 10); passwords over 72 UTF-8 bytes are refused, never truncated; no response contains a `password`/`passwordHash` field | NFR-01 |
 | AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 |
 | AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 |
 | AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 |
@@ -172,5 +173,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-03 | Login and feedback validation checked in the UI, not only the API | PR #26 re-review | AC-01.8, AC-01.9 added; AC-06.2 extended; NFR-10 mapping updated |
 | 2026-11-03 | F-03 delivered as F-03.1 (data, seed) then F-03.2 (protected team views) | PR #26 review | FR-05, FR-06 and AC-03.3/03.4/03.6/03.7 land after F-02; no dependency cycle |
 | 2026-11-03 | NFR-10 server-error and loading/empty checks made explicit | PR #26 review | AC-03.7, AC-04.5, AC-04.6, AC-05.6, AC-05.7, AC-06.5 added; S2/S3 allocation stated |
+| 2026-11-04 | 72-byte password limit; fixed 8 h session lifetime | PR #27 review | AC-01.2, AC-01.5, AC-01.6 wording; TEST-01.2d, TEST-01.5c, TEST-01.6c |
 
 Later changes are added here with the PR that approved them.
