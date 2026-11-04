@@ -23,7 +23,6 @@ export function createApp(options: AppOptions = {}) {
   const app = express();
   app.disable("x-powered-by");
   app.use(cors({ origin: CLIENT_ORIGINS }));
-  app.use(express.json());
 
   // Liveness: the process is up. Never touches the database, so a DB outage
   // does not make the platform restart a healthy container.

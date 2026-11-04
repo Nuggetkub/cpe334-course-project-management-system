@@ -1,4 +1,6 @@
-import type { RequestHandler } from "express";
+import express from "express";
 
-// SKELETON for the second red run: does nothing; app.ts still parses JSON globally.
-export const jsonBody: RequestHandler = (_req, _res, next) => next();
+// F-02 contract §1.2: JSON is parsed per route, after requireAuth, requireRole and the
+// ownership check, so a malformed body can never answer before 401, 403 or 404.
+// Routes without a body (e.g. logout) do not parse it at all.
+export const jsonBody = express.json();

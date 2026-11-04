@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { HttpError, asyncHandler } from "../errors.js";
+import { jsonBody } from "../json-body.js";
 import { prisma } from "../prisma.js";
 import { requireAuth } from "./middleware.js";
 import { MAX_PASSWORD_BYTES, passwordTooLong, verifyAgainstDummy, verifyPassword } from "./password.js";
@@ -34,6 +35,7 @@ export const authRouter = Router();
 
 authRouter.post(
   "/login",
+  jsonBody,
   asyncHandler(async (req, res) => {
     const { email, password } = parseLogin(req.body);
 
