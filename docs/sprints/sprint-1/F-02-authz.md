@@ -7,6 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-04 | @Nuggetkub | @Earth2509 | Contract committed before implementation |
+| 0.2 | 2026-11-04 | @Nuggetkub | @Earth2509 | Review on PR #29: the global `express.json()` answered malformed JSON with 400 before any guard. JSON is now parsed **per route after the guards** (`jsonBody`); routes without a body never parse one. TEST-02.1 gains a malformed-body case per protected write; TEST-02.5e (ownership before validation, real validator) and TEST-02.5f (logout ignores a malformed body) added. STS now 17 rows |
 
 ---
 
@@ -44,14 +45,19 @@ request ─► requireAuth ─✗─► 401 UNAUTHENTICATED
               │✗ (malformed id, no such record, other team, student without team) ─► 404 NOT_FOUND
               │✓ req.team = { id }
               ▼
+          jsonBody (parse JSON; only routes that take a body) ─✗─► 400 BAD_REQUEST
+              │✓
+              ▼
           body validation ─✗─► 400 VALIDATION_ERROR
               │✓
               ▼
           business rules (deadline, duplicates…) and handler
 ```
 
-The order is fixed: **401 → 403 → 404 → 400**. Ownership runs before body validation so a request
-to another team's record with an invalid body still gets 404 (a 400 would confirm the record).
+The order is fixed: **401 → 403 → 404 → 400**. Ownership runs before body parsing and validation, so
+a request to another team's record with a malformed or invalid body still gets 404 (a 400 would
+confirm the record). There is **no global JSON parser**: `createApp` parses nothing, and each route
+that takes a body puts `jsonBody` after its guards (login has no guard, so it parses first).
 A Student calling a Supervisor-only operation gets 403 even for their own team.
 
 ### 1.3 Dependencies
@@ -112,7 +118,9 @@ list (§4) in the same PR.
 | `assertTeamAccess(user, teamId): Promise<void>` | Throws `HttpError(404, "NOT_FOUND", "Not found")` unless `canAccessTeam`. For nested records (milestone, submission) the handler first loads the record's `team_id` (missing record → same 404), then calls this |
 | `requireTeamAccess` | Middleware for routes with `:teamId`: `parseId` → `assertTeamAccess` → sets `req.team = { id }` |
 
-`errors.ts` gains a shared `NOT_FOUND` constructor so route 404s and ownership 404s cannot drift apart.
+| `jsonBody` (`server/src/json-body.ts`) | `express.json()`, mounted per route **after** the guards; replaces the global parser in `createApp` |
+
+`errors.ts` gains a shared `notFoundError()` so route 404s and ownership 404s cannot drift apart.
 
 ### 2.2 Data
 
@@ -141,7 +149,7 @@ IDs are fixed in [traceability.md](../../traceability.md); AC-02.5 is added by t
 | AC-02.2 | A Student calls a Supervisor-only operation (also for their own team); a Supervisor calls a Student-only operation | 403 `FORBIDDEN` with the fixed body; the handler does not run | BR-01, NFR-03 |
 | AC-02.3 | A Supervisor addresses a team they are not assigned to | 404 `NOT_FOUND`, identical to a nonexistent team; every assigned supervisor (co-supervision) passes; the supervisor's team scope contains only assigned teams | BR-02, NFR-03 |
 | AC-02.4 | A Student addresses another team, or has no team at all | 404 `NOT_FOUND`, identical to a nonexistent team; the student's team scope contains only their own team (or nothing) | BR-03, BR-04, NFR-03 |
-| AC-02.5 | Malformed or out-of-range IDs; checks combined on one endpoint | 404 `NOT_FOUND` without a 500; checks run in the order 401 → 403 → 404 | NFR-03, NFR-05, DEC-10 |
+| AC-02.5 | Malformed or out-of-range IDs; checks combined on one endpoint; malformed or invalid JSON bodies | 404 `NOT_FOUND` without a 500; checks run in the order 401 → 403 → 404 → 400, so a malformed or invalid body is reported only to a caller who passed every guard | NFR-03, NFR-05, DEC-10 |
 
 ---
 
@@ -168,7 +176,7 @@ fixture does not depend on the login route.
 
 | Test | AC | Level | Precondition / input | Action | Expected result |
 |---|---|---|---|---|---|
-| TEST-02.1 | AC-02.1 | I | Each entry of the protected-endpoint list | Call with no header, `Basic xyz`, `Bearer ` (empty), unknown 43-char token | 401 `{error:{code:"UNAUTHENTICATED",message:"Sign in to continue"}}` each |
+| TEST-02.1 | AC-02.1, AC-02.5 | I | Each entry of the protected-endpoint list | Call with no header, `Basic xyz`, `Bearer ` (empty), unknown 43-char token; for non-GET entries also without a token and a malformed JSON body | 401 `{error:{code:"UNAUTHENTICATED",message:"Sign in to continue"}}` each |
 | TEST-02.2a | AC-02.2 | I | sA, pA signed in | `GET /probe/supervisor-only` | sA → 403 fixed `FORBIDDEN` body; pA → 200 |
 | TEST-02.2b | AC-02.2 | I | sA, pA signed in | `GET /probe/student-only` | pA → 403; sA → 200 |
 | TEST-02.2c | AC-02.2 | I | sA signed in | `POST /probe/teams/A/supervise` (Supervisor-only + ownership) for **own** team A | 403 (role before ownership); the handler did not run |
@@ -182,9 +190,11 @@ fixture does not depend on the login route.
 | TEST-02.5a | AC-02.5 | U | — | `parseId` on `"1"`, `"2147483647"`, `"0"`, `"-1"`, `"1.5"`, `"01"`, `"1e3"`, `"abc"`, `""`, `"2147483648"`, `undefined` | 1, 2147483647, then `null` for every other input |
 | TEST-02.5b | AC-02.5 | I | sA signed in | `GET /probe/teams/<id>` for `abc`, `0`, `01`, `2147483648` | 404 fixed body each; never 500 |
 | TEST-02.5c | AC-02.5 | I | No token | `POST /probe/teams/B/supervise` | 401 (authentication before role and ownership) |
+| TEST-02.5e | AC-02.5 | I | Probe `POST /probe/teams/:teamId/notes` (Supervisor-only, ownership, `jsonBody`, title validator) | Same invalid body `{title:""}` as pA and pB; malformed JSON with no token, as sA, pB, pA; valid body as pA | pA 400 `VALIDATION_ERROR` on `title`, pB 404; malformed: 401, 403, 404, 400 `BAD_REQUEST`; valid 201, handler ran once |
+| TEST-02.5f | AC-02.5 | I | sA signed in, real app | `POST /api/auth/logout` with a malformed JSON body | 204: a route without a body never parses one |
 | TEST-02.5d | AC-02.3, AC-02.4 | I | sA, sB, pB | `assertTeamAccess(user, A)` called directly (nested-record path) | sA resolves; sB and pB reject with `HttpError` 404 `NOT_FOUND` |
 
-**Count (v0.1):** 15 STS rows: 1 unit (U), 14 API+DB integration (I). TEST-02.1 expands to one case per
+**Count (v0.2):** 17 STS rows: 1 unit (U), 16 API+DB integration (I). TEST-02.1 expands to one case per
 list entry and header variant; the runner reports more tests than rows.
 
 **TDD evidence:** commit order on this branch is (1) this contract, (2) failing tests TEST-02.x (red
@@ -200,8 +210,8 @@ run recorded in the PR), (3) implementation (green run).
 - [ ] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
       `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
 - [ ] Probe routes exist only in tests; `createApp` mounts nothing new.
-- [ ] README states the rule for new endpoints: use the helpers, add the endpoint to the
-      protected-endpoint list, add 403/404 tests.
+- [ ] README states the rule for new endpoints: use the helpers, put `jsonBody` after the guards, add
+      the endpoint to the protected-endpoint list, add 403/404 tests.
 - [ ] `traceability.md` gains AC-02.5 and the updated AC-02.1–02.4 wording, with a change-log row.
 - [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`
       after #28.

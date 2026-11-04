@@ -9,6 +9,7 @@
 | 0.3 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 re-review: Login form UI checks (AC-01.8, AC-01.9); feedback field error shown in the form (AC-06.2) |
 | 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
 | 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
+| 0.6 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #29 review: AC-02.5 covers malformed/invalid JSON bodies (order 401 → 403 → 404 → 400) |
 
 ## ID conventions
 
@@ -40,7 +41,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 |
 | AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 |
 | AC-02.4 | A Student reading another team's records, or a Student with no team → 404, identical to a nonexistent record, no data | BR-03, BR-04, NFR-03 |
-| AC-02.5 | Malformed or out-of-range IDs → 404 (never 500); checks run in the order 401 → 403 → 404 | NFR-03, NFR-05 |
+| AC-02.5 | Malformed or out-of-range IDs → 404 (never 500); checks run in the order 401 → 403 → 404 → 400, including malformed JSON bodies | NFR-03, NFR-05 |
 | AC-03.1 | **[F-03.1]** `npm run prisma:seed` creates demo supervisors, students and teams; a second run creates no duplicates; passwords come from env | AS-01, NFR-12 |
 | AC-03.2 | **[F-03.1]** Seeded users' `password_hash` values are bcrypt hashes | NFR-01 |
 | AC-03.3 | **[F-03.2]** A Student sees their team name, members and assigned supervisors | FR-05 |
@@ -177,5 +178,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-03 | NFR-10 server-error and loading/empty checks made explicit | PR #26 review | AC-03.7, AC-04.5, AC-04.6, AC-05.6, AC-05.7, AC-06.5 added; S2/S3 allocation stated |
 | 2026-11-04 | 72-byte password limit; fixed 8 h session lifetime | PR #27 review | AC-01.2, AC-01.5, AC-01.6 wording; TEST-01.2d, TEST-01.5c, TEST-01.6c |
 | 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
+| 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
 
 Later changes are added here with the PR that approved them.
