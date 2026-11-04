@@ -1,6 +1,6 @@
 # System-level software design specification
 
-Version 0.1 · 2026-11-04 · D1 Part C · Issue #3
+Version 0.2 · 2026-11-04 · D1 Part C · Issue #3 (PR #30 review)
 
 This document describes the system design. The [SRS](srs.md) defines required behavior, the [decision log](decisions.md) records design decisions, and the [traceability matrix](traceability.md) maps requirements to verification. The baseline reviewed here is Sprint 1 staging at `e6fa4c5`: F-01, F-02 and F-03.1 are integrated. F-03.2 and later features below are design scope, not a claim of release. Feature contracts specify concrete endpoints and tests.
 
@@ -10,6 +10,17 @@ This document describes the system design. The [SRS](srs.md) defines required be
 - **API:** Express and TypeScript authenticate requests, enforce role and ownership, validate input and apply business rules before writing. Prisma scopes reads by authenticated identity and supplies transactions for multi-row writes.
 - **Database:** PostgreSQL stores identities, assignments, sessions and project records. Foreign keys, uniqueness and indexes protect relationships and support scoped queries. Vitest/Supertest cover unit and API behavior; Playwright covers browser workflows.
 - **Runtime:** During development Vite and Express run separately. The production design serves the built client and API from one Express container, with SPA fallback outside the API namespace.
+
+```mermaid
+flowchart LR
+  Browser["Browser: React / Vite"] -->|HTTPS| Express
+  subgraph Run["Planned Cloud Run container"]
+    Express["Express: SPA and API"] --> Guards["Auth → role → ownership"]
+    Guards --> Rules["Validation and business rules"]
+    Rules --> Prisma["Prisma"]
+  end
+  Prisma --> DB["PostgreSQL · planned Cloud SQL"]
+```
 
 ## Data model
 
@@ -26,11 +37,49 @@ This document describes the system design. The [SRS](srs.md) defines required be
 
 For nested records, resolve the owning team and apply the same ownership check as team routes. Do not trust client-supplied owner, author, role, timestamps or version counters. Server time controls writes: Sprint 1 accepts work through the deadline inclusive. Window status and team submission status are separate; manual close changes the window, not the team status (DEC-13). Sprint 2 late-window writes are marked Late, including a first submission (DEC-14).
 
+### Major fields
+
+The first six rows mirror [the Prisma schema](../server/prisma/schema.prisma) using database column names. Later rows are proposed design fields, not deployed columns.
+
+| Entity | Fields and key constraints |
+| --- | --- |
+| User | `id` PK, `email` unique, `name`, `role`, `password_hash`, `created_at` |
+| Session | `id` PK, `token_hash` unique, `user_id` FK, `created_at`, `expires_at` |
+| Course | `id` PK, `code` unique, `name` |
+| Team | `id` PK, `course_id` FK, `name`; unique (`course_id`, `name`) |
+| TeamMember | `student_id` PK and User FK, `team_id` FK |
+| SupervisorTeam | `supervisor_id` User FK and `team_id` Team FK; composite PK |
+| Milestone | `id` PK, `team_id` FK, `title` (1–120), `description`, `due_at` (timestamptz, UTC; future on create/extend), `created_by` Supervisor FK, `created_at` |
+| Submission | `id` PK, `milestone_id` FK, `team_id` FK constrained to the milestone's team, `version` (1 in Sprint 1), `title` (1–120), `description` (≤2000), `link` (absolute HTTP/HTTPS), `submitted_by` Student FK, `submitted_at` (server time); unique (`milestone_id`, `version`) |
+| Feedback | `id` PK, `submission_id` FK to a specific version, `supervisor_id` User FK, `text` (1–2000), `created_at` |
+| Grade | Proposed `id`, `team_id`, `milestone_id`, `score` and release timestamp; one grade per team/milestone, with the milestone release operation defined in F-10. |
+
+```mermaid
+erDiagram
+  USER ||--o{ SESSION : has
+  COURSE ||--o{ TEAM : contains
+  USER ||--o| TEAM_MEMBER : joins
+  TEAM ||--o{ TEAM_MEMBER : includes
+  USER ||--o{ SUPERVISOR_TEAM : supervises
+  TEAM ||--o{ SUPERVISOR_TEAM : has
+  TEAM ||--o{ MILESTONE : owns
+  MILESTONE ||--o{ SUBMISSION : versions
+  TEAM ||--o{ SUBMISSION : owns
+  USER ||--o{ SUBMISSION : submits
+  SUBMISSION ||--o{ FEEDBACK : receives
+  USER ||--o{ FEEDBACK : authors
+```
+
 Use reviewed Prisma migrations in order; run `prisma migrate deploy` for deployment rather than schema push or reset. The opt-in demo seed uses environment-supplied passwords, can be repeated sequentially without duplicating fixtures, and must run one invocation per schema at a time. Test migrations and seed in a disposable database before deployment; never reset deployed data. See [F-03.1](sprints/sprint-1/F-03-seed.md).
 
 ## API, identity and permissions
 
 API routes live under `/api` and return JSON except intentional no-content responses and the planned CSV export. Failures use `{ "error": { "code": "...", "message": "..." } }`, optionally with field messages for validation. Never expose SQL, stack traces or raw internal errors. For protected writes, check authentication (401), role (403), and ownership (404) before parsing and validating the body (400). Cross-team access has the same outward 404 as a missing record.
+
+- Nest resources under their owner where appropriate: planned paths include `/api/teams/:teamId/milestones`, `/api/milestones/:milestoneId/submissions` and `/api/submissions/:submissionId/feedback`.
+- Use camelCase for JSON request and response keys, positive integer resource IDs and ISO 8601 UTC timestamps. Convert deadlines to Asia/Bangkok for display.
+- Use 200 for successful reads, 201 for creation and 204 for successful operations without a response body (for example logout). Use the feature contract for response wrappers and validation details.
+- Default to 50 records per page for the paginated lists measured by NFR-09 (team milestones, milestone submissions and supervisor overview).
 
 | Operation | Student | Supervisor |
 | --- | --- | --- |
@@ -41,14 +90,14 @@ API routes live under `/api` and return JSON except intentional no-content respo
 | Feedback and grades | Read own team's feedback and released grades | Record feedback for assigned teams; record/release grades in Sprint 2 |
 | Team administration and reporting | No team-management writes; own progress in Sprint 3 | Manage assigned teams in Sprint 2; assigned-team overview/export in Sprint 3 |
 
-`POST /api/auth/login` verifies bcrypt (configured work factor at least 10; default 12), then returns an opaque token and public user data. The browser keeps the token in sessionStorage and sends it as Bearer; PostgreSQL stores only its SHA-256 hash. `GET /api/auth/me` verifies the session on reload; expiry is fixed at eight hours. `POST /api/auth/logout` revokes the presented session; the browser clears its token. Never log tokens or passwords. See [authentication](sprints/sprint-1/F-01-auth.md) and [authorization](sprints/sprint-1/F-02-authz.md).
+`POST /api/auth/login` verifies bcrypt (configured work factor at least 10; default 12), then returns an opaque token and public user data. Passwords longer than 72 bytes are rejected, never truncated. Unknown email and wrong password return the same 401 to avoid account enumeration. The browser keeps the token in sessionStorage and sends it as Bearer; PostgreSQL stores only its SHA-256 hash. `GET /api/auth/me` verifies the session on reload; expiry is fixed at eight hours. `POST /api/auth/logout` revokes the presented session; the browser clears its token. Never log tokens or passwords. See [authentication](sprints/sprint-1/F-01-auth.md) and [authorization](sprints/sprint-1/F-02-authz.md).
 
 ## Screens and states
 
 | Screen | Navigation and states |
 | --- | --- |
 | Login and protected shell | Anonymous access redirects to login. Show field validation, safe sign-in errors and loading while checking the session. |
-| My team / My teams | Student opens own roster; supervisor opens assigned list. Announce loading; show role-specific no-team text; show safe error and Retry on fetch failure. Wrong-role direct navigation must not fetch that view. |
+| My team / My teams | Student opens own roster; supervisor opens assigned list. Announce loading; show role-specific no-team text; show safe error and Retry on fetch failure. The API enforces 403 for wrong roles and 404 for hidden or missing team records; the UI displays a safe message. |
 | Milestones and submission | Open via role navigation and team scope. Show loading/empty/error, deadline and team statuses, and field-level errors. Do not display another team's record on 404. |
 | Feedback, grades and progress | Show feedback beside its version; distinguish no feedback from an error. Hide unpublished grades from students; Sprint 3 filtered views distinguish no matches from no data. |
 
