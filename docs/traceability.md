@@ -8,6 +8,7 @@
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 review: F-03 increments (F-03.1 / F-03.2); NFR-10 server-error and loading/empty ACs with per-sprint allocation |
 | 0.3 | 2026-11-03 | @Nuggetkub | @Earth2509 | PR #26 re-review: Login form UI checks (AC-01.8, AC-01.9); feedback field error shown in the form (AC-06.2) |
 | 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
+| 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
 
 ## ID conventions
 
@@ -35,10 +36,11 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 |
 | AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 |
 | AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 |
-| AC-02.1 | Every protected endpoint without a valid token → 401, no data | NFR-02 |
-| AC-02.2 | A Student calling a Supervisor-only operation → 403 | BR-01, NFR-03 |
-| AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404 | BR-02, NFR-03 |
-| AC-02.4 | A Student reading another team's records → 404, no data | BR-03, NFR-03 |
+| AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 |
+| AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 |
+| AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 |
+| AC-02.4 | A Student reading another team's records, or a Student with no team → 404, identical to a nonexistent record, no data | BR-03, BR-04, NFR-03 |
+| AC-02.5 | Malformed or out-of-range IDs → 404 (never 500); checks run in the order 401 → 403 → 404 | NFR-03, NFR-05 |
 | AC-03.1 | **[F-03.1]** `npm run prisma:seed` creates demo supervisors, students and teams; a second run creates no duplicates; passwords come from env | AS-01, NFR-12 |
 | AC-03.2 | **[F-03.1]** Seeded users' `password_hash` values are bcrypt hashes | NFR-01 |
 | AC-03.3 | **[F-03.2]** A Student sees their team name, members and assigned supervisors | FR-05 |
@@ -107,7 +109,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | BR-01 | F-02 (S1 operations); F-07, F-10 extend it | 1 → 2 | AC-02.2, AC-06.4 / TEST-02.2, TEST-06.4; S2 contracts for grades/teams |
 | BR-02 | F-02 | 1 → 2, 3 | AC-02.3, AC-03.6, AC-06.4 / TEST-02.3, TEST-03.6, TEST-06.4 |
 | BR-03 | F-02 | 1 → 2, 3 | AC-02.4, AC-05.5 / TEST-02.4, TEST-05.5 |
-| BR-04 | F-03.1 (DB constraint), F-03.2 (API); F-07 (UI) | 1 → 2 | AC-03.4, AC-03.5 / TEST-03.4, TEST-03.5; Sprint 2 contract |
+| BR-04 | F-03.1 (DB constraint), F-02 + F-03.2 (API); F-07 (UI) | 1 → 2 | AC-02.4, AC-03.4, AC-03.5 / TEST-02.4b, TEST-03.4, TEST-03.5; Sprint 2 contract |
 | BR-05 | F-04 (create); F-08 (extend) | 1 → 2 | AC-04.2 / TEST-04.2; Sprint 2 contract |
 | BR-06 | F-05 | 1 → 2 (late window) | AC-05.3 / TEST-05.3 |
 | BR-07 | F-05 — **Sprint 1 only**, superseded by BR-08 | 1 | AC-05.4 / TEST-05.4 (replaced in S2) |
@@ -127,7 +129,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 |---|---|---|---|
 | NFR-01 | F-01, F-03.1 | 1 | AC-01.6, AC-03.2 / TEST-01.6, TEST-03.2 |
 | NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1 / TEST-02.1, re-run each sprint |
-| NFR-03 | F-02 | 1 → 2, 3 | AC-02.2–AC-02.4 / TEST-02.2–TEST-02.4, extended each sprint |
+| NFR-03 | F-02 | 1 → 2, 3 | AC-02.2–AC-02.5 / TEST-02.2–TEST-02.5, extended each sprint |
 | NFR-04 | F-01 | 1 | AC-01.4, AC-01.5 / TEST-01.4, TEST-01.5 |
 | NFR-05 | SR-01 (all features) | 1 → 2, 3 | AC-SR1.1 / TEST-SR1.1, asserted in each feature's API tests |
 | NFR-06 | F-04 (display), F-05 (comparison) | 1 | AC-04.3, AC-04.4, AC-05.3 / TEST-04.3, TEST-04.4, TEST-05.3 |
@@ -174,5 +176,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-03 | F-03 delivered as F-03.1 (data, seed) then F-03.2 (protected team views) | PR #26 review | FR-05, FR-06 and AC-03.3/03.4/03.6/03.7 land after F-02; no dependency cycle |
 | 2026-11-03 | NFR-10 server-error and loading/empty checks made explicit | PR #26 review | AC-03.7, AC-04.5, AC-04.6, AC-05.6, AC-05.7, AC-06.5 added; S2/S3 allocation stated |
 | 2026-11-04 | 72-byte password limit; fixed 8 h session lifetime | PR #27 review | AC-01.2, AC-01.5, AC-01.6 wording; TEST-01.2d, TEST-01.5c, TEST-01.6c |
+| 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
 
 Later changes are added here with the PR that approved them.
