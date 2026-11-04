@@ -34,3 +34,10 @@ Both endpoints use `requireAuth` before `requireRole`. Missing or invalid sessio
 | TEST-02.1 and role regression | API | Both routes reject invalid sessions; Students cannot list supervised teams and Supervisors cannot use the Student route. |
 
 Record red/green test evidence before peer review into `staging/sprint-1`. Keep Issue #8 open until both F-03 increments have been accepted.
+
+### API verification
+
+Command: `npm --prefix server test -- tests/team-views.test.ts tests/authz.test.ts` against local PostgreSQL's dedicated test schema.
+
+- Red at test-only commit `ab4ddd4`: 12 failed, 25 passed. The two unmounted routes returned 404; the no-team test also passed against that generic 404, so it alone was not evidence of the intended behavior.
+- Green after mounting the two team routes: 37 passed across both files. Server typecheck passed. UI verification is separate.
