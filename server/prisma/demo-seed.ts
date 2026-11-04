@@ -1,7 +1,26 @@
-import type { PrismaClient, Role } from "@prisma/client";
+import { Prisma, type PrismaClient, type Role } from "@prisma/client";
 import { hashPassword, passwordTooLong } from "../src/auth/password.js";
 
 export class SeedError extends Error {}
+
+/** Log only our own messages, fixed categories and validated Prisma codes. */
+export function seedFailureMessage(error: unknown): string {
+  if (error instanceof SeedError) return error.message;
+
+  let kind = "UnexpectedError";
+  let code: string | undefined;
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    kind = "PrismaClientInitializationError";
+    code = error.errorCode;
+  } else if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    kind = "PrismaClientKnownRequestError";
+    code = error.code;
+  } else if (error instanceof Prisma.PrismaClientValidationError) {
+    kind = "PrismaClientValidationError";
+  }
+  const safeCode = code && code.length === 5 && /^P[0-9]{4}$/.test(code) ? ` ${code}` : "";
+  return `Failed to seed demo data (${kind}${safeCode}).`;
+}
 
 export function readSeedConfig(env: NodeJS.ProcessEnv) {
   if (env.SEED_DEMO_DATA === undefined || env.SEED_DEMO_DATA === "false") return null;
