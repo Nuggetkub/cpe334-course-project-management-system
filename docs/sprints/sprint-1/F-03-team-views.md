@@ -41,3 +41,9 @@ Command: `npm --prefix server test -- tests/team-views.test.ts tests/authz.test.
 
 - Red at test-only commit `ab4ddd4`: 12 failed, 25 passed. The two unmounted routes returned 404; the no-team test also passed against that generic 404, so it alone was not evidence of the intended behavior.
 - Green after mounting the two team routes: 37 passed across both files. Server typecheck passed. UI verification is separate.
+
+### UI verification
+
+- Red at `bfd03a1`: all six new team-view tests failed against the placeholder pages.
+- Green after wiring the team pages: `npm --prefix client test` passed 14 tests across two files (six team-view tests and eight authentication regressions); `npm --prefix client run build` passed.
+- The UI tests exercise route and role handling with mocked HTTP responses. The API tests above verify real PostgreSQL-backed access control separately.
