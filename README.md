@@ -107,6 +107,14 @@ Run only one seed process at a time against a given schema. If concurrent runs r
 Use only synthetic data and inject deployed passwords as secrets; never commit them.
 API and E2E tests create their own fixtures in isolated schemas.
 
+**Adding a protected endpoint (F-02):** never write permission logic in a route. Use the helpers in
+`server/src/auth/authorize.ts` in this order: `requireAuth` (401) → `requireRole(...)` (403, wrong role)
+→ `requireTeamAccess` or `assertTeamAccess` (404 for another team, no team or a missing record, the
+same body as a nonexistent ID) → `jsonBody` (there is no global JSON parser) → body validation (400). Lists filter with `teamScope(req.user)` in the
+query. In the same PR, add the endpoint to `server/tests/support/protected-endpoints.ts` (the 401 test
+covers it from then on) and write its 403/404 tests with `expectForbidden` / `expectHidden` from
+`server/tests/support/authz.ts`. The rules per endpoint are in `docs/sprints/sprint-1/F-02-authz.md` §1.5.
+
 ### Production mode (what the Lab 5 container runs)
 
 ```bash

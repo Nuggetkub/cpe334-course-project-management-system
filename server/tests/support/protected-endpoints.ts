@@ -1,0 +1,18 @@
+// NFR-02: every real protected endpoint, so TEST-02.1 checks each one for 401.
+// Each feature PR that adds a protected endpoint adds it here (F-02 contract §4).
+// `:id` placeholders are filled with 1; the 401 must come before any lookup.
+
+export interface ProtectedEndpoint {
+  method: "get" | "post" | "put" | "patch" | "delete";
+  path: string;
+  feature: string;
+}
+
+export const PROTECTED_ENDPOINTS: ProtectedEndpoint[] = [
+  { method: "get", path: "/api/auth/me", feature: "F-01" },
+  { method: "post", path: "/api/auth/logout", feature: "F-01" },
+];
+
+export function concretePath(path: string): string {
+  return path.replace(/:[A-Za-z]+/g, "1");
+}

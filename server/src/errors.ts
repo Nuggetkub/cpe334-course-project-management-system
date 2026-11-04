@@ -32,8 +32,13 @@ export function asyncHandler(
   };
 }
 
+/** One 404 for unknown routes, missing records and other teams' records (DEC-10). */
+export function notFoundError(): HttpError {
+  return new HttpError(404, "NOT_FOUND", "Not found");
+}
+
 export const notFound: RequestHandler = (_req, res) => {
-  sendError(res, new HttpError(404, "NOT_FOUND", "Not found"));
+  sendError(res, notFoundError());
 };
 
 export const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
