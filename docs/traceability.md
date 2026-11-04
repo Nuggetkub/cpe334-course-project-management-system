@@ -10,6 +10,7 @@
 | 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
 | 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
 | 0.6 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #29 review: AC-02.5 covers malformed/invalid JSON bodies (order 401 → 403 → 404 → 400) |
+| 0.7 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-05 contract: AC-05.1–AC-05.7 made precise (409 codes, simultaneous submits, assigned Supervisors read); AC-05.8 (team status, §4.3.1 S1 rows) and AC-05.9 (Supervisor cannot submit; check order) added |
 
 ## ID conventions
 
@@ -55,13 +56,15 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-04.4 | Window and team status follow SRS §4.3.1 Sprint 1 rows at `due_at − 1 s`, `due_at`, `due_at + 1 s` | FR-09, NFR-06 |
 | AC-04.5 | When creating a milestone fails on the server (5xx or network error), the form shows the error message, keeps the entered values and allows a retry | NFR-10 |
 | AC-04.6 | The milestone list shows a loading state while fetching and "No milestones yet" when empty | FR-09, NFR-10 |
-| AC-05.1 | A team member submits title, description, link for an Open milestone → 201, persisted with submitter and server time | FR-13 |
+| AC-05.1 | A Student of the milestone's team submits title, description, link while the window is Open → 201, persisted as version 1 with submitter and server time | FR-13 |
 | AC-05.2 | Invalid title/description/link → 400 with field errors shown in the form | BR-09, NFR-10 |
-| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` rejected (server clock) | BR-06, NFR-06 |
-| AC-05.4 | A second submission for the same team and milestone → 409 | BR-07 |
-| AC-05.5 | Team members see the persisted submission with submitter and time; other teams → 404 | FR-14, BR-03 |
+| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` → 409 `DEADLINE_PASSED` (server clock; client times ignored) | BR-06, NFR-06 |
+| AC-05.4 | A second submission for the same team and milestone, including two members at the same moment → 409 `ALREADY_SUBMITTED`; one row | BR-07 |
+| AC-05.5 | Team members and assigned Supervisors see the persisted submission with submitter and time; other teams, no team, unassigned Supervisors → 404 | FR-14, BR-02, BR-03 |
 | AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 |
 | AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 |
+| AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline) | FR-09, DEC-13 |
+| AC-05.9 | A Supervisor submitting → 403; a malformed or invalid body to another team's milestone → 404 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 |
 | AC-06.1 | An assigned Supervisor records feedback on a submission version → 201 | FR-18, BR-10 |
 | AC-06.2 | Feedback text outside 1–2000 chars → 400, and the feedback form shows the field error next to the text box | BR-10, NFR-10 |
 | AC-06.3 | Team members see the feedback together with the version it refers to | FR-19 |
@@ -85,7 +88,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-06 | F-03.2 | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
 | FR-07 | F-07 Team management | 2 | Sprint 2 contract |
 | FR-08 | F-04 Milestones: create and view | 1 | AC-04.1 / TEST-04.1 |
-| FR-09 | F-04 | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4 / TEST-04.3, TEST-04.4 |
+| FR-09 | F-04 (window, Not submitted / Overdue), F-05 (Submitted) | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4, AC-05.8 / TEST-04.3, TEST-04.4, TEST-05.8 |
 | FR-10 | F-08 Milestone lifecycle | 2 | Sprint 2 contract |
 | FR-11 | F-08 | 2 | Sprint 2 contract |
 | FR-12 | F-08 | 2 | Sprint 2 contract |
@@ -107,8 +110,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 
 | Req | Feature / responsibility | Sprint (established → re-verified) | Verification |
 |---|---|---|---|
-| BR-01 | F-02 (S1 operations); F-07, F-10 extend it | 1 → 2 | AC-02.2, AC-06.4 / TEST-02.2, TEST-06.4; S2 contracts for grades/teams |
-| BR-02 | F-02 | 1 → 2, 3 | AC-02.3, AC-03.6, AC-06.4 / TEST-02.3, TEST-03.6, TEST-06.4 |
+| BR-01 | F-02 (S1 operations); F-07, F-10 extend it | 1 → 2 | AC-02.2, AC-05.9, AC-06.4 / TEST-02.2, TEST-05.9, TEST-06.4; S2 contracts for grades/teams |
+| BR-02 | F-02 | 1 → 2, 3 | AC-02.3, AC-03.6, AC-05.5, AC-06.4 / TEST-02.3, TEST-03.6, TEST-05.5, TEST-06.4 |
 | BR-03 | F-02 | 1 → 2, 3 | AC-02.4, AC-05.5 / TEST-02.4, TEST-05.5 |
 | BR-04 | F-03.1 (DB constraint), F-02 + F-03.2 (API); F-07 (UI) | 1 → 2 | AC-02.4, AC-03.4, AC-03.5 / TEST-02.4b, TEST-03.4, TEST-03.5; Sprint 2 contract |
 | BR-05 | F-04 (create); F-08 (extend) | 1 → 2 | AC-04.2 / TEST-04.2; Sprint 2 contract |
@@ -179,5 +182,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-04 | 72-byte password limit; fixed 8 h session lifetime | PR #27 review | AC-01.2, AC-01.5, AC-01.6 wording; TEST-01.2d, TEST-01.5c, TEST-01.6c |
 | 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
 | 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
+| 2026-11-04 | Submission rules made testable; team status "Submitted" owned by F-05 | F-05 contract v0.1 (PR review pending) | AC-05.1, AC-05.3–AC-05.5 wording; AC-05.8, AC-05.9 added; FR-09 also verified by F-05 |
 
 Later changes are added here with the PR that approved them.
