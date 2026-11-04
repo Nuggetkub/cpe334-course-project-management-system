@@ -103,6 +103,7 @@ From the repository root, run `npm --prefix server run prisma:deploy-seed`.
 Use `student1@example.test` or `supervisor1@example.test` with the corresponding password.
 `smoke.student@example.test` is an unassigned Student for smoke login.
 Seeding is off by default, and rerunning it does not rotate existing passwords.
+Run only one seed process at a time against a given schema. If concurrent runs race, retry after the other run finishes.
 Use only synthetic data and inject deployed passwords as secrets; never commit them.
 API and E2E tests create their own fixtures in isolated schemas.
 

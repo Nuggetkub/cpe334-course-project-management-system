@@ -2,7 +2,7 @@
 // it after `prisma migrate deploy`, so it must be safe to run repeatedly.
 
 import { PrismaClient } from "@prisma/client";
-import { SeedError, seedDemo } from "./demo-seed.js";
+import { seedDemo, seedFailureMessage } from "./demo-seed.js";
 
 const prisma = new PrismaClient();
 
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
 main()
   .catch((error: unknown) => {
     // Raw Prisma errors may contain write inputs, including hashes.
-    console.error("[seed]", error instanceof SeedError ? error.message : "Failed to seed demo data.");
+    console.error("[seed]", seedFailureMessage(error));
     process.exitCode = 1;
   })
   .finally(() => prisma.$disconnect());
