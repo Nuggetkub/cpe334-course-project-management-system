@@ -97,8 +97,14 @@ npm run dev                   # http://localhost:5173
 
 Errors always have the shape `{"error":{"code","message","fields?"}}`.
 
-**Signing in locally:** accounts come from the seed (`npm run prisma:seed`, Issue #8 — F-03.1). Until
-that lands, the development database has no users; the API tests and the E2E run create their own.
+**Signing in locally (F-03.1):** set `SEED_DEMO_DATA=true` in `server/.env` and provide
+`STUDENT_DEMO_PASSWORD` and `SUPERVISOR_DEMO_PASSWORD` (nonblank, at most 72 UTF-8 bytes each).
+From the repository root, run `npm --prefix server run prisma:deploy-seed`.
+Use `student1@example.test` or `supervisor1@example.test` with the corresponding password.
+`smoke.student@example.test` is an unassigned Student for smoke login.
+Seeding is off by default, and rerunning it does not rotate existing passwords.
+Use only synthetic data and inject deployed passwords as secrets; never commit them.
+API and E2E tests create their own fixtures in isolated schemas.
 
 ### Production mode (what the Lab 5 container runs)
 

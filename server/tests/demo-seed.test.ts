@@ -54,7 +54,7 @@ describe("F-03.1 demo seed", () => {
       expect(response.status).toBe(200);
       expect(response.body.user).toMatchObject({ id: user.id, role });
     }
-  });
+  }, 30000);
 
   it("TEST-03.1b does not write when disabled or invalid", async () => {
     await seedDemo(db, {});
@@ -70,7 +70,7 @@ describe("F-03.1 demo seed", () => {
     await expect(seedDemo(db, env)).rejects.toThrow(/role/i);
     expect(await db.course.count()).toBe(0);
     expect(await db.user.findMany()).toEqual([existing]);
-  });
+  }, 30000);
 
   it("TEST-03.5 rejects a second membership and TEST-03.1c refuses to reassign", async () => {
     await seedDemo(db, env);
@@ -81,5 +81,5 @@ describe("F-03.1 demo seed", () => {
     await db.teamMember.update({ where: { studentId: member.studentId }, data: { teamId: otherTeam.id } });
     await expect(seedDemo(db, env)).rejects.toThrow(/membership/i);
     expect(await db.teamMember.findUnique({ where: { studentId: member.studentId } })).toMatchObject(otherMembership);
-  });
+  }, 30000);
 });

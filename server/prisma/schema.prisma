@@ -7,7 +7,7 @@
 // same release) so the previous image still works after a Cloud Run rollback.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // Native target for local dev/CI plus the musl build used by node:24-alpine.
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
@@ -32,9 +32,54 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  sessions Session[]
+  sessions        Session[]
+  teamMembership  TeamMember?
+  supervisedTeams SupervisorTeam[]
 
   @@map("users")
+}
+
+model Course {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  name  String
+  teams Team[]
+
+  @@map("courses")
+}
+
+model Team {
+  id          Int              @id @default(autoincrement())
+  courseId    Int              @map("course_id")
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  name        String
+  members     TeamMember[]
+  supervisors SupervisorTeam[]
+
+  @@unique([courseId, name])
+  @@map("teams")
+}
+
+// BR-04: Sprint 1 supports one offering and at most one team per student.
+model TeamMember {
+  studentId Int  @id @map("student_id")
+  teamId    Int  @map("team_id")
+  student   User @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  team      Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@index([teamId])
+  @@map("team_members")
+}
+
+model SupervisorTeam {
+  supervisorId Int  @map("supervisor_id")
+  teamId       Int  @map("team_id")
+  supervisor   User @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  team         Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@id([supervisorId, teamId])
+  @@index([teamId])
+  @@map("supervisor_teams")
 }
 
 // F-01 / DEC-12: one row per signed-in browser. Only SHA-256(token) is stored;

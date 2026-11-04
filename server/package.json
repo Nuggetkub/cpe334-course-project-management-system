@@ -14,6 +14,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:deploy-seed": "prisma migrate deploy && prisma db seed",
     "test": "vitest run",
     "e2e:server": "tsx scripts/e2e-prepare.ts && tsx src/index.ts",
     "postinstall": "prisma generate"
