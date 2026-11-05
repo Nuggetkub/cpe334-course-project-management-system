@@ -256,14 +256,40 @@ the red run recorded in the PR, (4) implementation (green run). The deadline and
 
 ## 5. Definition of Done
 
-- [ ] F-04's Milestone model is merged (or this branch is stacked on it), and §1.3's shared modules agree with F-04.
-- [ ] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
-- [ ] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
-      green runs (command, counts, commit SHA) are in the PR.
-- [ ] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
+- [x] F-04's Milestone model is merged (or this branch is stacked on it), and §1.3's shared modules agree with F-04. Stacked on #35.
+- [x] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
+- [x] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
+      green runs (command, counts, commit SHA) are in §6 and the PR.
+- [x] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
       `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
-- [ ] Both endpoints are in the protected-endpoint list; F-02's suite still passes.
-- [ ] README API table lists the two endpoints.
-- [ ] `traceability.md` updated: AC-05.1–05.7 wording, AC-05.8 and AC-05.9 added, change-log row.
+- [x] Both endpoints are in the protected-endpoint list; F-02's suite still passes.
+- [x] README API table lists the two endpoints.
+- [x] `traceability.md` updated: AC-05.1–05.7 wording, AC-05.8 and AC-05.9 added, change-log row (v0.8, v0.11).
 - [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`.
-- [ ] Known limitations disclosed: no resubmission, late window or manual close until Sprint 2.
+- [x] Known limitations disclosed: no resubmission, late window or manual close until Sprint 2.
+
+---
+
+## 6. Implementation and verification record
+
+Branch `feature/F-05-submission`, stacked on F-04 (`3be187d` merges `feature/9-f04-milestones` at
+`8adf0b1` into staging `e3420eb`). Commit order: contract v0.2 `5c093ec` → migration `91ab4e1` →
+failing tests `b5321a0` → implementation `bdbf2fc`. Local PostgreSQL 16 (Docker), Node 24.
+
+### Red at `b5321a0` (migration present, no F-05 code)
+
+| Command | Result |
+|---|---|
+| `npm --prefix server test` | 33 failed / 130 passed. `submissions.test.ts` **22/22 failed on behaviour**: `expected 404 to be 201/400/403/200` (routes not mounted), `[404, 404]` instead of `[201, 409]` (TEST-05.4b), `OVERDUE`/`NOT_SUBMITTED` instead of `SUBMITTED` (TEST-05.8c). TEST-02.1: 9 failed (404 instead of 401 for the two new endpoints). TEST-05.8a: 2 failed (`teamStatus` ignored the submission). `submissions-validate.test.ts` failed to **load** (`parseSubmission` did not exist); this is not claimed as behavioural red. TEST-05.3a passed already: F-04 had implemented the shared window rule |
+| `npm --prefix client test` | 7/7 new TEST-05.x failed (F-04's read-only page); 38 existing passed |
+| `npm run e2e` | TEST-05.1e and TEST-05.3e failed; the four F-01/F-04 journeys passed with the new "E2E Submission Team" fixture |
+
+### Green at `bdbf2fc`
+
+| Command | Result |
+|---|---|
+| `npm --prefix server test` | **180/180**, 13 files |
+| `npm --prefix server run typecheck` / `build` | pass / pass |
+| `npm --prefix client test` | **45/45**, 6 files |
+| `npm --prefix client run build` | pass |
+| `npm run e2e` | **6/6** (TEST-01.7b, 01.8b, 04.1e, 04.2e, 05.1e, 05.3e) |
