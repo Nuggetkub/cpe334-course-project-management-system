@@ -121,3 +121,18 @@ button:disabled {
 .content {
   padding: 24px;
 }
+
+.milestones { max-width: 960px; margin: 0 auto; overflow-wrap: anywhere; }
+.milestone-form { margin: 24px 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.milestone-form fieldset { display: flex; flex-direction: column; gap: 8px; border: 0; min-width: 0; padding: 0; }
+textarea, select { font: inherit; padding: 10px; border: 1px solid var(--border); border-radius: 6px; max-width: 100%; }
+textarea { min-height: 100px; resize: vertical; }
+textarea[aria-invalid="true"] { border-color: var(--danger); }
+.milestone-list { list-style: none; padding: 0; }
+.milestone-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+.milestone-list h3 { margin-top: 0; }
+.milestone-description { white-space: pre-wrap; }
+.badges, nav[aria-label="Milestone pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.badges span { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.milestones button, .milestones input, .milestones select { min-height: 44px; box-sizing: border-box; }

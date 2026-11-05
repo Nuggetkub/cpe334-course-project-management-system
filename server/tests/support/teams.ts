@@ -8,6 +8,7 @@ import { createUser } from "./users.js";
 export async function cleanDatabase(): Promise<void> {
   const db = prisma();
   await db.$transaction([
+    db.milestone.deleteMany(),
     db.supervisorTeam.deleteMany(),
     db.teamMember.deleteMany(),
     db.team.deleteMany(),

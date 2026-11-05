@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ApiError, apiFetch } from "../api";
 import { useAuth, type Role } from "../auth/AuthContext";
 
@@ -53,12 +54,15 @@ function TeamContent({ role }: { role: Role }) {
       </>
     );
   }
-  if (state.kind === "supervisor") return <Names entries={state.teams} empty="No teams assigned yet" />;
+  if (state.kind === "supervisor") return state.teams.length
+    ? <ul>{state.teams.map((team) => <li key={team.id}><Link to={`/teams/${team.id}/milestones`}>{team.name}</Link></li>)}</ul>
+    : <p>No teams assigned yet</p>;
   if (!state.team) return <p>You are not assigned to a team yet</p>;
 
   return (
     <>
       <h3>{state.team.name}</h3>
+      <Link to={`/teams/${state.team.id}/milestones`}>View team milestones</Link>
       <h4>Members</h4>
       <Names entries={state.team.members} empty="No members listed" />
       <h4>Assigned supervisors</h4>
