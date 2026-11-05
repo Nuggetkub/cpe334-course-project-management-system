@@ -52,6 +52,9 @@ try {
     { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F05 open milestone", dueAt: new Date(Date.now() + 7 * day) },
     { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F05 past milestone", dueAt: new Date(Date.now() - day) },
   ] });
+  // F-06: a milestone that Student 2 has already submitted, ready for feedback.
+  const reviewed = await prisma.milestone.create({ data: { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F06 submitted milestone", dueAt: new Date(Date.now() + 7 * day) } });
+  await prisma.submission.create({ data: { milestoneId: reviewed.id, title: "F06 work", link: "https://example.com/f06-work", submittedBy: student2.id, submittedAt: new Date() } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();
