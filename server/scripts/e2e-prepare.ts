@@ -41,6 +41,17 @@ try {
   const emptyTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Validation Team" } });
   await prisma.teamMember.create({ data: { studentId: student.id, teamId: team.id } });
   await prisma.supervisorTeam.createMany({ data: [team, emptyTeam].map((t) => ({ supervisorId: supervisor.id, teamId: t.id })) });
+  // F-05: its own team and Student, so F-04's empty-list journey above stays empty. One milestone
+  // is open for a week; one is already past due (created directly, as F-04's API refuses past dates).
+  const student2 = await prisma.user.create({ data: { email: "student2@e2e.test", name: "E2E Student 2", role: "STUDENT", passwordHash } });
+  const submissionTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Submission Team" } });
+  await prisma.teamMember.create({ data: { studentId: student2.id, teamId: submissionTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: submissionTeam.id } });
+  const day = 24 * 60 * 60 * 1000;
+  await prisma.milestone.createMany({ data: [
+    { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F05 open milestone", dueAt: new Date(Date.now() + 7 * day) },
+    { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F05 past milestone", dueAt: new Date(Date.now() - day) },
+  ] });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();

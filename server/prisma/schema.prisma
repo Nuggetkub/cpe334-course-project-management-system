@@ -32,10 +32,11 @@ model User {
   passwordHash String   @map("password_hash")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  sessions        Session[]
-  teamMembership  TeamMember?
-  supervisedTeams SupervisorTeam[]
+  sessions          Session[]
+  teamMembership    TeamMember?
+  supervisedTeams   SupervisorTeam[]
   createdMilestones Milestone[]
+  submissions       Submission[]
 
   @@map("users")
 }
@@ -100,16 +101,35 @@ model Session {
 
 // F-04: additive create/view model; UTC values at the precision shared with F-05.
 model Milestone {
-  id          Int      @id @default(autoincrement())
-  teamId      Int      @map("team_id")
-  team        Team     @relation(fields: [teamId], references: [id], onDelete: Restrict)
-  title       String   @db.VarChar(120)
-  description String   @default("") @db.VarChar(2000)
-  dueAt       DateTime @map("due_at") @db.Timestamp(3)
-  createdBy   Int      @map("created_by")
-  creator     User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+  id          Int          @id @default(autoincrement())
+  teamId      Int          @map("team_id")
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  title       String       @db.VarChar(120)
+  description String       @default("") @db.VarChar(2000)
+  dueAt       DateTime     @map("due_at") @db.Timestamp(3)
+  createdBy   Int          @map("created_by")
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
+  submissions Submission[]
 
   @@index([teamId, dueAt, id])
   @@map("milestones")
+}
+
+// F-05: one row per submitted version; Sprint 1 allows only version 1 per milestone (BR-07).
+// No team_id: the team is milestone.team_id, so ownership has one source.
+model Submission {
+  id          Int       @id @default(autoincrement())
+  milestoneId Int       @map("milestone_id")
+  milestone   Milestone @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
+  version     Int       @default(1)
+  title       String    @db.VarChar(120)
+  description String    @default("") @db.VarChar(2000)
+  link        String    @db.VarChar(2048)
+  submittedBy Int       @map("submitted_by")
+  submitter   User      @relation(fields: [submittedBy], references: [id], onDelete: Restrict)
+  submittedAt DateTime  @map("submitted_at") @db.Timestamp(3)
+
+  @@unique([milestoneId, version])
+  @@map("submissions")
 }
