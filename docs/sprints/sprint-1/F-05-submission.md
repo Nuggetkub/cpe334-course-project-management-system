@@ -258,8 +258,11 @@ the red run recorded in the PR, (4) implementation (green run). The deadline and
 
 - [x] F-04's Milestone model is merged (or this branch is stacked on it), and §1.3's shared modules agree with F-04. Stacked on #35.
 - [x] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
-- [x] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
-      green runs (command, counts, commit SHA) are in §6 and the PR.
+- [x] Every test in §4 exists and passes, and the red run before the implementation is recorded in
+      §6 with command, counts and commit SHA. Two exceptions are stated there, not claimed as
+      behavioural red: TEST-05.3a already passed (F-04 had implemented the shared window rule), and
+      TEST-05.2a failed only because the `parseSubmission` module did not exist yet. The rule-heavy
+      API tests (TEST-05.3b, TEST-05.4a/b) were seen failing on behaviour.
 - [x] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
       `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
 - [x] Both endpoints are in the protected-endpoint list; F-02's suite still passes.
