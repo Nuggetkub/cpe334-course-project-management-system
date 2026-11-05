@@ -55,6 +55,11 @@ export function LoginPage() {
       <h1>Sign in</h1>
       <p className="muted">Course Project Management System</p>
       <form onSubmit={handleSubmit} noValidate>
+        {state.status === "anonymous" && state.expired && !formError && (
+          <p role="status" className="banner">
+            Your session has expired. Please sign in again.
+          </p>
+        )}
         {formError && (
           <p role="alert" className="banner">
             {formError}

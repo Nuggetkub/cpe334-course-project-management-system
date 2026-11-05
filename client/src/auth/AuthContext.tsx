@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { apiFetch } from "../api";
+import { apiFetch, setSessionEndedHandler } from "../api";
 import { clearToken, getToken, setToken } from "./token";
 
 export type Role = "STUDENT" | "SUPERVISOR";
@@ -11,7 +11,10 @@ export interface User {
   role: Role;
 }
 
-type AuthState = { status: "loading" } | { status: "anonymous" } | { status: "authenticated"; user: User };
+type AuthState =
+  | { status: "loading" }
+  | { status: "anonymous"; expired?: boolean }
+  | { status: "authenticated"; user: User };
 
 interface AuthContextValue {
   state: AuthState;
@@ -24,6 +27,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>(() => (getToken() ? { status: "loading" } : { status: "anonymous" }));
 
+  useEffect(() => {
+    setSessionEndedHandler(() => setState({ status: "anonymous", expired: true }));
+    return () => setSessionEndedHandler(null);
+  }, []);
+
   // A stored token is only a claim: the server decides (expired or logged-out
   // tokens get 401), so the UI never trusts a role it has not just been told.
   useEffect(() => {
@@ -35,7 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         clearToken();
-        if (!cancelled) setState({ status: "anonymous" });
+        // Keep the expiry notice if the 401 handler already set it.
+        if (!cancelled) setState((current) => (current.status === "anonymous" ? current : { status: "anonymous" }));
       });
     return () => {
       cancelled = true;
