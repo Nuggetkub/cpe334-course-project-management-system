@@ -9,6 +9,7 @@
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Contract committed before implementation |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | During implementation: added TEST-01.1b (client stores token, shows nav after login) and E2E TEST-01.8b (generic 401 message in a real browser); client routing uses `react-router-dom` **7** (v6 has two moderate advisories, GHSA-wrjc-x8rr-h8h6 / GHSA-337j-9hxr-rhxg); E2E users come from `server/scripts/e2e-prepare.ts` in a separate `cpms_e2e` schema. No behaviour or AC changed |
 | 0.3 | 2026-11-04 | @Nuggetkub | @Earth2509 | Review on PR #27: **password limit is 72 UTF-8 bytes**, not 128 characters (bcrypt ignores later bytes, so longer passwords are rejected, never truncated) in login validation, `hashPassword()` and `verifyPassword()`; **session lifetime fixed at 8 h in code** (`SESSION_TTL_HOURS` setting removed, NFR-04). AC-01.2 and AC-01.6 wording extended; TEST-01.2d, TEST-01.5c, TEST-01.6c added. STS now has 23 rows (see §4 count) |
+| 0.4 | 2026-11-05 | @Nuggetkub | @Earth2509 | Found in PR #32 review: a 401 on a page request (session expired mid-use) showed the page's error and Retry instead of returning to login. AC-01.10 added; `apiFetch` handles every 401 sent with a token in one place; TEST-01.10a, TEST-01.10b added. PR #33 review: a late 401 for a token that is no longer the stored one (user signed in again, or logged out) changes nothing; TEST-01.10c added. STS now has 26 rows |
 
 ---
 
@@ -131,6 +132,7 @@ Additive migration `add_sessions` (no change to existing columns — safe for Cl
 | 5xx / network (AC-01.9) | Banner "Could not sign in. Please try again."; email kept, password cleared, button re-enabled |
 | After login (AC-01.7) | Token saved in `sessionStorage`; header shows user name, role and **Log out**. Student nav: *My team*, *Milestones*. Supervisor nav: *My teams*, *Milestones*. Pages are placeholders until F-03.2/F-04 |
 | Protected routes | Without a token, or when `/me` returns 401 (expired/logged out), the app clears the token and redirects to `/login` |
+| Session ends mid-use (AC-01.10) | Any request sent **with** a token that gets 401 (other than logout) clears the token and returns to `/login`, but only while that token is still the stored one (a late 401 from an older session is ignored), which shows "Your session has expired. Please sign in again." Pages never handle 401 themselves; the notice disappears after the next sign-in |
 | Log out | Calls logout, clears the token even if the call fails, returns to `/login` |
 
 Token storage choice: `sessionStorage` (cleared when the tab closes) rather than `localStorage`. Both
@@ -163,6 +165,7 @@ IDs are fixed in [traceability.md](../../traceability.md).
 | AC-01.7 | Signed in as Student / as Supervisor | The matching navigation is shown with the user's name; **Log out** returns to `/login`, and reloading a protected page then redirects to `/login` | FR-04 |
 | AC-01.8 | Login form: empty/malformed email, empty password; then a wrong password | Field messages appear and no request is sent; after the 401 the banner "Email or password is incorrect" appears | FR-01, NFR-10 |
 | AC-01.9 | Login request fails with 5xx or a network error | Banner "Could not sign in. Please try again."; email kept, password cleared, user can retry | FR-01, NFR-10 |
+| AC-01.10 | Signed in, a later API request (not login) returns 401 because the session expired or was revoked | The app clears the token and shows `/login` with the notice "Your session has expired. Please sign in again." instead of the page's error; a 401 from logout, or a wrong password at login, does not show that notice; a late 401 for a token that is no longer the stored one (signed in again, or logged out) changes nothing | FR-03, NFR-04, NFR-10 |
 
 Also covered here for the auth endpoints (completed by F-02 for every protected endpoint):
 AC-02.1 — `/me` and `/logout` without a valid token → 401, no data. AC-SR1.1 — every error above uses
@@ -199,10 +202,13 @@ Levels: **U** = unit (Vitest, no DB) · **I** = API + DB integration (Vitest + S
 | TEST-01.8b | AC-01.8 | C | `fetch` returns 401 | Submit valid-looking credentials | Banner "Email or password is incorrect" |
 | TEST-01.8b (E2E) | AC-01.8 | E | Supervisor exists in the E2E schema | Sign in with a wrong password in the browser | Alert "Email or password is incorrect" |
 | TEST-01.9 | AC-01.9 | C | `fetch` returns 500, then rejects (network) | Submit | Banner "Could not sign in. Please try again."; email value kept; password empty; button enabled |
+| TEST-01.10a | AC-01.10 | C | Student signed in (`/me` 200); `/api/teams/mine` returns 401 | Open `/team` | `/login` shown with "Your session has expired. Please sign in again."; token removed from `sessionStorage`; no "Could not load team information" |
+| TEST-01.10b | AC-01.10 | C | Student signed in; `/api/auth/logout` returns 401. Separately, no token and login returns 401 | Select **Log out**; submit a wrong password | `/login` without the expiry notice in both cases; the login case shows "Email or password is incorrect" |
+| TEST-01.10c | AC-01.10 | U | Request in flight with token `old`; before it returns, the stored token becomes `new-session` (signed in again), or is cleared (logged out) | The old request returns 401 | Stored token is still `new-session` / still empty; the session-ended handler is not called |
 | TEST-02.1-auth | AC-02.1 | I | — | `GET /me` and `POST /logout` with no header, `Basic xyz`, `Bearer ` (empty), `Bearer unknown` | 401 `UNAUTHENTICATED` each; body has no user data |
 | TEST-SR1.1-auth | AC-SR1.1 | I | — | Unknown `/api/x` (404), malformed JSON body on login (400) | `{error:{code,message}}`; no `stack`, no SQL text |
 
-**Count (v0.3):** 23 STS rows: 4 unit (U), 12 API+DB integration (I), 5 client component (C), 2 end-to-end (E). Some rows expand into several executable cases (one per input), so the runner reports more tests than rows.
+**Count (v0.4):** 26 STS rows: 5 unit (U), 12 API+DB integration (I), 7 client component (C), 2 end-to-end (E). Some rows expand into several executable cases (one per input), so the runner reports more tests than rows.
 
 **TDD evidence:** commit order on this branch is (1) this contract, (2) failing tests TEST-01.x
 (red run recorded in the PR), (3) implementation (green run). Rule-heavy tests (01.2, 01.4, 01.5)

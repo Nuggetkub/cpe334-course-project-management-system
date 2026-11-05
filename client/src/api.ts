@@ -1,4 +1,4 @@
-import { getToken } from "./auth/token";
+import { clearToken, getToken } from "./auth/token";
 
 // Empty base URL = same origin (production: Express serves the UI and the API).
 export const API_URL = import.meta.env.VITE_API_URL ?? "";
@@ -13,6 +13,15 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
+}
+
+// AC-01.10: a 401 on a request that carried the current token means the session expired
+// or was revoked. It is handled here once, so pages never treat it as their own error.
+// A late 401 for an older token (the user has since signed in again or logged out) is ignored.
+let onSessionEnded: (() => void) | null = null;
+
+export function setSessionEndedHandler(handler: (() => void) | null): void {
+  onSessionEnded = handler;
 }
 
 export async function apiFetch<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
@@ -32,6 +41,10 @@ export async function apiFetch<T>(path: string, init: { method?: string; body?: 
     throw new ApiError(0, "NETWORK", "Could not reach the server");
   }
 
+  if (res.status === 401 && token && getToken() === token) {
+    clearToken();
+    onSessionEnded?.();
+  }
   if (res.status === 204) return undefined as T;
   const body = await res.json().catch(() => null);
   if (!res.ok) {
