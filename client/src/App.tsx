@@ -2,8 +2,9 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./pages/LoginPage";
+import { TeamPage } from "./pages/TeamPage";
 
-// Placeholder pages until F-03.2 (team views) and F-04 (milestones) land.
+// Placeholder for screens outside the team-view increment.
 function Placeholder({ title }: { title: string }) {
   return (
     <section>
@@ -27,8 +28,8 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedArea />}>
           <Route index element={<Placeholder title="Home" />} />
-          <Route path="team" element={<Placeholder title="My team" />} />
-          <Route path="teams" element={<Placeholder title="My teams" />} />
+          <Route path="team" element={<TeamPage role="STUDENT" />} />
+          <Route path="teams" element={<TeamPage role="SUPERVISOR" />} />
           <Route path="milestones" element={<Placeholder title="Milestones" />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

@@ -6,6 +6,7 @@ import { authRouter } from "./auth/routes.js";
 import { CLIENT_DIST_DIR, CLIENT_ORIGINS, IS_PRODUCTION } from "./config.js";
 import { errorHandler, notFound } from "./errors.js";
 import { prisma } from "./prisma.js";
+import { teamsRouter } from "./teams/routes.js";
 
 export interface AppOptions {
   /** Resolves when the database answers a trivial query; rejects otherwise. */
@@ -41,6 +42,7 @@ export function createApp(options: AppOptions = {}) {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/teams", teamsRouter);
 
   // Unknown API routes answer JSON, never the SPA's index.html.
   app.use("/api", notFound);
