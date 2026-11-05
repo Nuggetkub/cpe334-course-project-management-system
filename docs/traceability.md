@@ -10,6 +10,7 @@
 | 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
 | 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
 | 0.6 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #29 review: AC-02.5 covers malformed/invalid JSON bodies (order 401 → 403 → 404 → 400) |
+| 0.7 | 2026-11-04 | @Earth2509 | @Nuggetkub | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
 
 ## ID conventions
 
@@ -81,8 +82,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-02 | F-01 | 1 | AC-01.4 / TEST-01.4 |
 | FR-03 | F-01 | 1 | AC-01.3 / TEST-01.3 |
 | FR-04 | F-01 | 1 | AC-01.7 / TEST-01.7 (E2E) |
-| FR-05 | F-03.2 Teams: protected team views | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
-| FR-06 | F-03.2 | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
+| FR-05 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
+| FR-06 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
 | FR-07 | F-07 Team management | 2 | Sprint 2 contract |
 | FR-08 | F-04 Milestones: create and view | 1 | AC-04.1 / TEST-04.1 |
 | FR-09 | F-04 | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4 / TEST-04.3, TEST-04.4 |

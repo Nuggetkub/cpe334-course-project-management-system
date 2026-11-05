@@ -11,6 +11,8 @@ export interface ProtectedEndpoint {
 export const PROTECTED_ENDPOINTS: ProtectedEndpoint[] = [
   { method: "get", path: "/api/auth/me", feature: "F-01" },
   { method: "post", path: "/api/auth/logout", feature: "F-01" },
+  { method: "get", path: "/api/teams/mine", feature: "F-03.2" },
+  { method: "get", path: "/api/teams", feature: "F-03.2" },
 ];
 
 export function concretePath(path: string): string {
