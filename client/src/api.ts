@@ -15,8 +15,9 @@ export class ApiError extends Error {
   }
 }
 
-// AC-01.10: a 401 on a request that carried a token means the session expired or was
-// revoked. It is handled here once, so pages never treat it as their own error.
+// AC-01.10: a 401 on a request that carried the current token means the session expired
+// or was revoked. It is handled here once, so pages never treat it as their own error.
+// A late 401 for an older token (the user has since signed in again or logged out) is ignored.
 let onSessionEnded: (() => void) | null = null;
 
 export function setSessionEndedHandler(handler: (() => void) | null): void {
@@ -40,7 +41,7 @@ export async function apiFetch<T>(path: string, init: { method?: string; body?: 
     throw new ApiError(0, "NETWORK", "Could not reach the server");
   }
 
-  if (res.status === 401 && token) {
+  if (res.status === 401 && token && getToken() === token) {
     clearToken();
     onSessionEnded?.();
   }
