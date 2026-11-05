@@ -13,6 +13,7 @@
 | 0.7 | 2026-11-04 | @Earth2509 | @Nuggetkub | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
 | 0.8 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract: AC-05.1–AC-05.7 made precise (409 codes, simultaneous submits, assigned Supervisors read); AC-05.8 (team status, §4.3.1 S1 rows) and AC-05.9 (Supervisor cannot submit; check order) added |
 | 0.9 | 2026-11-05 | @Nuggetkub | @Earth2509 | AC-01.10 added: a 401 during use returns to login with an expiry notice (gap found in PR #32 review); a late 401 from an older session changes nothing (PR #33 review) |
+| 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub (review pending) | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. Version 0.9 is reserved for the separate F-01 session-expiry PR #33 |
 
 ## ID conventions
 
@@ -59,6 +60,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-04.4 | Window and team status follow SRS §4.3.1 Sprint 1 rows at `due_at − 1 s`, `due_at`, `due_at + 1 s` | FR-09, NFR-06 |
 | AC-04.5 | When creating a milestone fails on the server (5xx or network error), the form shows the error message, keeps the entered values and allows a retry | NFR-10 |
 | AC-04.6 | The milestone list shows a loading state while fetching and "No milestones yet" when empty | FR-09, NFR-10 |
+| AC-04.7 | Supervisor-only create, team-scoped list/detail and identical hidden/missing 404; malformed JSON cannot outrank 401/403/404 | BR-01–BR-04, NFR-02, NFR-03, NFR-05 |
+| AC-04.8 | Team milestone list paginates 50 rows by dueAt ASC/id ASC; team changes cannot show stale prior-team results | FR-09, NFR-10 |
 | AC-05.1 | A Student of the milestone's team submits title, description, link while the window is Open → 201, persisted as version 1 with submitter and server time | FR-13 |
 | AC-05.2 | Invalid title/description/link → 400 with field errors shown in the form | BR-09, NFR-10 |
 | AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` → 409 `DEADLINE_PASSED` (server clock; client times ignored) | BR-06, NFR-06 |
@@ -90,8 +93,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-05 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
 | FR-06 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
 | FR-07 | F-07 Team management | 2 | Sprint 2 contract |
-| FR-08 | F-04 Milestones: create and view | 1 | AC-04.1 / TEST-04.1 |
-| FR-09 | F-04 (window, Not submitted / Overdue), F-05 (Submitted) | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4, AC-05.8 / TEST-04.3, TEST-04.4, TEST-05.8 |
+| FR-08 | [F-04 Milestones: create and view](sprints/sprint-1/F-04-milestone.md) | 1 | AC-04.1, AC-04.2, AC-04.7 / TEST-04.1i/e, TEST-04.2u/i/c/e, TEST-04.7i |
+| FR-09 | F-04 (window, Not submitted / Overdue), F-05 (Submitted) | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4, AC-04.6, AC-04.8, AC-05.8 / TEST-04.3i/c, TEST-04.4u, TEST-04.6i/c, TEST-04.8i/c, TEST-05.8 |
 | FR-10 | F-08 Milestone lifecycle | 2 | Sprint 2 contract |
 | FR-11 | F-08 | 2 | Sprint 2 contract |
 | FR-12 | F-08 | 2 | Sprint 2 contract |

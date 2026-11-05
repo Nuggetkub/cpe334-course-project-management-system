@@ -7,8 +7,11 @@ import { CLIENT_DIST_DIR, CLIENT_ORIGINS, IS_PRODUCTION } from "./config.js";
 import { errorHandler, notFound } from "./errors.js";
 import { prisma } from "./prisma.js";
 import { teamsRouter } from "./teams/routes.js";
+import { milestonesRouter, teamMilestonesRouter } from "./milestones/routes.js";
 
 export interface AppOptions {
+  /** Test-only clock injection, shared with F-05. Production uses server time. */
+  now?: () => Date;
   /** Resolves when the database answers a trivial query; rejects otherwise. */
   checkDatabase?: () => Promise<unknown>;
   /** Directory of the built client to serve, or null to serve API only. */
@@ -22,6 +25,7 @@ export function createApp(options: AppOptions = {}) {
   const clientDistDir = options.clientDistDir !== undefined ? options.clientDistDir : IS_PRODUCTION ? CLIENT_DIST_DIR : null;
 
   const app = express();
+  app.locals.now = options.now ?? (() => new Date());
   app.disable("x-powered-by");
   app.use(cors({ origin: CLIENT_ORIGINS }));
 
@@ -42,6 +46,8 @@ export function createApp(options: AppOptions = {}) {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/teams/:teamId/milestones", teamMilestonesRouter);
+  app.use("/api/milestones", milestonesRouter);
   app.use("/api/teams", teamsRouter);
 
   // Unknown API routes answer JSON, never the SPA's index.html.

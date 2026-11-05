@@ -13,6 +13,9 @@ export const PROTECTED_ENDPOINTS: ProtectedEndpoint[] = [
   { method: "post", path: "/api/auth/logout", feature: "F-01" },
   { method: "get", path: "/api/teams/mine", feature: "F-03.2" },
   { method: "get", path: "/api/teams", feature: "F-03.2" },
+  { method: "get", path: "/api/teams/:teamId/milestones", feature: "F-04" },
+  { method: "post", path: "/api/teams/:teamId/milestones", feature: "F-04" },
+  { method: "get", path: "/api/milestones/:milestoneId", feature: "F-04" },
 ];
 
 export function concretePath(path: string): string {

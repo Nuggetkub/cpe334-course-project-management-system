@@ -33,6 +33,14 @@ try {
       { email: "supervisor@e2e.test", name: "E2E Supervisor", role: "SUPERVISOR", passwordHash },
     ],
   });
+  // F-04: dedicated synthetic teams; no milestones so empty/create are real DB states.
+  const student = await prisma.user.findUniqueOrThrow({ where: { email: "student@e2e.test" } });
+  const supervisor = await prisma.user.findUniqueOrThrow({ where: { email: "supervisor@e2e.test" } });
+  const course = await prisma.course.create({ data: { code: "E2E-F04", name: "E2E course" } });
+  const team = await prisma.team.create({ data: { courseId: course.id, name: "E2E Journey Team" } });
+  const emptyTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Validation Team" } });
+  await prisma.teamMember.create({ data: { studentId: student.id, teamId: team.id } });
+  await prisma.supervisorTeam.createMany({ data: [team, emptyTeam].map((t) => ({ supervisorId: supervisor.id, teamId: t.id })) });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();

@@ -35,6 +35,7 @@ model User {
   sessions        Session[]
   teamMembership  TeamMember?
   supervisedTeams SupervisorTeam[]
+  createdMilestones Milestone[]
 
   @@map("users")
 }
@@ -55,6 +56,7 @@ model Team {
   name        String
   members     TeamMember[]
   supervisors SupervisorTeam[]
+  milestones  Milestone[]
 
   @@unique([courseId, name])
   @@map("teams")
@@ -94,4 +96,20 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+}
+
+// F-04: additive create/view model; UTC values at the precision shared with F-05.
+model Milestone {
+  id          Int      @id @default(autoincrement())
+  teamId      Int      @map("team_id")
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  title       String   @db.VarChar(120)
+  description String   @default("") @db.VarChar(2000)
+  dueAt       DateTime @map("due_at") @db.Timestamp(3)
+  createdBy   Int      @map("created_by")
+  creator     User     @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(3)
+
+  @@index([teamId, dueAt, id])
+  @@map("milestones")
 }
