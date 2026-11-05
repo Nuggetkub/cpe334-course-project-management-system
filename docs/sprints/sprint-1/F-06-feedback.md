@@ -195,10 +195,40 @@ such and not claimed as behavioural red.
 
 ## 5. Definition of Done
 
-- [ ] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
-- [ ] Every test in §4 exists and passes; the red run before the implementation is recorded with command, counts and commit SHA.
-- [ ] `server`: `npm run typecheck`, `npm test`, `npm run build`; `client`: `npm test`, `npm run build`; root: `npm run e2e` — all pass on the PR head.
-- [ ] Both endpoints in the protected-endpoint list; README API table updated.
-- [ ] `traceability.md` updated: AC-06.1–06.5 wording, change-log row.
+- [x] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
+- [x] Every test in §4 exists and passes; the red run before the implementation is recorded in §6 with command, counts and commit SHA. TEST-06.2a failed only because `parseFeedback` did not exist yet; this is stated, not claimed as behavioural red.
+- [x] `server`: `npm run typecheck`, `npm test`, `npm run build`; `client`: `npm test`, `npm run build`; root: `npm run e2e` — all pass on the PR head.
+- [x] Both endpoints in the protected-endpoint list; README API table updated.
+- [x] `traceability.md` updated: AC-06.1–06.4 wording, FR-18/FR-19 rows, change-log row v0.12.
 - [ ] Reviewed and approved by @Earth2509; merged into `staging/sprint-1`.
-- [ ] Known limitations disclosed: no edit/delete, no grades, no notifications in Sprint 1.
+- [x] Known limitations disclosed: no edit/delete, no grades, no notifications in Sprint 1.
+
+---
+
+## 6. Implementation and verification record
+
+Branch `feature/11-f06-feedback` from staging `f0ec131` (F-01–F-05 merged). Commit order: contract
+`d95acf9` → migration `59cb392` → failing tests `c992c56` → implementation `c076ad1`. Local
+PostgreSQL 16 (Docker), Node 24.
+
+### Red at `c992c56` (migration present, no F-06 code)
+
+| Command | Result |
+|---|---|
+| `npm --prefix server test` | 19 failed / 180 passed. `feedback.test.ts` **10/10 failed on behaviour**: `expected 404 to be 201 / 200 / 400 / 403` (routes not mounted). TEST-02.1: 9 failed (404 instead of 401 on the two new endpoints). `feedback-validate.test.ts` failed to **load** (`parseFeedback` did not exist); not claimed as behavioural red |
+| `npm --prefix client test` | 5/5 new TEST-06.x failed (no feedback section); 45 existing passed |
+| `npm run e2e` | TEST-06.1e failed; the six F-01/F-04/F-05 journeys passed with the new "F06 submitted milestone" fixture |
+
+### Green at `c076ad1`
+
+| Command | Result |
+|---|---|
+| `npm --prefix server test` | **209/209**, 15 files |
+| `npm --prefix server run typecheck` / `build` | pass / pass |
+| `npm --prefix client test` | **50/50**, 7 files; 20 consecutive runs pass after `8eab9aa` |
+| `npm --prefix client run build` | pass |
+| `npm run e2e` | **7/7** (TEST-01.7b, 01.8b, 04.1e, 04.2e, 05.1e, 05.3e, 06.1e) |
+
+Two test-only changes outside F-06's own files: F-05's client mock answers the feedback request
+the page now makes (`c076ad1`), and F-04's TEST-04.6c creates its pending response before
+rendering, fixing a race that failed it about 1 run in 15 on staging (`8eab9aa`).
