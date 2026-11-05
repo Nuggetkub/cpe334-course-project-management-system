@@ -144,9 +144,60 @@ proved a business-rule assertion. Existing auth/seed/team regressions must remai
 
 ## 5. Definition of Done
 
-- [ ] API, DB and UI above implemented without unrelated authentication changes.
-- [ ] Red/green runs recorded with commands, commit IDs and limitations.
+- [x] API, DB and UI above implemented without unrelated authentication changes.
+- [x] Red/green runs recorded with commands, commit IDs and limitations below.
 - [ ] All server tests/typecheck/build, client tests/build and browser tests pass; no skipped/weakened tests.
-- [ ] README, traceability and AI-use/contribution records updated.
-- [ ] F-05 interface agreement preserved and disclosed to reviewer.
+- [x] README, traceability and AI-use/contribution records updated.
+- [x] F-05 interface agreement preserved and documented for review below.
 - [ ] @Nuggetkub peer review completed; PR merged into staging/sprint-1. Release to main is separate.
+
+## 6. Implementation and verification record
+
+Base: `44e4ae5` on staging/sprint-1. Contract `33e4f05` → additive model/migration `ed26f11`
+→ test-first commit `dd83ca1` → implementation `143c4c2`. No F-01 session-expiry changes from
+the separate PR #33 are included. Tests operate only on local disposable schemas.
+
+### Red evidence and limits
+
+At `dd83ca1`, before application implementation, `npm --prefix client test -- tests/milestones.test.tsx`
+failed all 10 new cases against the placeholder screen (11.85 s). That run is UI behavioral red
+evidence. The local full output is retained outside the repository as
+`outputs/cpms-f04-red-client.log`; the missing Title, Team, list and status controls caused failures.
+
+The attempted API red run was blocked in global setup because Docker/PostgreSQL was unavailable.
+It did **not** exercise API assertions, and is not counted as behavioral red evidence. The new unit
+modules also did not exist at the test-first commit; no unit business-rule red run is claimed.
+Once the database became available, the implementation was already present. Additional time-format,
+hidden-detail, page-range and E2E cases were added during implementation; they are regression checks,
+not claimed as originally captured red tests.
+
+### Local verification on `143c4c2` (5 Nov 2026, Node v24.14.0)
+
+| Command from repository root | Result |
+| --- | --- |
+| `npm --prefix server test` | 10 files / 124 tests passed, no skips (42.48 s; repeat after final changes 41.61 s) |
+| `npm --prefix server run typecheck` | Passed source and test TypeScript checks |
+| `npm --prefix server run build` | Passed |
+| `npm --prefix client test` | 4 files / 33 tests passed, no skips (2.92 s) |
+| `npm --prefix client run build` | Passed |
+| `npm run e2e -- --reporter=list` | All 4 cases reported `ok`, including the real create/read and past-deadline rejection. Sandbox runner stalled during server teardown; interrupted, so a complete exit-0 browser repeat is still required |
+| `git diff --check` | Passed |
+
+Browser infrastructure attempts are separate from assertions: initial launch failed because
+Chromium v1248 was missing; after official Playwright installation in a local workspace cache,
+the four tests reported `ok`. No tests or assertions were disabled, and the incomplete runner is
+not presented as a complete successful E2E run. Port 3101/4173 processes from the interrupted
+run were stopped before asking the developer to repeat it outside the sandbox.
+
+### F-05 handoff
+
+- Prisma `Milestone` exposes `id`, `teamId` (database `team_id`), `title`, `description`, `dueAt`
+  (`timestamp(3)` UTC), `createdBy`, `createdAt`; no Submission table is pre-created.
+- `createApp({ now })` stores the supplied/default server clock in `app.locals.now`.
+- `submissionWindow(dueAt, now)` already implements the inclusive deadline. `teamStatus` currently
+  handles the no-submission path; F-05 adds SUBMITTED and passes actual existence into list responses.
+- `formatBangkok(iso)` is shared in `client/src/time.ts`. List titles link to `/milestones/:milestoneId`;
+  `MilestonePage.tsx` is the read-only bridge for F-05 to extend with its own submission endpoint/form.
+- List reads are paginated at 50 and sorted dueAt ASC/id ASC; preserve ownership and status behavior
+  when adding submission relations. The E2E fixture now has a shared journey team and a validation team.
+- Peer approval, integration, issue closure and release are separate gates, not claimed by local tests.
