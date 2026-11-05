@@ -15,6 +15,7 @@
 | 0.9 | 2026-11-05 | @Nuggetkub | @Earth2509 | AC-01.10 added: a 401 during use returns to login with an expiry notice (gap found in PR #32 review); a late 401 from an older session changes nothing (PR #33 review) |
 | 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. PR #35 review approved the implementation; v0.9 from merged PR #33 is retained above |
 | 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
+| 0.12 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-06 contract v0.1 (taken over from @Earth2509): AC-06.1–AC-06.4 made precise (server-set author/time, trimming, oldest-first list, readers' 404, check order) |
 
 ## ID conventions
 
@@ -72,10 +73,10 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 |
 | AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline), on the milestone page and in F-04's list and detail | FR-09, DEC-13 |
 | AC-05.9 | A Supervisor submitting → 403; a malformed or invalid body to another team's milestone → 404 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 |
-| AC-06.1 | An assigned Supervisor records feedback on a submission version → 201 | FR-18, BR-10 |
-| AC-06.2 | Feedback text outside 1–2000 chars → 400, and the feedback form shows the field error next to the text box | BR-10, NFR-10 |
-| AC-06.3 | Team members see the feedback together with the version it refers to | FR-19 |
-| AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404 | BR-01, BR-02 |
+| AC-06.1 | An assigned Supervisor (or co-supervisor) records feedback on a submission version → 201; author, time and submission come from the session, server clock and URL | FR-18, BR-10 |
+| AC-06.2 | Feedback text outside 1–2000 characters after trimming → 400 `fields.text`, no row; the feedback form checks it before sending and shows the field error next to the text box | BR-10, NFR-10 |
+| AC-06.3 | Team members and assigned Supervisors see every feedback entry, oldest first, with author, Bangkok time and the version it refers to | FR-19 |
+| AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404; other teams' Students and Students with no team reading it → 404; order 401 → 403 → 404 → 400 | BR-01, BR-02, BR-03 |
 | AC-06.5 | The feedback list shows a loading state and "No feedback yet" when empty; the feedback form shows server errors and keeps the text | FR-19, NFR-10 |
 | AC-SR1.1 | Validation, auth and not-found errors use `{ "error": { "code", "message" } }` with no stack trace or SQL | NFR-05 |
 | AC-SR2.1 | `.env` is git-ignored; `.env.example` lists every variable; the client bundle contains no secret | NFR-12 |
@@ -104,8 +105,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-15 | F-09 Versioned resubmission | 2 | Sprint 2 contract |
 | FR-16 | F-09 | 2 | Sprint 2 contract |
 | FR-17 | F-09 | 2 | Sprint 2 contract |
-| FR-18 | F-06 Feedback on a submission | 1 | AC-06.1 / TEST-06.1 |
-| FR-19 | F-06 | 1 | AC-06.3 / TEST-06.3 |
+| FR-18 | [F-06 Feedback on a submission](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.1, AC-06.2 / TEST-06.1, TEST-06.2a/b/c, TEST-06.1e |
+| FR-19 | [F-06](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.3, AC-06.5 / TEST-06.3, TEST-06.5a/b/c, TEST-06.1e |
 | FR-20 | F-10 Grades and release | 2 | Sprint 2 contract |
 | FR-21 | F-10 | 2 | Sprint 2 contract |
 | FR-22 | F-11 Student progress board | 3 | Sprint 3 contract |
