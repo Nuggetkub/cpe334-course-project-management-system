@@ -100,7 +100,7 @@ describe("F-04 real API and database", () => {
     const ids = [...first.body.milestones, ...second.body.milestones].map((m: { id: number }) => m.id);
     expect(ids).toEqual([...ids].sort((a, b) => a - b));
     expect(new Set(ids).size).toBe(51);
-    for (const page of ["0", "-1", "abc", "1.2", "99999999999999999999999"]) {
+    for (const page of ["0", "-1", "abc", "1.2", "2147483647", "99999999999999999999999"]) {
       expect((await request(app).get(`${list()}?page=${page}`).set("Authorization", auth)).status).toBe(400);
       expectHidden(await request(app).get(`${list(f.teamB.id)}?page=${page}`).set("Authorization", auth));
     }

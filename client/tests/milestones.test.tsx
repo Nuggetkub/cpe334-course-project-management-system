@@ -105,6 +105,12 @@ it("TEST-04.3c opens read-only detail and hides missing detail safely", async ()
   expect(screen.queryByRole("button", { name: "Create milestone" })).not.toBeInTheDocument();
 });
 
+it("TEST-04.3c shows no fields for a hidden milestone", async () => {
+  open("STUDENT", () => Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }), "/milestones/7");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Milestone not found.");
+  expect(screen.queryByText("Build it")).not.toBeInTheDocument();
+});
+
 it("TEST-04.8c ignores old-team results after selecting another supervised team", async () => {
   let old!: (r: Response) => void;
   open("SUPERVISOR", (url) => {

@@ -94,6 +94,9 @@ npm run dev                   # http://localhost:5173
 | `POST /api/auth/login` | `{email, password}` → `200 {token, user}`; `401` for a wrong password or unknown email (same message) |
 | `GET /api/auth/me` | `Authorization: Bearer <token>` → `200 {user}`; `401` when missing, expired (8 h) or logged out |
 | `POST /api/auth/logout` | `Authorization: Bearer <token>` → `204`; the token stops working immediately |
+| `POST /api/teams/:teamId/milestones` | Assigned Supervisor only; `{title,description?,dueAt}` with explicit-zone future date → 201 `{milestone}` |
+| `GET /api/teams/:teamId/milestones?page=1` | Team members / assigned Supervisors only; 50 rows per page ordered by dueAt, id → `{milestones,page,pageSize,total}` |
+| `GET /api/milestones/:milestoneId` | Authorized read-only milestone detail, with separate window/team status |
 
 Errors always have the shape `{"error":{"code","message","fields?"}}`.
 
@@ -120,6 +123,16 @@ same body as a nonexistent ID) → `jsonBody` (there is no global JSON parser) �
 query. In the same PR, add the endpoint to `server/tests/support/protected-endpoints.ts` (the 401 test
 covers it from then on) and write its 403/404 tests with `expectForbidden` / `expectHidden` from
 `server/tests/support/authz.ts`. The rules per endpoint are in `docs/sprints/sprint-1/F-02-authz.md` §1.5.
+
+**Milestones (F-04 / Issue #9):** apply the additive migration before starting the new API. As a
+demo Supervisor open **Milestones**, select an assigned team, and create a title, optional description,
+and future due time. The form input is explicitly **Asia/Bangkok (UTC+07:00)** even on browsers in
+another timezone; the API stores UTC and enforces future time using its own clock. Students open
+**Milestones** or the link in **My team** to read their team's list and detail, without a create form.
+Unassigned Students see the no-team state. Direct hidden-team URLs return the same 404 as missing data.
+No demo milestones are seeded, preserving the empty/create journey. See the
+[F-04 contract and verification](docs/sprints/sprint-1/F-04-milestone.md). F-05 adds submission controls
+to the detail route and supplies actual submission presence to the shared status calculation.
 
 ### Production mode (what the Lab 5 container runs)
 
