@@ -13,7 +13,7 @@
 | 0.7 | 2026-11-04 | @Earth2509 | @Nuggetkub | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
 | 0.8 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract: AC-05.1–AC-05.7 made precise (409 codes, simultaneous submits, assigned Supervisors read); AC-05.8 (team status, §4.3.1 S1 rows) and AC-05.9 (Supervisor cannot submit; check order) added |
 | 0.9 | 2026-11-05 | @Nuggetkub | @Earth2509 | AC-01.10 added: a 401 during use returns to login with an expiry notice (gap found in PR #32 review); a late 401 from an older session changes nothing (PR #33 review) |
-| 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub (review pending) | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. Version 0.9 is reserved for the separate F-01 session-expiry PR #33 |
+| 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. PR #35 review approved the implementation; v0.9 from merged PR #33 is retained above |
 | 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
 
 ## ID conventions
