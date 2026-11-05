@@ -97,6 +97,8 @@ npm run dev                   # http://localhost:5173
 | `POST /api/teams/:teamId/milestones` | Assigned Supervisor only; `{title,description?,dueAt}` with explicit-zone future date → 201 `{milestone}` |
 | `GET /api/teams/:teamId/milestones?page=1` | Team members / assigned Supervisors only; 50 rows per page ordered by dueAt, id → `{milestones,page,pageSize,total}` |
 | `GET /api/milestones/:milestoneId` | Authorized read-only milestone detail, with separate window/team status |
+| `POST /api/milestones/:milestoneId/submissions` | Students of the milestone's team only; `{title,description?,link}` (absolute http/https link) → 201 `{submission}` as version 1; 409 `ALREADY_SUBMITTED` (one per milestone in Sprint 1) or `DEADLINE_PASSED` (server time after `due_at`) |
+| `GET /api/milestones/:milestoneId/submission` | Team members and assigned Supervisors → `{milestone, submission}`; `submission` is `null` until the team submits |
 
 Errors always have the shape `{"error":{"code","message","fields?"}}`.
 

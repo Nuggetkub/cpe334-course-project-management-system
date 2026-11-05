@@ -8,6 +8,7 @@ import { errorHandler, notFound } from "./errors.js";
 import { prisma } from "./prisma.js";
 import { teamsRouter } from "./teams/routes.js";
 import { milestonesRouter, teamMilestonesRouter } from "./milestones/routes.js";
+import { submissionsRouter } from "./submissions/routes.js";
 
 export interface AppOptions {
   /** Test-only clock injection, shared with F-05. Production uses server time. */
@@ -47,6 +48,7 @@ export function createApp(options: AppOptions = {}) {
 
   app.use("/api/auth", authRouter);
   app.use("/api/teams/:teamId/milestones", teamMilestonesRouter);
+  app.use("/api/milestones/:milestoneId", submissionsRouter);
   app.use("/api/milestones", milestonesRouter);
   app.use("/api/teams", teamsRouter);
 
