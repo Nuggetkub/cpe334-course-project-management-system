@@ -40,8 +40,10 @@ beforeEach(() => sessionStorage.clear());
 
 describe("F-05 milestone page", () => {
   it("TEST-05.7 shows loading, then the empty state with the form, from the submission endpoint", async () => {
+    // Created before rendering, so resolving never depends on when the page's effect sends the GET.
     let respond!: (r: Response) => void;
-    const fetchMock = open("STUDENT", () => new Promise<Response>((resolve) => { respond = resolve; }));
+    const pending = new Promise<Response>((resolve) => { respond = resolve; });
+    const fetchMock = open("STUDENT", () => pending);
     expect(await screen.findByText("Loading submission…")).toBeInTheDocument();
     respond(page());
     expect(await screen.findByText("Not submitted yet")).toBeInTheDocument();
