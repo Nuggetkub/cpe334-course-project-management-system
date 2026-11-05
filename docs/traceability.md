@@ -11,6 +11,7 @@
 | 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
 | 0.6 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #29 review: AC-02.5 covers malformed/invalid JSON bodies (order 401 → 403 → 404 → 400) |
 | 0.7 | 2026-11-04 | @Earth2509 | @Nuggetkub | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
+| 0.9 | 2026-11-05 | @Nuggetkub | @Earth2509 | AC-01.10 added: a 401 during use returns to login with an expiry notice (gap found in PR #32 review). v0.8 is F-05 (#31) |
 
 ## ID conventions
 
@@ -38,6 +39,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 |
 | AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 |
 | AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 |
+| AC-01.10 | When a signed-in user's session expires or is revoked during use, the next API request's 401 returns them to the login page with "Your session has expired. Please sign in again." and the token is cleared; no page shows its own error for it | FR-03, NFR-04, NFR-10 |
 | AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 |
 | AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 |
 | AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 |
@@ -80,7 +82,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 |---|---|---|---|
 | FR-01 | F-01 Authentication and session | 1 | AC-01.1, AC-01.2, AC-01.8, AC-01.9 / TEST-01.1, TEST-01.2, TEST-01.8, TEST-01.9 |
 | FR-02 | F-01 | 1 | AC-01.4 / TEST-01.4 |
-| FR-03 | F-01 | 1 | AC-01.3 / TEST-01.3 |
+| FR-03 | F-01 | 1 | AC-01.3, AC-01.10 / TEST-01.3, TEST-01.10 |
 | FR-04 | F-01 | 1 | AC-01.7 / TEST-01.7 (E2E) |
 | FR-05 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
 | FR-06 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
@@ -132,13 +134,13 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | NFR-01 | F-01, F-03.1 | 1 | AC-01.6, AC-03.2 / TEST-01.6, TEST-03.2 |
 | NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1 / TEST-02.1, re-run each sprint |
 | NFR-03 | F-02 | 1 → 2, 3 | AC-02.2–AC-02.5 / TEST-02.2–TEST-02.5, extended each sprint |
-| NFR-04 | F-01 | 1 | AC-01.4, AC-01.5 / TEST-01.4, TEST-01.5 |
+| NFR-04 | F-01 | 1 | AC-01.4, AC-01.5, AC-01.10 / TEST-01.4, TEST-01.5, TEST-01.10 |
 | NFR-05 | SR-01 (all features) | 1 → 2, 3 | AC-SR1.1 / TEST-SR1.1, asserted in each feature's API tests |
 | NFR-06 | F-04 (display), F-05 (comparison) | 1 | AC-04.3, AC-04.4, AC-05.3 / TEST-04.3, TEST-04.4, TEST-05.3 |
 | NFR-07 | SR-03 | 2 (Lab 5) | Persistence check, Issue #22 |
 | NFR-08 | SR-02 | 1 (local) → 2 (Docker) | AC-SR2.2 / TEST-SR2.2 (timed manual walkthrough); Docker in #17 |
 | NFR-09 | F-12, SR-03 | 3 | Sprint 3 performance script against GCP |
-| NFR-10 | Each feature's forms and lists; SR-01 audit | 1 (S1 forms + lists) → 2 (S2 features) → 3 (S3 lists + audit) | **Field errors:** AC-01.8, AC-04.2, AC-05.2, AC-06.2 · **Server errors:** AC-01.8 (401), AC-01.9, AC-04.5, AC-05.6, AC-06.5 · **Loading/empty:** AC-03.7, AC-04.6, AC-05.7, AC-06.5 / matching TEST IDs (E2E). Sprint 2: an NFR-10 AC in each F-07–F-10 contract. Sprint 3: F-11–F-13 lists + SR-01 audit of every form and list (features.md, "UI feedback states") |
+| NFR-10 | Each feature's forms and lists; SR-01 audit | 1 (S1 forms + lists) → 2 (S2 features) → 3 (S3 lists + audit) | **Field errors:** AC-01.8, AC-04.2, AC-05.2, AC-06.2 · **Server errors:** AC-01.8 (401), AC-01.9, AC-01.10, AC-04.5, AC-05.6, AC-06.5 · **Loading/empty:** AC-03.7, AC-04.6, AC-05.7, AC-06.5 / matching TEST IDs (E2E). Sprint 2: an NFR-10 AC in each F-07–F-10 contract. Sprint 3: F-11–F-13 lists + SR-01 audit of every form and list (features.md, "UI feedback states") |
 | NFR-11 | SR-03 | 2 (Lab 5) | CI required check `test-and-docker`, Issues #18, #20 |
 | NFR-12 | SR-02 | 1 (manual) → 2 (CI scan) | AC-03.1, AC-SR2.1 / TEST-03.1, TEST-SR2.1; CI secret scan in Sprint 2 |
 
@@ -178,6 +180,7 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-03 | F-03 delivered as F-03.1 (data, seed) then F-03.2 (protected team views) | PR #26 review | FR-05, FR-06 and AC-03.3/03.4/03.6/03.7 land after F-02; no dependency cycle |
 | 2026-11-03 | NFR-10 server-error and loading/empty checks made explicit | PR #26 review | AC-03.7, AC-04.5, AC-04.6, AC-05.6, AC-05.7, AC-06.5 added; S2/S3 allocation stated |
 | 2026-11-04 | 72-byte password limit; fixed 8 h session lifetime | PR #27 review | AC-01.2, AC-01.5, AC-01.6 wording; TEST-01.2d, TEST-01.5c, TEST-01.6c |
+| 2026-11-05 | A session that ends mid-use returns to login | PR #32 review | AC-01.10 added; FR-03, NFR-04, NFR-10 rows updated; TEST-01.10a, TEST-01.10b |
 | 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
 | 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
 
