@@ -146,7 +146,7 @@ proved a business-rule assertion. Existing auth/seed/team regressions must remai
 
 - [x] API, DB and UI above implemented without unrelated authentication changes.
 - [x] Red/green runs recorded with commands, commit IDs and limitations below.
-- [ ] All server tests/typecheck/build, client tests/build and browser tests pass; no skipped/weakened tests.
+- [x] All server tests/typecheck/build, client tests/build and browser tests pass; no skipped/weakened tests. Browser completion confirmed by the developer's repeat below.
 - [x] README, traceability and AI-use/contribution records updated.
 - [x] F-05 interface agreement preserved and documented for review below.
 - [ ] @Nuggetkub peer review completed; PR merged into staging/sprint-1. Release to main is separate.
@@ -171,7 +171,10 @@ Once the database became available, the implementation was already present. Addi
 hidden-detail, page-range and E2E cases were added during implementation; they are regression checks,
 not claimed as originally captured red tests.
 
-### Local verification on `143c4c2` (5 Nov 2026, Node v24.14.0)
+### Local verification (5 Nov 2026, Node v24.14.0)
+
+Application/test source: `143c4c2`; `8d14848` changed only this verification document. The developer
+repeated E2E on the same branch after `8d14848`, using the commands supplied in the handoff.
 
 | Command from repository root | Result |
 | --- | --- |
@@ -180,14 +183,16 @@ not claimed as originally captured red tests.
 | `npm --prefix server run build` | Passed |
 | `npm --prefix client test` | 4 files / 33 tests passed, no skips (2.92 s) |
 | `npm --prefix client run build` | Passed |
-| `npm run e2e -- --reporter=list` | All 4 cases reported `ok`, including the real create/read and past-deadline rejection. Sandbox runner stalled during server teardown; interrupted, so a complete exit-0 browser repeat is still required |
+| `npm run e2e -- --reporter=list` | Developer's completed Command Prompt repeat: **4 passed (9.5 s)**, no skips; includes two auth regressions and two real milestone journeys |
 | `git diff --check` | Passed |
 
 Browser infrastructure attempts are separate from assertions: initial launch failed because
 Chromium v1248 was missing; after official Playwright installation in a local workspace cache,
-the four tests reported `ok`. No tests or assertions were disabled, and the incomplete runner is
-not presented as a complete successful E2E run. Port 3101/4173 processes from the interrupted
-run were stopped before asking the developer to repeat it outside the sandbox.
+the four tests reported `ok`, but that sandbox attempt stalled during server teardown and was
+interrupted. It is not counted as a complete run. Port 3101/4173 processes were stopped before the
+developer's completed repeat outside the sandbox. The developer supplied all four `ok` lines and
+the final `4 passed (9.5s)` summary. No tests or assertions were disabled. The repeat used the
+disposable `cpms_e2e` schema and the official Chromium cache under local `outputs/playwright-browsers`.
 
 ### F-05 handoff
 
