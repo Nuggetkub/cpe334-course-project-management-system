@@ -120,3 +120,54 @@ describe("Login form (AC-01.8, AC-01.9)", () => {
     expect(sessionStorage.getItem(TOKEN_KEY)).toBe("t".repeat(43));
   });
 });
+
+describe("Session ends mid-use (AC-01.10)", () => {
+  const EXPIRED = "Your session has expired. Please sign in again.";
+  const unauthenticated = () =>
+    jsonResponse(401, { error: { code: "UNAUTHENTICATED", message: "Authentication required" } });
+
+  it("TEST-01.10a returns to the login page with a notice when a page request gets 401", async () => {
+    sessionStorage.setItem(TOKEN_KEY, "expired-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => (url.endsWith("/api/auth/me") ? jsonResponse(200, { user: student }) : unauthenticated())),
+    );
+
+    renderAt("/team");
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(EXPIRED);
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
+    expect(screen.queryByText("Could not load team information. Please try again.")).not.toBeInTheDocument();
+  });
+
+  it("TEST-01.10b shows no expiry notice after logging out with an expired session", async () => {
+    sessionStorage.setItem(TOKEN_KEY, "expired-token");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => (url.endsWith("/api/auth/me") ? jsonResponse(200, { user: student }) : unauthenticated())),
+    );
+    renderAt("/");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Log out" }));
+
+    expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByText(EXPIRED)).not.toBeInTheDocument();
+    expect(sessionStorage.getItem(TOKEN_KEY)).toBeNull();
+  });
+
+  it("TEST-01.10b shows no expiry notice for a wrong password", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        jsonResponse(401, { error: { code: "INVALID_CREDENTIALS", message: "Email or password is incorrect" } }),
+      ),
+    );
+    renderAt("/login");
+
+    fillLogin("student@example.test", "wrong-password");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Email or password is incorrect");
+    expect(screen.queryByText(EXPIRED)).not.toBeInTheDocument();
+  });
+});
