@@ -16,7 +16,7 @@ function open(role: "STUDENT" | "SUPERVISOR", path: string, result: () => Respon
   return fetchMock;
 }
 
-it("shows loading, then the student's team and roster", async () => {
+it("TEST-03.3c shows loading, then the student's team and roster", async () => {
   let complete!: (value: Response) => void;
   const pending = new Promise<Response>((resolve) => { complete = resolve; });
   const fetchMock = open("STUDENT", "/team", () => pending);
@@ -32,18 +32,18 @@ it("shows loading, then the student's team and roster", async () => {
   expect(fetchMock.mock.calls[1]?.[0]).toMatch(/\/api\/teams\/mine$/);
 });
 
-it("shows the student's no-team state only for the expected 404", async () => {
+it("TEST-03.4c shows the student's no-team state only for the expected 404", async () => {
   open("STUDENT", "/team", () => Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }));
   expect(await screen.findByText("You are not assigned to a team yet")).toBeInTheDocument();
 });
 
-it("shows the supervisor's assigned teams", async () => {
+it("TEST-03.6c shows the supervisor's assigned teams", async () => {
   const fetchMock = open("SUPERVISOR", "/teams", () => Response.json({ teams: [{ id: 2, name: "Team B" }] }));
   expect(await screen.findByText("Team B")).toBeInTheDocument();
   expect(fetchMock.mock.calls[1]?.[0]).toMatch(/\/api\/teams$/);
 });
 
-it("shows a safe error and retries to the supervisor's empty state", async () => {
+it("TEST-03.7c shows a safe error and retries to the supervisor's empty state", async () => {
   const result = vi.fn()
     .mockImplementationOnce(() => Response.json({ error: { message: "internal detail" } }, { status: 500 }))
     .mockImplementationOnce(() => Response.json({ teams: [] }));
@@ -55,7 +55,7 @@ it("shows a safe error and retries to the supervisor's empty state", async () =>
 });
 
 it.each([["STUDENT", "/teams"], ["SUPERVISOR", "/team"]] as const)(
-  "does not fetch the other role's team endpoint (%s)",
+  "TEST-03.8c does not fetch the other role's team endpoint (%s)",
   async (role, path) => {
     const fetchMock = open(role, path, () => Response.json({}));
     expect(await screen.findByRole("alert")).toHaveTextContent("You do not have permission");

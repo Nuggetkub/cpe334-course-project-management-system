@@ -10,7 +10,7 @@
 | 0.4 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #27 review: AC-01.2 / AC-01.6 add the 72-byte bcrypt password limit; AC-01.5 states the 8 h lifetime is not configurable |
 | 0.5 | 2026-11-04 | @Nuggetkub | @Earth2509 | F-02 contract: AC-02.1–AC-02.4 made precise (identical 404 body, co-supervision, no-team student, Student-only operations); AC-02.5 added (malformed IDs, check order 401 → 403 → 404) |
 | 0.6 | 2026-11-04 | @Nuggetkub | @Earth2509 | PR #29 review: AC-02.5 covers malformed/invalid JSON bodies (order 401 → 403 → 404 → 400) |
-| 0.7 | 2026-11-04 | @Earth2509 | Pending | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
+| 0.7 | 2026-11-04 | @Earth2509 | @Nuggetkub | F-03.2: link team-view acceptance criteria to the implementation contract and test evidence |
 
 ## ID conventions
 

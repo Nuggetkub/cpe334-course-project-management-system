@@ -111,7 +111,7 @@ API and E2E tests create their own fixtures in isolated schemas.
 `student1@example.test` and open **My team** to check the team name, members, and assigned supervisors.
 Sign out and use `supervisor1@example.test` to check that **My teams** lists only assigned teams.
 The unassigned `smoke.student@example.test` account can be used to check the student empty state
-if its smoke password is configured. See the [F-03.2 contract and test evidence](docs/sprints/sprint-1/F-03-team-views.md).
+using the same `STUDENT_DEMO_PASSWORD` as the other demo Students. See the [F-03.2 contract and test evidence](docs/sprints/sprint-1/F-03-team-views.md).
 
 **Adding a protected endpoint (F-02):** never write permission logic in a route. Use the helpers in
 `server/src/auth/authorize.ts` in this order: `requireAuth` (401) → `requireRole(...)` (403, wrong role)

@@ -60,7 +60,7 @@ describe("F-03.2 protected team views", () => {
     expect(res.body).toEqual({ teams: [] });
   });
 
-  it("rejects the wrong role on both endpoints", async () => {
+  it("TEST-03.8 rejects the wrong role on both endpoints", async () => {
     expectForbidden(await getAs("sA", "/api/teams"));
     expectForbidden(await getAs("pA", "/api/teams/mine"));
   });
