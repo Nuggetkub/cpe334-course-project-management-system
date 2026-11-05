@@ -7,6 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-04 | @Nuggetkub | @Earth2509 | Contract committed before implementation. Depends on F-04's Milestone model (§1.3), which is not yet merged |
+| 0.2 | 2026-11-05 | @Nuggetkub | @Earth2509 | Aligned with F-04 as delivered in #35 (this branch is stacked on it): the GET returns F-04's milestone shape with the real `teamStatus`; F-04's list and detail endpoints also report *Submitted* (TEST-05.8c added); the page extends F-04's `MilestonePage.tsx`; E2E uses its own team and a second E2E student so F-04's empty-list browser test is unaffected. STS 22 rows |
 
 ---
 
@@ -36,7 +37,7 @@ Milestone page (/milestones/:milestoneId)
   └─ GET /api/milestones/:id/submission ─► requireAuth → ownership (milestone's team) ─✗─► 401 / 404
          │✓
          ▼
-     { milestone {id,title,dueAt,window}, teamStatus, submission | null }
+     { milestone {…F-04 fields, window, teamStatus}, submission | null }
          │
          ├─ submission present ─────────────► show it (read-only), team status "Submitted"
          ├─ none, window Closed ────────────► "Not submitted yet" + "The deadline has passed."
@@ -68,14 +69,14 @@ the deadline too.
 | F-01 (#6) | `requireAuth`, `req.user`, NFR-05 error helpers, `apiFetch` / `ApiError` on the client | Merged |
 | F-02 (#7) | `requireRole`, `assertTeamAccess`, `parseId`, `jsonBody`, protected-endpoint list, `expectForbidden` / `expectHidden` | Merged |
 | F-03.1 (#8) | `teams`, `team_members`, `supervisor_teams` | Merged |
-| **F-04 (#9)** | **`Milestone` model** with at least `id`, `team_id` (FK → teams), `title`, `description`, `due_at` (`timestamp(3)`, UTC); the milestone list page links each milestone to `/milestones/:milestoneId`; the window rule "Open while `now ≤ due_at`" | **Not started.** F-05 code starts once F-04's migration exists: either after F-04 merges, or stacked on F-04's branch (as F-02 was on F-03.1) |
+| **F-04 (#9)** | **`Milestone` model** with at least `id`, `team_id` (FK → teams), `title`, `description`, `due_at` (`timestamp(3)`, UTC); the milestone list page links each milestone to `/milestones/:milestoneId`; the window rule "Open while `now ≤ due_at`" | **Provided by #35** (F-04 v0.1): `Milestone` (also `createdBy`, `createdAt`), `status.ts`, `createApp({ now })`, `formatBangkok`, the list links and the read-only `MilestonePage.tsx`. This branch is stacked on F-04's branch until #35 merges |
 | — | F-06 attaches feedback to `submissions.id` (BR-10) | Provided by this feature |
 
 **Shared with F-04.** The two status rules live in one server module,
 `server/src/milestones/status.ts`, so the deadline is implemented once:
 
 - `submissionWindow(dueAt, now)` returns `"OPEN" | "CLOSED"` (Sprint 1 rows of §4.3.1). F-04 creates it; F-05 uses it for BR-06.
-- `teamStatus(dueAt, hasSubmission, now)` returns `"SUBMITTED" | "NOT_SUBMITTED" | "OVERDUE"`. F-04 creates it without submissions; F-05 adds the `SUBMITTED` row and makes F-04's milestone list pass the real value.
+- `teamStatus(dueAt, hasSubmission, now)` returns `"SUBMITTED" | "NOT_SUBMITTED" | "OVERDUE"`. F-04 creates it without submissions; F-05 adds the `SUBMITTED` row and makes F-04's milestone list **and** detail endpoints pass the real value.
 
 Whoever lands first creates the module; the other extends it. The same applies to the client time
 formatter `client/src/time.ts` (`formatBangkok(iso)` → e.g. `8 Nov 2026, 23:59 (ICT)`).
@@ -120,7 +121,7 @@ Errors use the NFR-05 shape. Timestamps are ISO 8601 UTC strings.
 | Method + path | Request | Success | Errors |
 |---|---|---|---|
 | `POST /api/milestones/:milestoneId/submissions` | Bearer; `{ "title": string, "description"?: string, "link": string }` | **201** `{ "submission": Submission }` | 401 · 403 `FORBIDDEN` · 404 `NOT_FOUND` · 400 `BAD_REQUEST` (malformed JSON) · 400 `VALIDATION_ERROR` + `fields` · 409 `ALREADY_SUBMITTED` · 409 `DEADLINE_PASSED` |
-| `GET /api/milestones/:milestoneId/submission` | Bearer | **200** `{ "milestone": { id, title, dueAt, window: "OPEN" \| "CLOSED" }, "teamStatus": "SUBMITTED" \| "NOT_SUBMITTED" \| "OVERDUE", "submission": Submission \| null }` | 401 · 404 `NOT_FOUND` |
+| `GET /api/milestones/:milestoneId/submission` | Bearer | **200** `{ "milestone": Milestone, "submission": Submission \| null }`, where `Milestone` is F-04's shape `{ id, teamId, title, description, dueAt, createdBy, createdAt, window: "OPEN" \| "CLOSED", teamStatus: "SUBMITTED" \| "NOT_SUBMITTED" \| "OVERDUE" }` | 401 · 404 `NOT_FOUND` |
 
 ```json
 "Submission": {
@@ -136,8 +137,10 @@ hidden milestone. `submittedBy` has only `id` and `name`.
 
 Server modules: `server/src/submissions/routes.ts` (router), `server/src/submissions/validate.ts`
 (`parseSubmission(body)` → value or `HttpError` 400), and the shared `server/src/milestones/status.ts`.
-`createApp` gains an option `now?: () => Date` (default `() => new Date()`), stored as
-`app.locals.now`, so integration tests can fix the clock at `due_at ± 1 s`; production never sets it.
+`createApp({ now })` (from F-04) stores the clock as `app.locals.now`, so integration tests can fix
+it at `due_at ± 1 s`; production never sets it. F-04's `GET /api/teams/:teamId/milestones` and
+`GET /api/milestones/:milestoneId` keep their response shape but report `teamStatus: "SUBMITTED"`
+once the milestone has a submission (TEST-05.8c).
 
 ### 2.2 Data
 
@@ -162,12 +165,13 @@ seed is unchanged (no demo submissions), so the journey can be shown from an emp
 
 ### 2.3 UI
 
-New route `/milestones/:milestoneId` (`client/src/pages/MilestonePage.tsx`), reached from F-04's
-milestone list. One component renders for both roles from the GET response.
+Route `/milestones/:milestoneId` (`client/src/pages/MilestonePage.tsx`, F-04's read-only page),
+reached from F-04's milestone list. F-05 switches the page to the submission GET, so one request
+loads both the milestone and its submission. One component renders for both roles.
 
 | Element | Behaviour |
 |---|---|
-| Header | Milestone title; "Due 8 Nov 2026, 23:59 (ICT)" (`formatBangkok`); window badge (*Open* / *Closed*) and team status badge (*Submitted* / *Not submitted* / *Overdue*) as two separate values (DEC-13) |
+| Header | Milestone title and description (F-04's fields); "Due 8 Nov 2026, 23:59 (ICT)" (`formatBangkok`); window badge (*Open* / *Closed*) and team status badge (*Submitted* / *Not submitted* / *Overdue*) as two separate values (DEC-13) |
 | Loading (AC-05.7) | "Loading submission…" (`role="status"`) while the GET is in flight |
 | Empty (AC-05.7) | No submission: "Not submitted yet". If the window is Closed, also "The deadline has passed." |
 | Submission view (AC-05.5) | Title, description, link (`<a href>` with `target="_blank" rel="noopener noreferrer"`; only http/https links are ever stored), "Submitted by {name} on {formatBangkok(submittedAt)}" |
@@ -200,7 +204,7 @@ AC-05.8 and AC-05.9 are added by this contract.
 | AC-05.5 | Members of the team and its assigned Supervisors open the milestone; anyone else does | Members and assigned Supervisors see the same submission with submitter name and time; another team's Student, a Student with no team or an unassigned Supervisor → 404, identical to a nonexistent milestone, no data | FR-14, BR-02, BR-03 |
 | AC-05.6 | The submit request fails with 409, 5xx or a network error | The form shows the server message (409) or "Could not submit. Please try again."; title, description and link keep their values; the user can retry | BR-06, BR-07, NFR-10 |
 | AC-05.7 | The milestone page is loading; the team has no submission | "Loading submission…" while fetching; then "Not submitted yet" | FR-14, NFR-10 |
-| AC-05.8 | Team status per SRS §4.3.1 Sprint 1 rows | No submission and `now ≤ due_at` → Not submitted; no submission and `now > due_at` → Overdue; a submission → Submitted, before and after the deadline | FR-09, DEC-13 |
+| AC-05.8 | Team status per SRS §4.3.1 Sprint 1 rows, on the milestone page and in F-04's list and detail | No submission and `now ≤ due_at` → Not submitted; no submission and `now > due_at` → Overdue; a submission → Submitted, before and after the deadline | FR-09, DEC-13 |
 | AC-05.9 | A Supervisor (assigned or not) posts a submission; checks combined | 403 `FORBIDDEN`, no row; a malformed or invalid body to another team's milestone → 404, not 400 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 |
 
 ---
@@ -211,9 +215,9 @@ Levels: **U** = unit (Vitest, no DB) · **I** = API + DB integration (Vitest + S
 clock fixed through `createApp({ now })`) · **C** = client component (Vitest + Testing Library,
 `fetch` mocked) · **E** = end-to-end (Playwright, real API + DB in `cpms_e2e`).
 
-Fixture: F-02's `createTeamsFixture` extended with a second member **sA2** of team A, plus a milestone
-**mA** of team A (`due_at = 2026-11-08T16:59:59.000Z`) and **mB** of team B, inserted directly
-(F-04's API is not used, so these tests don't depend on F-04's validation).
+Fixture: F-02's `createTeamsFixture` plus a second member **sA2** of team A (created in the test file),
+a milestone **mA** of team A (`due_at = 2026-11-08T16:59:59.000Z`, created by pA) and **mB** of team B,
+inserted directly (F-04's API is not used, so these tests don't depend on F-04's validation).
 
 | Test | AC | Level | Precondition / input | Action | Expected result |
 |---|---|---|---|---|---|
@@ -229,6 +233,7 @@ Fixture: F-02's `createTeamsFixture` extended with a second member **sA2** of te
 | TEST-05.5a | AC-05.5, AC-05.7 | I | Before and after sA submits to mA | GET as sA, sA2, pA, pA2 | Before: `submission: null`, `teamStatus: "NOT_SUBMITTED"`; after: all four get the same submission with `submittedBy {id,name}` of sA |
 | TEST-05.5b | AC-05.5 | I | sA has submitted to mA | GET mA as sB, s0, pB; GET `/api/milestones/999999/submission` as sB; POST mA as sB and s0 | All 404 with the fixed `NOT_FOUND` body (`expectHidden`); still one row |
 | TEST-05.8b | AC-05.8 | I | mA with no submission; clock `due + 1 s` | GET as sA; then sA submits to a second milestone before its due, and GET after it | `OVERDUE` / window `CLOSED`; then `SUBMITTED` with the clock past that due |
+| TEST-05.8c | AC-05.8 | I | sA has submitted to mA; mA2 of team A has no submission; clock `due + 1 s` | GET F-04's `/api/teams/:teamId/milestones` and `/api/milestones/:mA` as sA | mA `SUBMITTED`, mA2 `OVERDUE` in the list; detail of mA `SUBMITTED`; response keys unchanged |
 | TEST-05.9a | AC-05.9 | I | pA (assigned) and pB signed in | POST valid body to mA | 403 for both (`expectForbidden`); no row |
 | TEST-05.9b | AC-05.9 | I | sB signed in | POST to mA with malformed JSON, and with `{title:""}` | 404 for both (ownership before parsing and validation) |
 | TEST-02.1 (extended) | AC-02.1 | I | Both F-05 endpoints added to the protected-endpoint list | The existing loop | 401 for every bad header; POST with a malformed body and no token → 401 |
@@ -236,10 +241,10 @@ Fixture: F-02's `createTeamsFixture` extended with a second member **sA2** of te
 | TEST-05.2d | AC-05.2 | C | POST returns 400 with `fields.link` | Submit | Server message shown under *Link* |
 | TEST-05.6 | AC-05.6 | C | POST returns 409 `DEADLINE_PASSED`; then 500; then rejects (network) | Submit each time | Banner with the server message / "Could not submit. Please try again." (twice); all three values kept; button enabled |
 | TEST-05.7 | AC-05.5, AC-05.7, AC-05.8 | C | GET pending; then `submission: null`; then a submission at `2026-11-08T16:59:59Z` | Render the page | "Loading submission…"; then "Not submitted yet" and the form; then title, link with `href` and `rel="noopener noreferrer"`, "Submitted by …" with `8 Nov 2026, 23:59 (ICT)`, badge *Submitted* and no form |
-| TEST-05.1e | AC-05.1, AC-05.5 | E | `e2e-prepare` adds a team with the E2E student and supervisor and a milestone due in 7 days | Student signs in → opens the milestone → submits → reloads → logs out; Supervisor signs in → opens the milestone | Student sees the submission after the reload; Supervisor sees the same title, link and submitter, and no form |
-| TEST-05.3e | AC-05.3, AC-05.6 | E | `e2e-prepare` adds a milestone that is already past due. Playwright rewrites only the **GET** response so the page thinks the window is Open | Student fills the form and submits | The real server answers 409; the banner reads "The deadline for this milestone has passed."; values kept. Shows the deadline is enforced by the server, not the page |
+| TEST-05.1e | AC-05.1, AC-05.5 | E | `e2e-prepare` adds `student2@e2e.test` in a new "E2E Submission Team" (the E2E supervisor is assigned) with a milestone due in 7 days. A separate team keeps F-04's empty-list browser test valid | Student signs in → opens the milestone → submits → reloads → logs out; Supervisor signs in → opens the milestone | Student sees the submission after the reload; Supervisor sees the same title, link and submitter, and no form |
+| TEST-05.3e | AC-05.3, AC-05.6 | E | `e2e-prepare` adds a milestone of the same team that is already past due. Playwright rewrites only the **GET** response so the page thinks the window is Open | Student fills the form and submits | The real server answers 409; the banner reads "The deadline for this milestone has passed."; values kept. Shows the deadline is enforced by the server, not the page |
 
-**Count (v0.1):** 21 STS rows: 3 unit (U), 12 API+DB integration (I, including the extended
+**Count (v0.2):** 22 STS rows: 3 unit (U), 13 API+DB integration (I, including the extended
 TEST-02.1), 4 client component (C), 2 end-to-end (E). Several rows expand into one case per input.
 
 **TDD evidence:** commit order on this branch is (1) this contract, (2) the `submissions` migration

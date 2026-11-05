@@ -14,6 +14,7 @@
 | 0.8 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract: AC-05.1–AC-05.7 made precise (409 codes, simultaneous submits, assigned Supervisors read); AC-05.8 (team status, §4.3.1 S1 rows) and AC-05.9 (Supervisor cannot submit; check order) added |
 | 0.9 | 2026-11-05 | @Nuggetkub | @Earth2509 | AC-01.10 added: a 401 during use returns to login with an expiry notice (gap found in PR #32 review); a late 401 from an older session changes nothing (PR #33 review) |
 | 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub (review pending) | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. Version 0.9 is reserved for the separate F-01 session-expiry PR #33 |
+| 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
 
 ## ID conventions
 
@@ -69,7 +70,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-05.5 | Team members and assigned Supervisors see the persisted submission with submitter and time; other teams, no team, unassigned Supervisors → 404 | FR-14, BR-02, BR-03 |
 | AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 |
 | AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 |
-| AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline) | FR-09, DEC-13 |
+| AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline), on the milestone page and in F-04's list and detail | FR-09, DEC-13 |
 | AC-05.9 | A Supervisor submitting → 403; a malformed or invalid body to another team's milestone → 404 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 |
 | AC-06.1 | An assigned Supervisor records feedback on a submission version → 201 | FR-18, BR-10 |
 | AC-06.2 | Feedback text outside 1–2000 chars → 400, and the feedback form shows the field error next to the text box | BR-10, NFR-10 |
