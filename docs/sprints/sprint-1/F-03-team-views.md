@@ -53,7 +53,7 @@ I = API integration against PostgreSQL; C = React component/application test wit
 
 | Test ID | Linked AC | Level | Precondition/input | Action | Expected result |
 | --- | --- | --- | --- | --- | --- |
-+| TEST-02.1 | AC-02.1 | I | no header | GET `/api/teams/mine` | 401 standard UNAUTHENTICATED; no team data |
+| TEST-02.1 | AC-02.1 | I | no header | GET `/api/teams/mine` | 401 standard UNAUTHENTICATED; no team data |
 | TEST-02.1 | AC-02.1 | I | another scheme (Basic) | GET `/api/teams/mine` | 401 standard UNAUTHENTICATED; no team data |
 | TEST-02.1 | AC-02.1 | I | an empty bearer token | GET `/api/teams/mine` | 401 standard UNAUTHENTICATED; no team data |
 | TEST-02.1 | AC-02.1 | I | an unknown token | GET `/api/teams/mine` | 401 standard UNAUTHENTICATED; no team data |
