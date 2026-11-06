@@ -1,0 +1,10 @@
+# Build context of `./client` in docker-compose.yml. The root .dockerignore does not apply here.
+# Host dependencies and build output must not overwrite what `npm ci` installed in the image
+# (on Windows they are win32 binaries), and local .env files must never reach an image.
+# No .env.example is needed by this build, so none is kept.
+node_modules
+dist
+coverage
+.env
+.env.*
+*.log
