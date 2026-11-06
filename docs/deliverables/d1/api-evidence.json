@@ -1,0 +1,99 @@
+[
+  {
+    "id": "R1 late submission (deadline rule)",
+    "request": "POST /api/milestones/2/submissions  (Authorization: Bearer <token>)  body {\"title\":\"Too late\",\"link\":\"https://example.com/late\"}",
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "DEADLINE_PASSED",
+        "message": "The deadline for this milestone has passed."
+      }
+    }
+  },
+  {
+    "id": "R2 second submission (one per milestone)",
+    "request": "POST /api/milestones/3/submissions  (Authorization: Bearer <token>)  body {\"title\":\"Again\",\"link\":\"https://example.com/again\"}",
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "ALREADY_SUBMITTED",
+        "message": "Your team has already submitted work for this milestone."
+      }
+    }
+  },
+  {
+    "id": "R3 milestone with a past deadline",
+    "request": "POST /api/teams/1/milestones  (Authorization: Bearer <token>)  body {\"title\":\"Backdated\",\"dueAt\":\"2020-01-01T00:00:00+07:00\"}",
+    "status": 400,
+    "body": {
+      "error": {
+        "code": "VALIDATION_ERROR",
+        "message": "Check the highlighted fields",
+        "fields": {
+          "dueAt": "Enter a valid future due date and time."
+        }
+      }
+    }
+  },
+  {
+    "id": "A1 unauthenticated protected request",
+    "request": "GET /api/milestones/3/submission  (no token)",
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHENTICATED",
+        "message": "Sign in to continue"
+      }
+    }
+  },
+  {
+    "id": "A2 Student creates a milestone (wrong role)",
+    "request": "POST /api/teams/1/milestones  (Authorization: Bearer <token>)  body {\"title\":\"Mine\",\"dueAt\":\"2030-01-01T00:00:00+07:00\"}",
+    "status": 403,
+    "body": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "You do not have permission to do this"
+      }
+    }
+  },
+  {
+    "id": "A3 Student adds feedback (wrong role)",
+    "request": "POST /api/submissions/1/feedback  (Authorization: Bearer <token>)  body {\"text\":\"Self-review\"}",
+    "status": 403,
+    "body": {
+      "error": {
+        "code": "FORBIDDEN",
+        "message": "You do not have permission to do this"
+      }
+    }
+  },
+  {
+    "id": "A4 Student reads another team's submission (ownership)",
+    "request": "GET /api/milestones/3/submission  (Authorization: Bearer <token>)",
+    "status": 404,
+    "body": {
+      "error": {
+        "code": "NOT_FOUND",
+        "message": "Not found"
+      }
+    }
+  },
+  {
+    "id": "A5 logout",
+    "request": "POST /api/auth/logout  (Authorization: Bearer <token>)",
+    "status": 204,
+    "body": null
+  },
+  {
+    "id": "A6 same token after logout",
+    "request": "GET /api/auth/me  (Authorization: Bearer <token>)",
+    "status": 401,
+    "body": {
+      "error": {
+        "code": "UNAUTHENTICATED",
+        "message": "Sign in to continue"
+      }
+    }
+  }
+]
