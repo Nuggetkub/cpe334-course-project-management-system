@@ -91,6 +91,9 @@ npm run dev                   # http://localhost:5173
 |---|---|
 | `GET /api/health` | Liveness — `200 {"status":"ok"}`, never touches the DB |
 | `GET /api/ready` | Readiness — `200 {"status":"ready","db":"connected"}`, or `503` when the DB is unreachable |
+
+See the [Lab 5 deployment notes](docs/labs/lab05/deployment.md) for cloud
+readiness, configuration sources, and the planned deployment smoke checks.
 | `POST /api/auth/login` | `{email, password}` → `200 {token, user}`; `401` for a wrong password or unknown email (same message) |
 | `GET /api/auth/me` | `Authorization: Bearer <token>` → `200 {user}`; `401` when missing, expired (8 h) or logged out |
 | `POST /api/auth/logout` | `Authorization: Bearer <token>` → `204`; the token stops working immediately |
