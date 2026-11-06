@@ -7,6 +7,7 @@
 | 0.1 | 2026-11-04 | @Earth2509 | @Nuggetkub | Initial contract for Issue #8, following F-03.1 and F-02 |
 | 0.2 | 2026-11-04 | @Earth2509 | @Nuggetkub | Record implementation commits, verification scope, and manual review steps |
 | 0.3 | 2026-11-05 | @Earth2509 | @Nuggetkub | Expand permissions, acceptance criteria, STS and completion gates after PR #32 review; re-review pending |
+| 0.4 | 2026-11-06 | @Nuggetkub | @Earth2509 | DoD: last two items ticked after release `v0.1.0` (PRs #32 and #34 merged; board Released). No behaviour or test changes |
 
 ## Scope
 
@@ -78,8 +79,8 @@ I = API integration against PostgreSQL; C = React component/application test wit
 - [x] Contract predates implementation; FR/BR/NFR, decisions, observable AC and test cases are documented.
 - [x] Protected routes derive scope from the session and return only intended fields; both views cover loading, empty and failure states.
 - [x] API and component tests have red/green evidence; record verification scope and known limits.
-- [ ] Peer re-review confirms the revised contract and test mapping; merge the PR into `staging/sprint-1`.
-- [ ] Update Issue #8 and the project board once both F-03 increments have been accepted.
+- [x] Peer re-review confirms the revised contract and test mapping; merge the PR into `staging/sprint-1`. PR #32 approved by @Nuggetkub and merged 5 Nov; the STS row fix in PR #34 was merged the same day.
+- [x] Update Issue #8 and the project board once both F-03 increments have been accepted. Board: Released (6 Nov 2026, release `v0.1.0`). Issue #8 is closed by the release PR to `main`.
 
 ### API verification
 

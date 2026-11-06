@@ -8,6 +8,7 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-05 | @Earth2509 | @Nuggetkub (approved `8adf0b1` in PR #35) | Contract and planned tests recorded before migration, tests and implementation |
 | 0.2 | 2026-11-05 | @Earth2509 | @Nuggetkub (post-review corrections) | PR #35: Given/When/Then ACs, explicit STS preconditions and missing TEST-04.6i (15 rows); reviewer-reproduced API red evidence; staging integration retains PR #33's F-01 contract |
+| 0.3 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: last DoD item ticked after release `v0.1.0` (PR #35 merged, PR #39 released). No behaviour or test changes |
 
 ## 1. Feature design
 
@@ -152,7 +153,7 @@ proved a business-rule assertion. Existing auth/seed/team regressions must remai
 - [x] README, traceability and AI-use/contribution records updated.
 - [x] F-05 interface agreement preserved and documented for review below.
 - [x] @Nuggetkub independently reviewed and approved `8adf0b1` in [PR #35](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/35#pullrequestreview-5787776325).
-- [ ] Post-review corrections confirmed and PR merged into staging/sprint-1. Release to main is separate.
+- [x] Post-review corrections confirmed and PR merged into staging/sprint-1. Release to main is separate. @Nuggetkub approved `2da7b20` and merged PR #35 (`8d1a66c`, 5 Nov); released to `main` in `v0.1.0` (PR #39).
 
 ## 6. Implementation and verification record
 

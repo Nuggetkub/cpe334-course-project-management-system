@@ -7,6 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-05 | @Nuggetkub | @Earth2509 | Contract committed before implementation, on top of F-05 (#36) in staging |
+| 0.2 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: last DoD item ticked after release `v0.1.0` (PR #37 merged). No behaviour or test changes |
 
 ---
 
@@ -200,7 +201,7 @@ such and not claimed as behavioural red.
 - [x] `server`: `npm run typecheck`, `npm test`, `npm run build`; `client`: `npm test`, `npm run build`; root: `npm run e2e` — all pass on the PR head.
 - [x] Both endpoints in the protected-endpoint list; README API table updated.
 - [x] `traceability.md` updated: AC-06.1–06.4 wording, FR-18/FR-19 rows, change-log row v0.12.
-- [ ] Reviewed and approved by @Earth2509; merged into `staging/sprint-1`.
+- [x] Reviewed and approved by @Earth2509; merged into `staging/sprint-1`. PR #37 approved and merged (`5b153f7`, 6 Nov); released in `v0.1.0`.
 - [x] Known limitations disclosed: no edit/delete, no grades, no notifications in Sprint 1.
 
 ---

@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-04 | @Nuggetkub | @Earth2509 | Contract committed before implementation |
 | 0.2 | 2026-11-04 | @Nuggetkub | @Earth2509 | Review on PR #29: the global `express.json()` answered malformed JSON with 400 before any guard. JSON is now parsed **per route after the guards** (`jsonBody`); routes without a body never parse one. TEST-02.1 gains a malformed-body case per protected write; TEST-02.5e (ownership before validation, real validator) and TEST-02.5f (logout ignores a malformed body) added. STS now 17 rows |
+| 0.3 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: DoD items ticked after release `v0.1.0`, each with a link to its evidence (PR #29). No behaviour or test changes |
 
 ---
 
@@ -204,14 +205,17 @@ run recorded in the PR), (3) implementation (green run).
 
 ## 5. Definition of Done
 
-- [ ] `server/src/auth/authorize.ts` implements §2.1; F-01's existing tests still pass.
-- [ ] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
-      green runs (command, counts, commit SHA) are in the PR.
-- [ ] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
-      `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
-- [ ] Probe routes exist only in tests; `createApp` mounts nothing new.
-- [ ] README states the rule for new endpoints: use the helpers, put `jsonBody` after the guards, add
+Status recorded on 2026-11-06, after release `v0.1.0`. Each item links to its evidence.
+
+- [x] `server/src/auth/authorize.ts` implements §2.1; F-01's existing tests still pass.
+- [x] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
+      green runs (command, counts, commit SHA) are in the PR. PR #29: red `12c275d` (module missing) and
+      `1a3bd37` (permissive skeleton: 12 behavioural failures); review cycle red `1ca868e`; green `2eff2ad`.
+- [x] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
+      `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened. Re-run on `v0.1.0`: D1 Part F, F.3.
+- [x] Probe routes exist only in tests; `createApp` mounts nothing new.
+- [x] README states the rule for new endpoints: use the helpers, put `jsonBody` after the guards, add
       the endpoint to the protected-endpoint list, add 403/404 tests.
-- [ ] `traceability.md` gains AC-02.5 and the updated AC-02.1–02.4 wording, with a change-log row.
-- [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`
-      after #28.
+- [x] `traceability.md` gains AC-02.5 and the updated AC-02.1–02.4 wording, with a change-log row (v0.5, v0.6).
+- [x] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`
+      after #28. PR #29 (malformed-JSON order found in review); #28 merged 14:45 UTC and #29 at 15:11 UTC, 4 Nov.
