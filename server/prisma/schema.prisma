@@ -1,0 +1,151 @@
+// Prisma schema for the Course Project Management System.
+// Only the account table exists in the scaffold (Prisma cannot generate a client
+// from an empty schema). Team, Milestone, Submission, Feedback and Session arrive
+// with their features — see Issue #8 (schema + seed), #6 (sessions) and the SDS.
+//
+// Migrations must stay additive (add tables/columns, never drop or rename in the
+// same release) so the previous image still works after a Cloud Run rollback.
+
+generator client {
+  provider      = "prisma-client-js"
+  // Native target for local dev/CI plus the musl build used by node:24-alpine.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SRS §2 / DEC-07: exactly one role per account.
+enum Role {
+  STUDENT
+  SUPERVISOR
+}
+
+// SRS FR-01..03, NFR-01: accounts are seeded; only a bcrypt hash is stored.
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String
+  role         Role
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  sessions          Session[]
+  teamMembership    TeamMember?
+  supervisedTeams   SupervisorTeam[]
+  createdMilestones Milestone[]
+  submissions       Submission[]
+  feedback          Feedback[]
+
+  @@map("users")
+}
+
+model Course {
+  id    Int    @id @default(autoincrement())
+  code  String @unique
+  name  String
+  teams Team[]
+
+  @@map("courses")
+}
+
+model Team {
+  id          Int              @id @default(autoincrement())
+  courseId    Int              @map("course_id")
+  course      Course           @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  name        String
+  members     TeamMember[]
+  supervisors SupervisorTeam[]
+  milestones  Milestone[]
+
+  @@unique([courseId, name])
+  @@map("teams")
+}
+
+// BR-04: Sprint 1 supports one offering and at most one team per student.
+model TeamMember {
+  studentId Int  @id @map("student_id")
+  teamId    Int  @map("team_id")
+  student   User @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  team      Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@index([teamId])
+  @@map("team_members")
+}
+
+model SupervisorTeam {
+  supervisorId Int  @map("supervisor_id")
+  teamId       Int  @map("team_id")
+  supervisor   User @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  team         Team @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@id([supervisorId, teamId])
+  @@index([teamId])
+  @@map("supervisor_teams")
+}
+
+// F-01 / DEC-12: one row per signed-in browser. Only SHA-256(token) is stored;
+// expires_at is fixed at login (8 h, NFR-04). Logout deletes the row.
+model Session {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique @map("token_hash")
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// F-04: additive create/view model; UTC values at the precision shared with F-05.
+model Milestone {
+  id          Int          @id @default(autoincrement())
+  teamId      Int          @map("team_id")
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+  title       String       @db.VarChar(120)
+  description String       @default("") @db.VarChar(2000)
+  dueAt       DateTime     @map("due_at") @db.Timestamp(3)
+  createdBy   Int          @map("created_by")
+  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
+  submissions Submission[]
+
+  @@index([teamId, dueAt, id])
+  @@map("milestones")
+}
+
+// F-05: one row per submitted version; Sprint 1 allows only version 1 per milestone (BR-07).
+// No team_id: the team is milestone.team_id, so ownership has one source.
+model Submission {
+  id          Int        @id @default(autoincrement())
+  milestoneId Int        @map("milestone_id")
+  milestone   Milestone  @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
+  version     Int        @default(1)
+  title       String     @db.VarChar(120)
+  description String     @default("") @db.VarChar(2000)
+  link        String     @db.VarChar(2048)
+  submittedBy Int        @map("submitted_by")
+  submitter   User       @relation(fields: [submittedBy], references: [id], onDelete: Restrict)
+  submittedAt DateTime   @map("submitted_at") @db.Timestamp(3)
+  feedback    Feedback[]
+
+  @@unique([milestoneId, version])
+  @@map("submissions")
+}
+
+// F-06: feedback points to one submission version (BR-10) and its supervisor author.
+model Feedback {
+  id           Int        @id @default(autoincrement())
+  submissionId Int        @map("submission_id")
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  supervisorId Int        @map("supervisor_id")
+  author       User       @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  text         String     @db.VarChar(2000)
+  createdAt    DateTime   @map("created_at") @db.Timestamp(3)
+
+  @@index([submissionId, createdAt, id])
+  @@map("feedback")
+}

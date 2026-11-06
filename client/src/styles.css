@@ -1,0 +1,141 @@
+:root {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --text: #1c1c1e;
+  --muted: #6b6b70;
+  --border: #d9d9de;
+  --accent: #2557d6;
+  --danger: #b42318;
+  --danger-bg: #fef3f2;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.login {
+  max-width: 360px;
+  margin: 10vh auto;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.login h1 {
+  margin: 0;
+}
+
+.login form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+input {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+
+input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+button {
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.login button {
+  margin-top: 16px;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.9em;
+}
+
+.banner {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+}
+
+.topbar nav a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.topbar nav a.active {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.content {
+  padding: 24px;
+}
+
+.milestones { max-width: 960px; margin: 0 auto; overflow-wrap: anywhere; }
+.milestone-form { margin: 24px 0; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.milestone-form fieldset { display: flex; flex-direction: column; gap: 8px; border: 0; min-width: 0; padding: 0; }
+textarea, select { font: inherit; padding: 10px; border: 1px solid var(--border); border-radius: 6px; max-width: 100%; }
+textarea { min-height: 100px; resize: vertical; }
+textarea[aria-invalid="true"] { border-color: var(--danger); }
+.milestone-list { list-style: none; padding: 0; }
+.milestone-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
+.milestone-list h3 { margin-top: 0; }
+.milestone-description { white-space: pre-wrap; }
+.feedback-list { list-style: none; padding: 0; }
+.feedback-list li { border-left: 3px solid var(--border); padding: 4px 12px; margin: 12px 0; }
+.feedback-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 4px; }
+.badges, nav[aria-label="Milestone pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.badges span { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.milestones button, .milestones input, .milestones select { min-height: 44px; box-sizing: border-box; }

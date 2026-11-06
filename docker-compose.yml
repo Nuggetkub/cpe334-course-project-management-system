@@ -1,0 +1,28 @@
+# Local development database only. The full app stack (migrate job, server,
+# client) is added in Lab 5 step 3 (Issue #17).
+#
+# Host port 5433 so it does not clash with a PostgreSQL already installed on 5432,
+# bound to 127.0.0.1 so only this machine can reach it (dev credentials are public).
+# The default credentials are throw-away local values; override them in a root
+# .env file (git-ignored) if you prefer.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cpms-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cpms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cpms}
+      POSTGRES_DB: ${POSTGRES_DB:-cpms}
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cpms} -d ${POSTGRES_DB:-cpms}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
