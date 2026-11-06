@@ -60,10 +60,12 @@ WORKDIR /app/server
 # Prisma needs openssl on alpine.
 RUN apk add --no-cache openssl
 COPY server/package*.json ./
+# package.json's postinstall runs `prisma generate` during `npm ci`, so the schema
+# must be there first.
+COPY server/prisma ./prisma/
 RUN npm ci
 COPY server/ ./
-# CHANGE ME: `prisma generate` is Prisma-specific; drop it for other ORMs.
-RUN npx prisma generate && npm run build
+RUN npm run build
 
 # ============================================================================
 # Stage 3: Unified Production Runtime (Serves API + Built React SPA on :3000)

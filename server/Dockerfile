@@ -16,14 +16,12 @@ WORKDIR /app
 # Prisma requires openssl on alpine.
 RUN apk add --no-cache openssl
 
-# --- Install dependencies (cached until package*.json changes) ----------------
+# --- Install dependencies and generate the Prisma client ---------------------
+# The schema is copied first because package.json's postinstall runs
+# `prisma generate` during `npm ci` (cached until package*.json or prisma/ change).
 COPY package*.json ./
-RUN npm ci
-
-# --- Generate Prisma client ---------------------------------------------------
-# CHANGE ME: remove or replace if your stack does not use Prisma.
 COPY prisma ./prisma/
-RUN npx prisma generate
+RUN npm ci
 
 # --- Copy source and build TypeScript -> dist/ --------------------------------
 COPY tsconfig.json ./
