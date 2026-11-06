@@ -104,6 +104,9 @@ npm run dev                   # http://localhost:5173
 
 Errors always have the shape `{"error":{"code","message","fields?"}}`.
 
+See the [Lab 5 deployment notes](docs/labs/lab05/deployment.md) for cloud
+readiness, configuration sources, and the planned deployment smoke checks.
+
 **Signing in locally (F-03.1):** set `SEED_DEMO_DATA=true` in `server/.env` and provide
 `STUDENT_DEMO_PASSWORD` and `SUPERVISOR_DEMO_PASSWORD` (nonblank, at most 72 UTF-8 bytes each).
 From the repository root, run `npm --prefix server run prisma:deploy-seed`.
