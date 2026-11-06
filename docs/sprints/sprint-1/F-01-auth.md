@@ -10,6 +10,7 @@
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | During implementation: added TEST-01.1b (client stores token, shows nav after login) and E2E TEST-01.8b (generic 401 message in a real browser); client routing uses `react-router-dom` **7** (v6 has two moderate advisories, GHSA-wrjc-x8rr-h8h6 / GHSA-337j-9hxr-rhxg); E2E users come from `server/scripts/e2e-prepare.ts` in a separate `cpms_e2e` schema. No behaviour or AC changed |
 | 0.3 | 2026-11-04 | @Nuggetkub | @Earth2509 | Review on PR #27: **password limit is 72 UTF-8 bytes**, not 128 characters (bcrypt ignores later bytes, so longer passwords are rejected, never truncated) in login validation, `hashPassword()` and `verifyPassword()`; **session lifetime fixed at 8 h in code** (`SESSION_TTL_HOURS` setting removed, NFR-04). AC-01.2 and AC-01.6 wording extended; TEST-01.2d, TEST-01.5c, TEST-01.6c added. STS now has 23 rows (see §4 count) |
 | 0.4 | 2026-11-05 | @Nuggetkub | @Earth2509 | Found in PR #32 review: a 401 on a page request (session expired mid-use) showed the page's error and Retry instead of returning to login. AC-01.10 added; `apiFetch` handles every 401 sent with a token in one place; TEST-01.10a, TEST-01.10b added. PR #33 review: a late 401 for a token that is no longer the stored one (user signed in again, or logged out) changes nothing; TEST-01.10c added. STS now has 26 rows |
+| 0.5 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: DoD items ticked after release `v0.1.0`, each with a link to its evidence (PRs #27, #33). No behaviour or test changes |
 
 ---
 
@@ -218,14 +219,19 @@ must be seen failing before the code exists.
 
 ## 5. Definition of Done
 
-- [ ] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI.
-- [ ] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
-      green runs (command, counts, commit SHA) are in the PR.
-- [ ] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
-      `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened.
-- [ ] `server/.env.example` and README updated (`BCRYPT_COST`, how to sign in).
-- [ ] No password, hash or token in logs, responses (except the login `token`), commits or screenshots.
-- [ ] Kit smoke-test contract holds: login → `{token}`, `/me` and `/logout` with Bearer.
-- [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`.
-- [ ] Traceability and this contract updated if anything changed (new version row with the reason);
-      known limitations (no rate limiting) disclosed.
+Status recorded on 2026-11-06, after release `v0.1.0`. Each item links to its evidence.
+
+- [x] Behaviour in §1–§2 implemented in API, DB (additive migration) and UI. PR #27, plus AC-01.10 in PR #33.
+- [x] Every test in §4 exists, was seen **failing before** its implementation, and passes; red and
+      green runs (command, counts, commit SHA) are in the PR. [PR #27](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/27#issuecomment-6610011499):
+      red `33ff13f` / `c840868`, green `fb75bb5`; review cycle red `ad15671`, green `c3ba961`.
+      PR #33: red `a23261b` / `c23450a`, green `9707f85` / `205c440`.
+- [x] `server`: `npm run typecheck`, `npm test`; `client`: `npm test`, `npm run build`; root:
+      `npm run e2e` — all pass on the PR head. No test skipped, disabled or weakened. Re-run on `v0.1.0`: D1 Part F, F.3.
+- [x] `server/.env.example` and README updated (`BCRYPT_COST`, how to sign in).
+- [x] No password, hash or token in logs, responses (except the login `token`), commits or screenshots. TEST-01.6b checks responses.
+- [x] Kit smoke-test contract holds: login → `{token}`, `/me` and `/logout` with Bearer. TEST-01.1, TEST-01.3, TEST-01.4.
+- [x] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`.
+      PR #27 (72-byte limit and fixed TTL found in review; merged 4 Nov); PR #33 (stale-401 finding; merged 5 Nov).
+- [x] Traceability and this contract updated if anything changed (new version row with the reason);
+      known limitations (no rate limiting) disclosed. Versions 0.2–0.4 above; traceability v0.4 and v0.9; §1.4.
