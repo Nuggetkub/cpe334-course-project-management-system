@@ -22,8 +22,10 @@ async function fill() {
 }
 
 it("TEST-04.6c announces loading then empty", async () => {
+  // Created before rendering, so resolving never depends on when the list request is sent.
   let resolve!: (r: Response) => void;
-  open("STUDENT", () => new Promise<Response>((done) => { resolve = done; }));
+  const pending = new Promise<Response>((done) => { resolve = done; });
+  open("STUDENT", () => pending);
   expect(await screen.findByRole("status")).toHaveTextContent("Loading milestones");
   resolve(response([]));
   expect(await screen.findByText("No milestones yet")).toBeInTheDocument();

@@ -21,6 +21,8 @@ function open(role: "STUDENT" | "SUPERVISOR", get: Handler, post: Handler = () =
   sessionStorage.setItem(TOKEN_KEY, "token");
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url.endsWith("/api/auth/me")) return Promise.resolve(Response.json({ user: { id: 1, name: "Somchai Student", role } }));
+    // F-06 loads feedback once a submission is shown; F-05's tests only need the empty list.
+    if (url.endsWith("/feedback")) return Promise.resolve(Response.json({ feedback: [] }));
     return Promise.resolve(init?.method === "POST" ? post(url, init) : get(url, init));
   });
   vi.stubGlobal("fetch", fetchMock);

@@ -18,6 +18,8 @@ export const PROTECTED_ENDPOINTS: ProtectedEndpoint[] = [
   { method: "get", path: "/api/milestones/:milestoneId", feature: "F-04" },
   { method: "post", path: "/api/milestones/:milestoneId/submissions", feature: "F-05" },
   { method: "get", path: "/api/milestones/:milestoneId/submission", feature: "F-05" },
+  { method: "post", path: "/api/submissions/:submissionId/feedback", feature: "F-06" },
+  { method: "get", path: "/api/submissions/:submissionId/feedback", feature: "F-06" },
 ];
 
 export function concretePath(path: string): string {

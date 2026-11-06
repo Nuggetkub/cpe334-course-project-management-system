@@ -97,6 +97,85 @@ function SubmitForm({ milestoneId, onSubmitted }: { milestoneId: number; onSubmi
   </form>;
 }
 
+// F-06: feedback on the submission, oldest first; Supervisors also get the form.
+
+export interface Feedback {
+  id: number; submissionId: number; version: number; text: string; createdAt: string; author: { id: number; name: string };
+}
+const FEEDBACK_MESSAGE = "Enter feedback (1–2000 characters).";
+
+function FeedbackForm({ submissionId, onAdded }: { submissionId: number; onAdded: (feedback: Feedback) => void }) {
+  const [text, setText] = useState("");
+  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    const trimmed = text.trim();
+    setError(null);
+    if (length(trimmed) < 1 || length(trimmed) > 2000) {
+      setFieldError(FEEDBACK_MESSAGE);
+      return;
+    }
+    setFieldError(null);
+    setBusy(true);
+    try {
+      const { feedback } = await apiFetch<{ feedback: Feedback }>(`/api/submissions/${submissionId}/feedback`, { method: "POST", body: { text: trimmed } });
+      setText("");
+      onAdded(feedback);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 400 && e.fields.text) setFieldError(e.fields.text);
+      else setError("Could not save feedback. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <form className="milestone-form" onSubmit={submit} noValidate>
+    {error && <p role="alert" className="banner">{error}</p>}
+    <fieldset disabled={busy}>
+      <label htmlFor="feedback-text">Feedback</label>
+      <textarea id="feedback-text" value={text} onChange={(e) => setText(e.target.value)} aria-invalid={!!fieldError} aria-describedby={fieldError ? "feedback-text-error" : undefined} />
+      {fieldError && <p className="field-error" id="feedback-text-error">{fieldError}</p>}
+      <button type="submit">{busy ? "Saving feedback…" : "Add feedback"}</button>
+    </fieldset>
+  </form>;
+}
+
+function FeedbackSection({ submissionId, canWrite }: { submissionId: number; canWrite: boolean }) {
+  const [load, setLoad] = useState<{ kind: "loading" | "error" } | { kind: "ready"; feedback: Feedback[] }>({ kind: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  const [added, setAdded] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setLoad({ kind: "loading" });
+    apiFetch<{ feedback: Feedback[] }>(`/api/submissions/${submissionId}/feedback`).then(
+      ({ feedback }) => { if (active) setLoad({ kind: "ready", feedback }); },
+      () => { if (active) setLoad({ kind: "error" }); },
+    );
+    return () => { active = false; };
+  }, [submissionId, attempt]);
+
+  return <section className="feedback">
+    <h3>Feedback</h3>
+    {load.kind === "loading" && <p role="status">Loading feedback…</p>}
+    {load.kind === "error" && <><p role="alert">Could not load feedback.</p><button type="button" onClick={() => setAttempt((n) => n + 1)}>Retry</button></>}
+    {load.kind === "ready" && (load.feedback.length === 0 ? <p>No feedback yet</p> : <ul className="feedback-list">
+      {load.feedback.map((item) => <li key={item.id}>
+        <p className="feedback-text">{item.text}</p>
+        <p className="muted">{`${item.author.name} on ${formatBangkok(item.createdAt)} · version ${item.version}`}</p>
+      </li>)}
+    </ul>)}
+    {added && <p role="status">Feedback added.</p>}
+    {canWrite && load.kind === "ready" && <FeedbackForm submissionId={submissionId} onAdded={(feedback) => {
+      setAdded(true);
+      setLoad((current) => (current.kind === "ready" ? { kind: "ready", feedback: [...current.feedback, feedback] } : current));
+    }} />}
+  </section>;
+}
+
 export function MilestonePage() {
   const { milestoneId } = useParams();
   const { state: auth } = useAuth();
@@ -113,6 +192,7 @@ export function MilestonePage() {
   }, [milestoneId, attempt]);
 
   const student = auth.status === "authenticated" && auth.user.role === "STUDENT";
+  const supervisor = auth.status === "authenticated" && auth.user.role === "SUPERVISOR";
   return <section className="milestones">
     <Link to="/milestones">Back to milestones</Link>
     {state.kind === "loading" && <p role="status">Loading submission…</p>}
@@ -124,7 +204,10 @@ export function MilestonePage() {
         <h2>{milestone.title}</h2>
         <MilestoneFields milestone={milestone} />
         <h3>Submission</h3>
-        {submission ? <SubmissionView submission={submission} /> : <>
+        {submission ? <>
+          <SubmissionView submission={submission} />
+          <FeedbackSection submissionId={submission.id} canWrite={supervisor} />
+        </> : <>
           <p>Not submitted yet</p>
           {milestone.window === "CLOSED" && <p>The deadline has passed.</p>}
           {student && milestone.window === "OPEN" && <SubmitForm milestoneId={milestone.id} onSubmitted={(created) =>

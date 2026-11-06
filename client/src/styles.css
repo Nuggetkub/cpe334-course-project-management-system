@@ -132,6 +132,9 @@ textarea[aria-invalid="true"] { border-color: var(--danger); }
 .milestone-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 12px 0; }
 .milestone-list h3 { margin-top: 0; }
 .milestone-description { white-space: pre-wrap; }
+.feedback-list { list-style: none; padding: 0; }
+.feedback-list li { border-left: 3px solid var(--border); padding: 4px 12px; margin: 12px 0; }
+.feedback-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 4px; }
 .badges, nav[aria-label="Milestone pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .badges span { padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
