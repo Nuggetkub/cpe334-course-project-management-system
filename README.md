@@ -91,9 +91,6 @@ npm run dev                   # http://localhost:5173
 |---|---|
 | `GET /api/health` | Liveness — `200 {"status":"ok"}`, never touches the DB |
 | `GET /api/ready` | Readiness — `200 {"status":"ready","db":"connected"}`, or `503` when the DB is unreachable |
-
-See the [Lab 5 deployment notes](docs/labs/lab05/deployment.md) for cloud
-readiness, configuration sources, and the planned deployment smoke checks.
 | `POST /api/auth/login` | `{email, password}` → `200 {token, user}`; `401` for a wrong password or unknown email (same message) |
 | `GET /api/auth/me` | `Authorization: Bearer <token>` → `200 {user}`; `401` when missing, expired (8 h) or logged out |
 | `POST /api/auth/logout` | `Authorization: Bearer <token>` → `204`; the token stops working immediately |
@@ -106,6 +103,9 @@ readiness, configuration sources, and the planned deployment smoke checks.
 | `GET /api/submissions/:submissionId/feedback` | Team members and assigned Supervisors → `{feedback: [...]}`, oldest first |
 
 Errors always have the shape `{"error":{"code","message","fields?"}}`.
+
+See the [Lab 5 deployment notes](docs/labs/lab05/deployment.md) for cloud
+readiness, configuration sources, and the planned deployment smoke checks.
 
 **Signing in locally (F-03.1):** set `SEED_DEMO_DATA=true` in `server/.env` and provide
 `STUDENT_DEMO_PASSWORD` and `SUPERVISOR_DEMO_PASSWORD` (nonblank, at most 72 UTF-8 bytes each).
