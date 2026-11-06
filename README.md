@@ -150,6 +150,25 @@ cd ../server && npm run build && NODE_ENV=production npm start
 # one process on $PORT serves the API under /api and the built UI (SPA fallback) everywhere else
 ```
 
+### Whole stack in Docker (Lab 5, Issue #17)
+
+Needs only Docker; no local Node.js or PostgreSQL.
+
+```bash
+docker compose up --build -d        # db → migrate (exits 0) → server :3000 → client :5173
+docker compose ps -a                # db, server, client running; migrate "exited (0)"
+curl --fail http://localhost:3000/api/ready   # PowerShell: curl.exe
+# open http://localhost:5173
+docker compose down                 # stop; data stays in the postgres_data volume
+docker compose down -v              # stop and delete the data
+```
+
+- **Demo accounts:** the seed is off by default, so the app starts with an empty database. To sign in, put `SEED_DEMO_DATA=true`, `STUDENT_DEMO_PASSWORD` and `SUPERVISOR_DEMO_PASSWORD` in a `.env` next to `docker-compose.yml`. That file is git-ignored; never commit it. Then run `docker compose up -d` again.
+- **Ports:** they are bound to `127.0.0.1`. Stop `npm run dev` first, since it also uses 3000 and 5173.
+- **Images:**
+  - The root `Dockerfile` builds the single image that CI and Cloud Run use: API and built UI on `$PORT`.
+  - `server/Dockerfile` and `client/Dockerfile` (nginx, which proxies `/api` to the server) are used only by Compose.
+
 ### Database changes
 
 Change `server/prisma/schema.prisma`, then `npx prisma migrate dev --name <what-changed>` and commit the new folder under `prisma/migrations/`.
