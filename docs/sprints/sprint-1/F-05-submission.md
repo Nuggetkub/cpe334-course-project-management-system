@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-04 | @Nuggetkub | @Earth2509 | Contract committed before implementation. Depends on F-04's Milestone model (§1.3), which is not yet merged |
 | 0.2 | 2026-11-05 | @Nuggetkub | @Earth2509 | Aligned with F-04 as delivered in #35 (this branch is stacked on it): the GET returns F-04's milestone shape with the real `teamStatus`; F-04's list and detail endpoints also report *Submitted* (TEST-05.8c added); the page extends F-04's `MilestonePage.tsx`; E2E uses its own team and a second E2E student so F-04's empty-list browser test is unaffected. STS 22 rows |
+| 0.3 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: last DoD item ticked after release `v0.1.0` (PR #36 merged). No behaviour or test changes |
 
 ---
 
@@ -268,7 +269,7 @@ the red run recorded in the PR, (4) implementation (green run). The deadline and
 - [x] Both endpoints are in the protected-endpoint list; F-02's suite still passes.
 - [x] README API table lists the two endpoints.
 - [x] `traceability.md` updated: AC-05.1–05.7 wording, AC-05.8 and AC-05.9 added, change-log row (v0.8, v0.11).
-- [ ] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`.
+- [x] Reviewed and approved by @Earth2509 with a specific check recorded; merged into `staging/sprint-1`. PR #36: DoD wording finding fixed in `67e6c4f`, approved and merged (`f0ec131`, 5 Nov); released in `v0.1.0`.
 - [x] Known limitations disclosed: no resubmission, late window or manual close until Sprint 2.
 
 ---
