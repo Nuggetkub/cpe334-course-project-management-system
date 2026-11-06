@@ -1,5 +1,6 @@
 # ##############################################################################
-# TokTickIT — Unified production Dockerfile (multi-stage)
+# Course Project Management System — unified production Dockerfile (multi-stage)
+# Adapted from the Lab 5 starter kit (TokTickIT); same stack, so only names changed.
 # ##############################################################################
 # WHAT THIS FILE DOES
 #   Builds ONE image that contains the API (Express) AND the built React SPA and
