@@ -64,7 +64,8 @@ docker compose up -d db
 # 2. API
 cd server
 cp .env.example .env          # defaults match docker-compose.yml; edit DATABASE_URL for your own Postgres
-npm install                   # also runs `prisma generate`
+npm install                   # its postinstall step runs `prisma generate`
+npx prisma generate           # safe to repeat; needed if postinstall did not generate the client
 npx prisma migrate deploy     # apply committed migrations
 npm run prisma:seed           # idempotent; safe to re-run
 npm run dev                   # http://localhost:3000/api/health

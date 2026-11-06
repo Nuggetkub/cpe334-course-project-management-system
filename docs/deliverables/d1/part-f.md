@@ -9,7 +9,7 @@ The full instructions are in the README. In short:
 | Step | Command |
 |---|---|
 | Prerequisites | Node.js 24, PostgreSQL 16 (Docker: `docker compose up -d db`, port 5433) |
-| API | `cd server`, `cp .env.example .env`, `npm install`, `npx prisma migrate deploy`, `npm run prisma:seed`, `npm run dev` (port 3000) |
+| API | `cd server`, `cp .env.example .env`, `npm install`, `npx prisma generate` (see F.4, TEST-SR2.2), `npx prisma migrate deploy`, `npm run prisma:seed`, `npm run dev` (port 3000) |
 | UI | `cd client`, `cp .env.example .env`, `npm install`, `npm run dev` (port 5173) |
 | Demo accounts | Seed is opt-in: set `SEED_DEMO_DATA=true` and choose `STUDENT_DEMO_PASSWORD` / `SUPERVISOR_DEMO_PASSWORD` in `server/.env` (never committed). Accounts and teams are synthetic. |
 | Tests | `npm test` in `server/` (Vitest + Supertest on schema `cpms_test`) and `client/` (Vitest + Testing Library); `npm run e2e` at the root (Playwright; resets schema `cpms_e2e`, API on 3101, UI on 4173) |
@@ -259,7 +259,7 @@ File prefixes: `s/` = `server/tests/`, `c/` = `client/tests/`, `e2e/` = Playwrig
 | Check | AC | Result |
 |---|---|---|
 | TEST-SR2.1: secrets stay out of Git and the client bundle | AC-SR2.1 | **Pass** at `v0.1.0`, checked 6 Nov 2026. Only `server/.env.example` and `client/.env.example` are tracked, and `.gitignore` excludes `.env` and `.env.*`. No `.env` file appears anywhere in the git history. The built client bundle contains no `DATABASE_URL`, connection string or demo/E2E password. |
-| TEST-SR2.2: the teammate follows the README from a fresh clone to passing tests in ≤ 15 min | AC-SR2.2 | **Not yet performed** at the time of writing. Scheduled for @Earth2509 from a fresh clone before submission; the result will be recorded here. |
+| TEST-SR2.2: the teammate follows the README from a fresh clone to passing tests in ≤ 15 min | AC-SR2.2 | **Time target met, with one deviation from the README.** @Earth2509 cloned `v0.1.0` (`d8bbb4d`) fresh on Windows (Node v24.14.0) and reached passing tests (209 server, 50 client, 7 E2E) in **1 min 37 s**, against a 15 min target, reported on PR #41 on 6 Nov 2026. The README flow stopped with Prisma Client not initialized, so the timed retry included an explicit `npx prisma generate` in `server/`. PostgreSQL was already running and the npm and browser caches were warm. @Nuggetkub's fresh clone of the same tag generated the client during `npm install` (its `postinstall` step), so the failure depends on the environment. PR #41 adds the explicit step to the README on `staging/sprint-1`, for the next release. |
 
 ## F.5 Selected test excerpts
 
@@ -396,4 +396,4 @@ Both students used AI coding assistants. Every AI-produced change went through t
   - Self-registration and password recovery, which are excluded in the SRS.
 - **Deployment:** no Docker image, CI pipeline or GCP deployment yet; these belong to Lab 5 (#17–#21). The app is designed for it: it reads `PORT`, binds `0.0.0.0`, stores sessions in PostgreSQL and has `/api/ready` (PR #38).
 - **Home page:** after sign-in, the Home page still shows the placeholder text "Coming in a later Sprint 1 feature." Users reach their work through the My team / My teams and Milestones links. A role-specific home page belongs to the Sprint 3 progress board (F-11, F-12).
-- **AC-SR2.2:** the timed fresh-clone walkthrough (NFR-08) is a manual check still to be performed; see F.4.
+- **AC-SR2.2:** in the timed fresh-clone walkthrough (NFR-08), the README of `v0.1.0` needed an extra `npx prisma generate` on one Windows machine. The target time was still met (1 min 37 s, see F.4). The README fix is on staging and ships with the next release, not in `v0.1.0`.
