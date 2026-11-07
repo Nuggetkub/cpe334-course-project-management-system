@@ -55,3 +55,38 @@ disposable environment, not by interrupting a shared database.
 
 The local failure-path check used the unchanged Sprint 1 server build. It did
 not verify readiness against a connected database or a deployed Cloud Run service.
+
+## Issue #17 containers (Guide Ep. 3, check C-03)
+
+The seven starter-kit files were committed unchanged first (`88bd832`), then adapted. The diff shows each change:
+
+| File | Adaptation |
+| --- | --- |
+| `Dockerfile` (root) | Names only, plus `server/prisma` copied before `npm ci`. Three stages: client build, server build, runtime as `node` on `$PORT` serving the API and the built SPA. CI and Cloud Run use this image. |
+| `server/Dockerfile`, `server/docker-entrypoint.sh` | `prisma/` copied before `npm ci`, because `package.json`'s `postinstall` runs `prisma generate`. The entrypoint `exec`s the CMD, so Node receives SIGTERM. |
+| `client/Dockerfile`, `client/nginx.conf` | Names only. nginx serves the SPA and proxies `/api` to `server:3000`. |
+| `docker-compose.yml` | Extends the existing `db` service (`cpms` names, `127.0.0.1:5433`) with `migrate`, `server` and `client`. All ports are bound to `127.0.0.1`. **The demo seed stays opt-in:** `SEED_DEMO_DATA` defaults to `false`, and the demo passwords have no fallback, because F-03.1 says no default password is committed. The kit's `ADMIN_PASSWORD` / `DEMO_USER_PASSWORD` defaults were not copied. |
+| `.dockerignore` | Also excludes `**/.env.*` and `**/coverage`. It applies only to `docker build .` (the root image). |
+| `client/.dockerignore`, `server/.dockerignore` (new) | Compose builds `./client` and `./server` as separate contexts, where the root file does not apply. Both exclude `node_modules`, `dist`, `coverage`, `.env`, `.env.*` and `*.log`; no `.env.example` is needed by either build. Without them, `client/Dockerfile`'s `COPY . .` (after `npm ci`) copied host files into the build stage (review finding on PR #45). |
+
+**C-03 result (6 Nov 2026, Docker 29.6.2, Compose v5.3.1, Windows).** Fresh clone of `build/17-docker` with no `.env`, only the committed defaults:
+
+| Check | Result |
+| --- | --- |
+| `docker compose up --build -d` | exit 0, 45 s. `db`, `server` and `client` running; `migrate` exited (0) with `[seed] Demo data disabled.` |
+| `curl --fail` `:3000/api/health`, `:3000/api/ready`, `:5173/api/ready` (through nginx) | `{"status":"ok"}`; `{"status":"ready","db":"connected"}` twice; all 200 |
+| Seed opted in through a git-ignored `.env` (random passwords) | migrate exited (0) with `[seed] Demo fixtures ready.`; Supervisor and Student sign in through `:5173` (200) |
+| Persistence | Supervisor creates milestone 1 "C-03 persistence check". After `docker compose down` and `up -d`, it is listed again and sign-in still works; the re-run seed rotated no password |
+| Root image (`docker build .`) | 30 s. Run with `PORT=8080` against the same database: `/api/ready` 200, `/` and `/milestones/1` 200 (SPA), `/api/nope` gives the JSON 404. Runs as `node` |
+| No secrets in images | Both images' `Config.Env` contain only `NODE_ENV`, `TZ`, `PORT` and the Node defaults. No password, secret or `DATABASE_URL` in the build history; no `.env` file in the image |
+
+**First attempt failed:** `npm ci` stopped at the `postinstall` step with "Could not find Prisma Schema", because the kit copies `prisma/` after `npm ci`. Fixed in `ef1b781`.
+
+**Developer checkout (7 Nov 2026).** The fresh clone has no local files to leak, so the check was repeated with host dependencies (`npm ci` on Windows in `client/` and `server/`) and dummy `client/.env` and `server/.env` files containing only a harmless marker:
+
+| Image | Before the per-context `.dockerignore` files | After |
+| --- | --- | --- |
+| Client build stage | `/app/.env` present (the marker); 3 `win32` native packages (e.g. `@rolldown/binding-win32-x64-msvc`) and 20 `.cmd`/`.ps1` shims copied over the Linux install; context 98 MB | No `.env`, no `win32` package, no shim; context 1.6 kB |
+| Server image | Already clean, because it copies only `package*.json`, `prisma`, `tsconfig.json`, `src` and the entrypoint | Clean, and the host files no longer enter the build context |
+
+With the fix, `docker compose up --build -d` exited 0, `migrate` exited (0), `:3000/api/health`, `:3000/api/ready`, `:5173/api/ready` and `:5173/` returned 200, and Supervisor and Student signed in.
