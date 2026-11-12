@@ -8,8 +8,9 @@
 #     rerun     : everything exists   -> nothing replaced (credentials kept)
 #     partial   : DB secret missing   -> DB user password reset + secret created
 #     job-fail  : migration fails     -> script exits 1, service NOT deployed
-#     demo      : --demo flag         -> demo secret is created and granted
-#   It also checks: `--edition=enterprise`, no project-wide secretAccessor role,
+#     demo      : --demo flag         -> both demo secrets created, granted, given to the job
+#   It also checks: `--edition=enterprise` and `--no-storage-auto-increase`,
+#   no admin secret (this app has no admin role), no project-wide secretAccessor role,
 #   DB password == password inside DATABASE_URL, and that no password/secret
 #   value leaks into the output. Finally DRY_RUN=1 must make zero gcloud calls.
 #
@@ -18,8 +19,9 @@
 #   CI runs it too (.github/workflows/ci-docker.yml).
 #
 # ⭐ CHANGE ME: if you rename resources in deploy/deploy.sh (e.g. the secret
-#    names toktickit-database-url / -admin-password / -demo-password, the DB
-#    user `toktickit`), update the matching strings below.
+#    names cpms-database-url, cpms-student-demo-password,
+#    cpms-supervisor-demo-password, the DB user `cpms`), update the matching
+#    strings below.
 # ==============================================================================
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -58,7 +60,7 @@ if [ "${1:-} ${2:-}" = 'config get-value' ]; then
   exit 0
 fi
 if [ "${1:-} ${2:-} ${3:-}" = 'run services describe' ]; then
-  echo https://toktickit-stub.example.invalid
+  echo https://cpms-stub.example.invalid
   exit 0
 fi
 if [ "${1:-} ${2:-} ${3:-}" = 'run jobs execute' ]; then
@@ -73,7 +75,7 @@ if [ "${1:-} ${2:-} ${3:-}" = 'sql users list' ]; then
   if [ "$STUB_MODE" = first_run ]; then
     echo postgres
   else
-    printf 'postgres\ntoktickit\n'
+    printf 'postgres\ncpms\n'
   fi
   exit 0
 fi
@@ -82,7 +84,7 @@ for word in "$@"; do
     case "$STUB_MODE" in
       first_run) exit 1 ;;
       partial)
-        if [ "${1:-} ${3:-}" = 'secrets toktickit-database-url' ]; then
+        if [ "${1:-} ${3:-}" = 'secrets cpms-database-url' ]; then
           exit 1
         fi ;;
     esac
@@ -121,17 +123,27 @@ for MODE in first_run rerun partial job-fail demo; do
   if grep -q '^projects add-iam-policy-binding .*roles/secretmanager.secretAccessor' "$GCLOUD_LOG"; then
     echo 'FAIL: runtime has project-wide secret access'; exit 1
   fi
-  for secret in toktickit-database-url toktickit-admin-password; do
-    grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
-  done
+  grep -q "^secrets add-iam-policy-binding cpms-database-url .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
+  if grep -qi 'admin-password\|ADMIN_PASSWORD' "$GCLOUD_LOG"; then
+    echo 'FAIL: admin secret used, but this app has no admin role'; exit 1
+  fi
   if [ "$MODE" = demo ]; then
-    grep -q '^secrets add-iam-policy-binding toktickit-demo-password ' "$GCLOUD_LOG"
-  elif grep -q '^secrets add-iam-policy-binding toktickit-demo-password ' "$GCLOUD_LOG"; then
+    for secret in cpms-student-demo-password cpms-supervisor-demo-password; do
+      grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
+    done
+    grep -q '^run jobs deploy .*STUDENT_DEMO_PASSWORD=cpms-student-demo-password:latest,SUPERVISOR_DEMO_PASSWORD=cpms-supervisor-demo-password:latest' "$GCLOUD_LOG"
+    grep -q '^run jobs deploy .*SEED_DEMO_DATA=true' "$GCLOUD_LOG"
+  elif grep -q '^secrets add-iam-policy-binding cpms-[a-z]*-demo-password ' "$GCLOUD_LOG"; then
     echo 'FAIL: granted optional demo secret in non-demo mode'; exit 1
+  fi
+  # The service itself only ever gets the database URL.
+  if grep '^run deploy ' "$GCLOUD_LOG" | grep -q 'DEMO_PASSWORD'; then
+    echo 'FAIL: demo password given to the service'; exit 1
   fi
   case "$MODE" in
     first_run)
       grep -q -- '--edition=enterprise' "$GCLOUD_LOG"
+      grep -q -- '--no-storage-auto-increase' "$GCLOUD_LOG"
       grep -q '^sql users create ' "$GCLOUD_LOG" ;;
     partial) grep -q '^sql users set-password ' "$GCLOUD_LOG" ;;
     rerun)
@@ -141,9 +153,9 @@ for MODE in first_run rerun partial job-fail demo; do
   esac
   if [ -f "$TEST_STATE_DIR/sql-pass" ]; then
     db_pass="$(cat "$TEST_STATE_DIR/sql-pass")"
-    db_url="$(cat "$TEST_STATE_DIR/payload-toktickit-database-url")"
+    db_url="$(cat "$TEST_STATE_DIR/payload-cpms-database-url")"
     case "$db_url" in
-      "postgresql://toktickit:${db_pass}@"*) ;;
+      "postgresql://cpms:${db_pass}@"*) ;;
       *) echo 'FAIL: DB password differs from secret'; exit 1 ;;
     esac
     if grep -Fq "$db_pass" "$TEST_STATE_DIR/output"; then

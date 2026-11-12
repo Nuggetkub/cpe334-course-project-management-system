@@ -11,9 +11,12 @@ WHAT THIS SCRIPT DOES
       1. GET /api/health      -> {"status": "ok"}
       2. GET /api/ready       -> {"db": "connected"}   (proves the DB works)
       3. GET /                -> HTML page (the built React app is served)
-      4. GET /api/categories  -> non-empty list (migration + seed worked)
+      4. POST /api/auth/login with an unknown account -> 401 INVALID_CREDENTIALS
+         (the migrated users table is queried; nothing is created)
       5. OPTIONAL login test  -> login, /api/auth/me, logout. Runs only if BOTH
-         env vars SMOKE_EMAIL and SMOKE_PASSWORD are set (set both or neither).
+         env vars SMOKE_EMAIL and SMOKE_PASSWORD are set (set both or neither),
+         e.g. smoke.student@example.test with the student demo password from
+         Secret Manager (proves the --demo seed ran).
          The session is always logged out, even if a check fails.
 
 IMPORTANT
@@ -26,7 +29,7 @@ REFERENCES
 
 CHANGE ME (groups using another tech stack):
     - the endpoint paths and expected responses in check() below
-      (/api/health, /api/ready, /, /api/categories, /api/auth/*)
+      (/api/health, /api/ready, /, /api/auth/*)
     - the login/logout endpoints and the 'token' field of the login response
 """
 import json
@@ -51,18 +54,33 @@ def request(base, path, data=None, token=None):
         return response.read()
 
 
+# Our API has no public data endpoint (the kit used /api/categories). A sign-in
+# with an unknown account must get 401 INVALID_CREDENTIALS: login looks the email
+# up in the migrated users table, so a missing table would give 500 instead.
+# Read-only: no account or session is created.
+UNKNOWN_LOGIN = {'email': 'smoke-check-unknown@example.invalid', 'password': 'smoke-check-only'}
+
+
+def login_rejected(base):
+    try:
+        request(base, '/api/auth/login', UNKNOWN_LOGIN)
+    except urllib.error.HTTPError as error:
+        return error.code == 401 and json.loads(error.read()).get('error', {}).get('code') == 'INVALID_CREDENTIALS'
+    return False
+
+
 def check(base):
     # --- Public checks (CHANGE ME: paths + predicates for your own API) -------
-    for path, predicate in (
-        ('/api/health', lambda b: json.loads(b).get('status') == 'ok'),
-        ('/api/ready', lambda b: json.loads(b).get('db') == 'connected'),
-        ('/', lambda b: b'<html' in b.lower()),
-        ('/api/categories', lambda b: isinstance(json.loads(b), list) and len(json.loads(b)) > 0),
+    for path, probe in (
+        ('/api/health', lambda: json.loads(request(base, '/api/health')).get('status') == 'ok'),
+        ('/api/ready', lambda: json.loads(request(base, '/api/ready')).get('db') == 'connected'),
+        ('/', lambda: b'<html' in request(base, '/').lower()),
+        ('/api/auth/login (unknown account -> 401)', lambda: login_rejected(base)),
     ):
         # Retry: a cold Cloud Run instance may need a few seconds to start.
         for attempt in range(5):
             try:
-                if not predicate(request(base, path)):
+                if not probe():
                     raise ValueError('Unexpected response')
                 break
             except (urllib.error.URLError, TimeoutError, ValueError):

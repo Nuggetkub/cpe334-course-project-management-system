@@ -4,12 +4,15 @@ Run (repo root):  python3 -m unittest discover -s deploy/tests -p 'test_smoke.py
 CI runs it too (.github/workflows/ci-docker.yml).
 
 Covers: public checks pass + login skipped without credentials; a DB that is not
-ready fails even if HTTP answers; the session is logged out even if a check fails.
+ready fails even if HTTP answers; a login that is not rejected with 401 (e.g. a 500
+from a missing users table) fails; the session is logged out even if a check fails.
 CHANGE ME: if you change the endpoints in smoke_test.py, update `response()` below.
 """
 import importlib.util
+import io
 from pathlib import Path
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('smoke', Path(__file__).parents[1] / 'smoke_test.py')
@@ -17,13 +20,18 @@ smoke = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(smoke)
 
 
+def http_error(code, body):
+    return urllib.error.HTTPError('https://demo.test', code, 'error', {}, io.BytesIO(body))
+
+
 class SmokeTests(unittest.TestCase):
     def response(self, base, path, data=None, token=None):
+        if path == '/api/auth/login' and data == smoke.UNKNOWN_LOGIN:
+            raise http_error(401, b'{"error":{"code":"INVALID_CREDENTIALS","message":"x"}}')
         return {
             '/api/health': b'{"status":"ok"}',
             '/api/ready': b'{"db":"connected"}',
             '/': b'<html></html>',
-            '/api/categories': b'[{"id":1}]',
             '/api/auth/login': b'{"token":"test-session"}',
             '/api/auth/me': b'{"id":1}',
             '/api/auth/logout': b'{}',
@@ -37,10 +45,20 @@ class SmokeTests(unittest.TestCase):
 
     @patch.dict('os.environ', {}, clear=True)
     def test_db_not_ready_fails_even_when_http_responds(self):
-        def disconnected(base, path, **kwargs):
-            return b'{"db":"disconnected"}' if path == '/api/ready' else self.response(base, path)
+        def disconnected(base, path, data=None, token=None):
+            return b'{"db":"disconnected"}' if path == '/api/ready' else self.response(base, path, data, token)
         with patch.object(smoke, 'request', side_effect=disconnected), patch.object(smoke.time, 'sleep'):
             with self.assertRaisesRegex(RuntimeError, '/api/ready'):
+                smoke.check('https://demo.test')
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_login_server_error_fails_instead_of_401(self):
+        def no_users_table(base, path, data=None, token=None):
+            if path == '/api/auth/login':
+                raise http_error(500, b'{"error":{"code":"INTERNAL","message":"x"}}')
+            return self.response(base, path, data, token)
+        with patch.object(smoke, 'request', side_effect=no_users_table), patch.object(smoke.time, 'sleep'):
+            with self.assertRaisesRegex(RuntimeError, 'unknown account'):
                 smoke.check('https://demo.test')
 
     @patch.dict('os.environ', {'SMOKE_EMAIL': 'smoke@example.test', 'SMOKE_PASSWORD': 'test-only'}, clear=True)
