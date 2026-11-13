@@ -135,10 +135,13 @@ production build passed. Server typecheck and production build passed after
 explicit Prisma generation. The developer ran the isolated verification helper;
 its server JSON report records **209/209 passed**, with no failures or skips.
 The helper uses a fresh disposable PostgreSQL container on port 15418 rather
-than the existing development database. Final confirmation of the Linux shell
-stubs and Docker build is still pending the helper's concluding output; the
-desktop sandbox cannot access the Docker Engine pipe. These are not recorded
-as passing yet.
+than the existing development database. The developer supplied the helper's
+final success line confirming that isolated server tests, typecheck/build,
+summary tests, Linux deploy/release stubs, Python smoke tests and the unified
+Docker build all passed. Each command is checked for a successful exit before
+that line is printed. The Docker-dependent results are developer-run evidence;
+the desktop sandbox itself cannot access the Docker Engine pipe. This local
+verification does not replace the pending C-01 GitHub Actions runs.
 
 ## Issue #19 first deployment (Guide Ep. 5, check C-04)
 
