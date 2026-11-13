@@ -4,6 +4,11 @@ import { renderSummary, testCounts } from './ci-summary.mjs';
 
 const passing = { success: true, numTotalTests: 5, numPassedTests: 4, numFailedTests: 0, numPendingTests: 1, numTodoTests: 0 };
 
+// Temporary Issue #20 / C-02 evidence branch only. Never merge this test.
+test('C-02 intentional failure: required CI check must block this PR', () => {
+  assert.fail('Intentional gate-proof failure for Issue #20; close this PR without merging.');
+});
+
 test('uses actual Vitest counts including skips', () => {
   assert.equal(testCounts(passing), '4 passed / 0 failed / 1 skipped / 0 todo (5 total)');
 });
