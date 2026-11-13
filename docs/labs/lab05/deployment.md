@@ -209,3 +209,36 @@ SMOKE_EMAIL=smoke.student@example.test \
 SMOKE_PASSWORD="$(gcloud secrets versions access latest --secret=cpms-student-demo-password)" \
 python3 deploy/smoke_test.py "$URL"     # expect PASS for login, /api/auth/me and logout
 ```
+
+## Issue #21 automatic deployment (Guide Ep. 7, check C-06)
+
+`.github/workflows/deploy.yml` (**Deploy demo**) comes from the kit. On every push to `main` it runs, in order:
+1. `ci-docker.yml` as job `test`;
+2. a keyless sign-in to Google Cloud as `cpms-deployer`, through Workload Identity Federation (#20);
+3. a build and push of the image tagged with the full commit SHA;
+4. `deploy/release.sh` (resolve the digest → migration job → service update → 100 % traffic);
+5. `deploy/smoke_test.py` against the public URL;
+6. a run summary with the tag, digest and URL.
+
+Nobody types a deploy command. A manual run with `image_tag` = an existing full SHA rolls the service back without tests, build or migration.
+
+| Kit setting (7.2) | CPMS value |
+| --- | --- |
+| `SERVICE_NAME` / `MIGRATE_JOB_NAME` | `cpms` / `cpms-migrate` |
+| Image path (`deploy.yml`, `release.sh`) | `asia-southeast1-docker.pkg.dev/cpe334-course-p-m-s/cpms/cpms:<sha>` |
+| GitHub environment | `demo` (deploys from `main` only); variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`; no secrets |
+| Migration command | Prisma, unchanged from #19: `npx prisma migrate deploy && npm run prisma:seed`. The demo seed only upserts with `update: {}`, so rerunning it changes no account, password or milestone. |
+| Smoke test endpoints | `/api/health`, `/api/ready`, `/`, plus the unknown-account login (401) that replaces `/api/categories` (#19). Optional login (7.3) is not set, so the step prints `SKIP login`. The sign-in was already proven by hand in #19. |
+
+**Changes beyond the names:**
+
+| File | Change |
+| --- | --- |
+| `Dockerfile` | `ARG APP_COMMIT=unknown` / `ENV APP_COMMIT` in the runtime stage. `deploy.yml` passes the full SHA with `--build-arg`. Local and CI builds show `unknown`. |
+| `server/src/app.ts` | `/api/health` returns `{"status":"ok","commit":"<sha>"}`, so anyone can see which release is running (#21: "expose running commit"). A commit SHA of a public repository is not secret. |
+| `deploy/smoke_test.py` | When `EXPECTED_COMMIT` is set (`deploy.yml` sets it to the image tag), `/api/health` must report that commit, so an old revision still answering fails the run. It prints `PASS running commit <sha>`. |
+| `deploy.yml` | Concurrency group `deploy-demo`, different from `ci-docker.yml`'s `ci-docker-<workflow>-<ref>`. Inside the called CI workflow, `<workflow>` is "Deploy demo", so the two groups never block each other. |
+
+The WIF provider condition accepts only `deploy.yml` on `refs/heads/main` in environment `demo`. The workflow can therefore sign in only after it is merged into `main`, and the first release is also the first real test of #20.
+
+**The deployer's permissions are enough.** Docker push and the digest lookup need Artifact Registry Writer on `cpms`. Updating and executing `cpms-migrate` and updating `cpms` and its traffic need Cloud Run Developer. Deploying them as `cpms-runner` needs Service Account User on `cpms-runner`. The deployer cannot read secrets: the service and the job read them as `cpms-runner`.
