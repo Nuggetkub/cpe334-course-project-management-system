@@ -13,6 +13,9 @@
 #     empty     : --demo, secrets exist without a version (interrupted run)
 #                                     -> new versions added, DB password reset, nothing re-created
 #     disabled  : --demo, :latest versions DISABLED -> same recovery as empty
+#     denied    : secrets describe -> PERMISSION_DENIED  } exit 1; no SQL password
+#     transient : versions list -> UNAVAILABLE           } change, no secret write,
+#     transient_demo: only a demo secret's lookup fails  } no job or service deploy
 #   It also checks: `--edition=enterprise` and `--no-storage-auto-increase`,
 #   no admin secret (this app has no admin role), no project-wide secretAccessor role,
 #   DB password == password inside DATABASE_URL, and that no password/secret
@@ -71,13 +74,31 @@ if [ "${1:-} ${2:-} ${3:-}" = 'run jobs execute' ]; then
   [ "$STUB_MODE" != job-fail ]
   exit $?
 fi
-if [ "${1:-} ${2:-} ${3:-}" = 'secrets versions describe' ]; then
-  # State of <secret>:latest. empty = created but `versions add` never ran.
+if [ "${1:-} ${2:-}" = 'secrets describe' ]; then
   case "$STUB_MODE" in
-    first_run|empty) exit 1 ;;
+    first_run) not_found=1 ;;
+    partial) [ "${3:-}" = cpms-database-url ] && not_found=1 ;;
+    denied)
+      echo "ERROR: (gcloud.secrets.describe) PERMISSION_DENIED: Permission 'secretmanager.secrets.get' denied" >&2
+      exit 1 ;;
+  esac
+  if [ -n "${not_found:-}" ]; then
+    echo "ERROR: (gcloud.secrets.describe) NOT_FOUND: Secret [${3:-}] not found or has no versions." >&2
+    exit 1
+  fi
+  exit 0
+fi
+if [ "${1:-} ${2:-} ${3:-}" = 'secrets versions list' ]; then
+  # State of the newest version. empty = created but `versions add` never ran.
+  case "$STUB_MODE" in
+    empty) exit 0 ;;
     disabled) echo DISABLED; exit 0 ;;
-    partial)
-      case "$*" in *--secret=cpms-database-url*) exit 1 ;; esac ;;
+    transient)
+      echo "ERROR: (gcloud.secrets.versions.list) UNAVAILABLE: connection reset" >&2; exit 1 ;;
+    transient_demo)
+      if [ "${4:-}" = cpms-supervisor-demo-password ]; then
+        echo "ERROR: (gcloud.secrets.versions.list) UNAVAILABLE: connection reset" >&2; exit 1
+      fi ;;
   esac
   echo ENABLED
   exit 0
@@ -113,7 +134,7 @@ export REGION=asia-southeast1
 export DRY_RUN=0
 
 # --- Run every scenario and assert on what deploy.sh did ------------------------
-for MODE in first_run rerun partial job-fail demo demo_rerun empty disabled; do
+for MODE in first_run rerun partial job-fail demo demo_rerun empty disabled denied transient transient_demo; do
   case "$MODE" in
     demo) export STUB_MODE=first_run ;;
     demo_rerun) export STUB_MODE=rerun ;;
@@ -123,15 +144,26 @@ for MODE in first_run rerun partial job-fail demo demo_rerun empty disabled; do
   rm -f "$TEST_STATE_DIR/sql-pass" "$TEST_STATE_DIR"/payload-*
   args=()
   DEMO=0
-  case "$MODE" in demo|demo_rerun|empty|disabled) DEMO=1; args+=(--demo) ;; esac
+  case "$MODE" in demo|demo_rerun|empty|disabled|denied|transient|transient_demo) DEMO=1; args+=(--demo) ;; esac
   result=0
   bash "$DEPLOY_SCRIPT" "${args[@]}" > "$TEST_STATE_DIR/output" 2>&1 || result=$?
   expected=0
-  if [ "$MODE" = job-fail ]; then expected=1; fi
+  case "$MODE" in job-fail|denied|transient|transient_demo) expected=1 ;; esac
   if [ "$result" -ne "$expected" ]; then
     echo "FAIL $MODE: unexpected exit $result (wanted $expected)"
     exit 1
   fi
+  case "$MODE" in denied|transient|transient_demo)
+    # A failed Secret Manager lookup must stop the run before anything changes.
+    if grep -Eq '^(sql users (create|set-password)|secrets (create|versions add)|run (deploy|jobs deploy)) ' "$GCLOUD_LOG"; then
+      echo "FAIL $MODE: changed credentials or deployed after a failed secret lookup"; exit 1
+    fi
+    if ! grep -q 'no credential was changed' "$TEST_STATE_DIR/output"; then
+      echo "FAIL $MODE: no clear error message"; exit 1
+    fi
+    echo "PASS: $MODE (failed lookup aborts, nothing changed)"
+    continue ;;
+  esac
   if [ "$MODE" = job-fail ]; then
     if grep -q '^run deploy ' "$GCLOUD_LOG"; then
       echo 'FAIL: service deployed after migration failure'; exit 1

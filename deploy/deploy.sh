@@ -89,19 +89,41 @@ run_cmd() {
   fi
 }
 
-# True only when `<secret>:latest` can be read, i.e. its newest version exists and is
-# ENABLED. A secret whose create succeeded but whose `versions add` failed or was
-# interrupted has no version: it is NOT usable, and the next run initializes it.
-secret_usable() {
-  [ "$(gcloud secrets versions describe latest --secret="$1" --project "$PROJECT_ID" \
-        --format='value(state)' 2>/dev/null)" = "ENABLED" ]
+# Prints the state of a secret, failing closed:
+#   USABLE    its newest version (what `:latest` resolves to) is ENABLED: keep it
+#   MISSING   Secret Manager answered NOT_FOUND for the secret: create + initialize
+#   NO_USABLE the secret exists, but has no version, or its newest version is not
+#             ENABLED (a run interrupted between `secrets create` and `versions add`):
+#             initialize it
+# Any other lookup failure (PERMISSION_DENIED, network, API error) prints an error and
+# returns 1, and the caller aborts BEFORE any password or secret is changed. Only states
+# positively identified above lead to new credentials.
+secret_state() {
+  local err state
+  if ! err="$(gcloud secrets describe "$1" --project "$PROJECT_ID" --format='value(name)' 2>&1 >/dev/null)"; then
+    case "$err" in
+      *NOT_FOUND*) echo MISSING; return 0 ;;
+    esac
+    printf '%s\n' "$err" "Error: could not inspect secret $1. Stopping; no credential was changed." >&2
+    return 1
+  fi
+  # --limit is applied after --sort-by, so this is the newest version.
+  if ! state="$(gcloud secrets versions list "$1" --project "$PROJECT_ID" \
+        --sort-by=~createTime --limit=1 --format='value(state)')"; then
+    echo "Error: could not list versions of secret $1. Stopping; no credential was changed." >&2
+    return 1
+  fi
+  if [ "$state" = "ENABLED" ]; then echo USABLE; else echo NO_USABLE; fi
 }
 
-# Creates the secret container only if it is missing (a retry after an interrupted
-# run finds it already there).
-ensure_secret() {
-  if ! gcloud secrets describe "$1" --project "$PROJECT_ID" >/dev/null 2>&1; then
-    run_cmd gcloud secrets create "$1" --replication-policy="automatic" --project "$PROJECT_ID"
+# Inspect every secret this run needs BEFORE changing anything, so a failed lookup of
+# a later secret cannot leave an earlier one half rotated.
+inspect_secrets() {
+  DB_SECRET_STATE="$(secret_state "$SECRET_DB_URL")" || exit 1
+  STUDENT_SECRET_STATE="" SUPERVISOR_SECRET_STATE=""
+  if [ "$SEED_DEMO_DATA" = "true" ]; then
+    STUDENT_SECRET_STATE="$(secret_state "$SECRET_STUDENT_PASS")" || exit 1
+    SUPERVISOR_SECRET_STATE="$(secret_state "$SECRET_SUPERVISOR_PASS")" || exit 1
   fi
 }
 
@@ -250,19 +272,26 @@ run_cmd gcloud projects add-iam-policy-binding "$PROJECT_ID" \
 #    CHANGE ME: the URL format below is PostgreSQL + Prisma specific
 #       (host=/cloudsql/... unix socket, schema=public, connection_limit=3).
 # ==============================================================================
-#    Re-runs keep the credentials when the secret has a usable version. If the
-#    secret is missing, or exists without an ENABLED latest version (interrupted
-#    run), nothing can use it yet, so a new password is set on the DB user and
-#    added as a new version.
+#    Re-runs keep the credentials when the secret has a usable version. Only when
+#    Secret Manager positively reports the secret MISSING or without a usable
+#    version (interrupted run) is a new password set on the DB user and stored as
+#    a new version; nothing can be using that secret yet. A failed lookup aborts
+#    (see secret_state). Order: password first, then the version, so if the version
+#    upload fails the secret stays NO_USABLE and the next run repairs both.
 if [ "$DRY_RUN" = "1" ]; then
-  run_cmd gcloud secrets versions describe latest --secret="$SECRET_DB_URL" --project "$PROJECT_ID" --format="value(state)"
-  run_cmd gcloud secrets describe "$SECRET_DB_URL" --project "$PROJECT_ID"
+  for secret in "$SECRET_DB_URL" "$SECRET_STUDENT_PASS" "$SECRET_SUPERVISOR_PASS"; do
+    if [ "$secret" = "$SECRET_DB_URL" ] || [ "$SEED_DEMO_DATA" = "true" ]; then
+      run_cmd gcloud secrets describe "$secret" --project "$PROJECT_ID"
+      run_cmd gcloud secrets versions list "$secret" --project "$PROJECT_ID" --sort-by=~createTime --limit=1 --format="value(state)"
+    fi
+  done
   run_cmd gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)"
   run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="<GENERATED_HEX_PASSWORD>" --project "$PROJECT_ID"
   run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
   run_cmd gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
 else
-  if ! secret_usable "$SECRET_DB_URL"; then
+  inspect_secrets
+  if [ "$DB_SECRET_STATE" != "USABLE" ]; then
     DB_PASS="$(openssl rand -hex 24)"
     if gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)" | grep -qx "$DB_USER"; then
       run_cmd gcloud sql users set-password "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
@@ -270,7 +299,9 @@ else
       run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
     fi
     DB_URL_VALUE="postgresql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}?host=/cloudsql/${SQL_CONN_NAME}&schema=public&connection_limit=3"
-    ensure_secret "$SECRET_DB_URL"
+    if [ "$DB_SECRET_STATE" = "MISSING" ]; then
+      run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
+    fi
     printf "%s" "$DB_URL_VALUE" | gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
   fi
 fi
@@ -284,17 +315,19 @@ fi
 # ==============================================================================
 JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest"
 if [ "$SEED_DEMO_DATA" = "true" ]; then
-  for secret in "$SECRET_STUDENT_PASS" "$SECRET_SUPERVISOR_PASS"; do
+  # States were inspected (fail-closed) in step 6, before any credential changed.
+  for entry in "$SECRET_STUDENT_PASS:${STUDENT_SECRET_STATE:-}" "$SECRET_SUPERVISOR_PASS:${SUPERVISOR_SECRET_STATE:-}"; do
+    secret="${entry%%:*}" state="${entry#*:}"
     if [ "$DRY_RUN" = "1" ]; then
-      run_cmd gcloud secrets versions describe latest --secret="$secret" --project "$PROJECT_ID" --format="value(state)"
-      run_cmd gcloud secrets describe "$secret" --project "$PROJECT_ID"
       run_cmd gcloud secrets create "$secret" --replication-policy="automatic" --project "$PROJECT_ID"
       run_cmd gcloud secrets versions add "$secret" --data-file=- --project "$PROJECT_ID"
     else
       # Same rule as the DB URL: keep a usable password, initialize a missing or empty secret.
-      if ! secret_usable "$secret"; then
+      if [ "$state" != "USABLE" ]; then
         GENERATED_DEMO_PASSWORD="$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-14)Dd1!"
-        ensure_secret "$secret"
+        if [ "$state" = "MISSING" ]; then
+          run_cmd gcloud secrets create "$secret" --replication-policy="automatic" --project "$PROJECT_ID"
+        fi
         printf "%s" "$GENERATED_DEMO_PASSWORD" | gcloud secrets versions add "$secret" --data-file=- --project "$PROJECT_ID"
       fi
     fi
