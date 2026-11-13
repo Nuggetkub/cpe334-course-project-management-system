@@ -132,9 +132,13 @@ merge with a failing temporary PR; adding this YAML does not enforce that gate.
 Local verification on 13 November 2026: actionlint 1.7.12 accepted the workflow;
 the summary-renderer tests passed 4/4; client tests passed 50/50 and the client
 production build passed. Server typecheck and production build passed after
-explicit Prisma generation. PostgreSQL tests, shell stubs and the Docker build
-still need confirmation from a Docker-enabled run; the desktop sandbox cannot
-access the Docker Engine pipe. These are not recorded as passing yet.
+explicit Prisma generation. The developer ran the isolated verification helper;
+its server JSON report records **209/209 passed**, with no failures or skips.
+The helper uses a fresh disposable PostgreSQL container on port 15418 rather
+than the existing development database. Final confirmation of the Linux shell
+stubs and Docker build is still pending the helper's concluding output; the
+desktop sandbox cannot access the Docker Engine pipe. These are not recorded
+as passing yet.
 
 ## Issue #19 first deployment (Guide Ep. 5, check C-04)
 
