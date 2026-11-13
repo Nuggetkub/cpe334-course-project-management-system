@@ -90,3 +90,64 @@ The seven starter-kit files were committed unchanged first (`88bd832`), then ada
 | Server image | Already clean, because it copies only `package*.json`, `prisma`, `tsconfig.json`, `src` and the entrypoint | Clean, and the host files no longer enter the build context |
 
 With the fix, `docker compose up --build -d` exited 0, `migrate` exited (0), `:3000/api/health`, `:3000/api/ready`, `:5173/api/ready` and `:5173/` returned 200, and Supervisor and Student signed in.
+
+## Issue #19 first deployment (Guide Ep. 5, check C-04)
+
+### GCP project and resource names
+
+Not secret; secret values live only in Secret Manager.
+
+| Item | Value |
+| --- | --- |
+| Project ID | `cpe334-course-p-m-s` (Issue #15) |
+| Region | `asia-southeast1` |
+| Artifact Registry repository / image | `cpms` / `cpms` |
+| Cloud SQL instance / database / user | `cpms-pg` (PostgreSQL 16, `db-f1-micro`, 10 GB SSD, storage auto-increase off) / `cpms` / `cpms` |
+| Runtime service account | `cpms-runner`: Cloud SQL Client on the project, Secret Manager Secret Accessor on each `cpms-*` secret only |
+| Secrets | `cpms-database-url`; with `--demo`: `cpms-student-demo-password`, `cpms-supervisor-demo-password` |
+| Migration job | `cpms-migrate`: `npx prisma migrate deploy && npm run prisma:seed`, runs before the service is updated |
+| Cloud Run service | `cpms`, port 3000, min 0 / max 3 instances, 512 MiB, public |
+
+### Adaptations of the kit's `deploy/` scripts
+
+The kit files were committed unchanged first, then adapted, so the diff shows each change.
+
+| File | Adaptation |
+| --- | --- |
+| `deploy.sh` | `toktickit*` names became `cpms*`. **No admin password secret**, because this app has no admin role. `--demo` generates one password per demo role (`STUDENT_DEMO_PASSWORD`, `SUPERVISOR_DEMO_PASSWORD`, read by `server/prisma/demo-seed.ts`) and gives them to the migration job only; the service gets only `DATABASE_URL`. `--no-storage-auto-increase` is set when the instance is created, so Guide 5.4 is only a check. A secret counts as initialized only when its `latest` version is `ENABLED`, not when the secret merely exists, so a run interrupted between `secrets create` and `versions add` recovers on the next run. All secrets are inspected before anything changes, and the lookup fails closed: only a `NOT_FOUND` secret or one with no usable version gets new credentials; a permission, network or API error stops the run with no password, secret or deploy change (review of PR #46) |
+| `smoke_test.py` | The kit's `/api/categories` check does not exist here, and every data endpoint needs sign-in. It is replaced by a sign-in with an unknown account, which must get `401 INVALID_CREDENTIALS`: that query needs the migrated `users` table (a missing table gives 500) and creates nothing. The optional `SMOKE_EMAIL`/`SMOKE_PASSWORD` login can use `smoke.student@example.test` |
+| `release.sh`, `teardown.sh` | Same names as `deploy.sh`; teardown deletes our three secrets |
+| `tests/` | Updated for the names. New assertions: no admin secret, both demo secrets granted and passed to the job in `--demo` mode, no demo password on the service, storage auto-increase off, a login that answers 500 fails the smoke test. Scenarios `empty` and `disabled` cover the retry after an interrupted run for the DB URL and both demo secrets; `demo_rerun` checks that usable credentials are kept; `denied`, `transient` and `transient_demo` check that a failed lookup exits 1 with no SQL password change, secret write or deploy |
+
+Offline checks (stub `gcloud`/`openssl`, no GCP access): `bash deploy/tests/test_deploy_stub.sh`, `bash deploy/tests/test_release_stub.sh`, `python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'`.
+
+### Running it (Cloud Shell, by the project owner)
+
+**Prerequisite: deploy only a reviewed release on `main`.** Merging this PR into `staging/sprint-1` is not enough: `main` gets `deploy/` and the root `Dockerfile` only through the release PR `staging/sprint-1` → `main` and its tag. Run the commands below after that release is merged and tagged, and check out that tag, not the default branch head. Record the printed SHA in #19 and the Lab 5 PDF; it is the commit being deployed.
+
+```bash
+export PROJECT_ID=cpe334-course-p-m-s REGION=asia-southeast1
+export RELEASE_TAG=v0.2.0          # the release tag on main that contains deploy/ (set to the real tag)
+gcloud config set project "$PROJECT_ID"
+git clone https://github.com/Nuggetkub/cpe334-course-project-management-system.git
+cd cpe334-course-project-management-system
+git checkout "$RELEASE_TAG" && git merge-base --is-ancestor HEAD origin/main && git rev-parse HEAD   # tag must be on main; record the SHA
+test -f deploy/deploy.sh && test -f Dockerfile                                     # stop if either is missing
+gcloud secrets describe cpms-does-not-exist                                        # read-only: the error must say NOT_FOUND
+DRY_RUN=1 PROJECT_ID="$PROJECT_ID" REGION="$REGION" bash deploy/deploy.sh --demo   # creates nothing
+PROJECT_ID="$PROJECT_ID" REGION="$REGION" bash deploy/deploy.sh --demo             # 10-20 min, costs start
+gcloud sql instances describe cpms-pg --format='value(settings.storageAutoResize)' # must print False
+```
+
+Re-running `deploy.sh` is safe: a secret whose latest version is usable is kept, and a secret left without a usable version by an interrupted run gets a new one (for the database URL, together with a new password on the `cpms` user). If Secret Manager cannot be read (permission, network), the script stops before changing anything; fix the cause and run it again.
+
+`--demo` is needed for C-04, because without it nobody can sign in. Never print, paste or screenshot a demo password; read one only when signing in, with `gcloud secrets versions access latest --secret=cpms-student-demo-password`.
+
+**C-04 smoke check with a successful sign-in.** The unknown-account 401 check only shows that the `users` table can be queried. For C-04, also run the optional sign-in, which reads the password into the environment without printing it:
+
+```bash
+URL="$(gcloud run services describe cpms --region "$REGION" --format='value(status.url)')"
+SMOKE_EMAIL=smoke.student@example.test \
+SMOKE_PASSWORD="$(gcloud secrets versions access latest --secret=cpms-student-demo-password)" \
+python3 deploy/smoke_test.py "$URL"     # expect PASS for login, /api/auth/me and logout
+```
