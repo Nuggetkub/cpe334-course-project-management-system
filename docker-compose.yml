@@ -1,10 +1,20 @@
-# Local development database only. The full app stack (migrate job, server,
-# client) is added in Lab 5 step 3 (Issue #17).
+# Local stack for the Course Project Management System (Lab 5 step 3, Issue #17):
+#   db       PostgreSQL 16 with a named volume, so data survives `down` / `up`
+#   migrate  runs once: `prisma migrate deploy`, then the demo seed; exits 0
+#   server   the API on http://localhost:3000 (starts after migrate succeeds)
+#   client   the built SPA served by nginx on http://localhost:5173; /api is proxied to server
 #
-# Host port 5433 so it does not clash with a PostgreSQL already installed on 5432,
-# bound to 127.0.0.1 so only this machine can reach it (dev credentials are public).
-# The default credentials are throw-away local values; override them in a root
-# .env file (git-ignored) if you prefer.
+# `docker compose up -d db` still starts only the database for `npm run dev` and the tests.
+#
+# Host port 5433 for the database so it does not clash with a PostgreSQL already installed
+# on 5432, bound to 127.0.0.1 so only this machine can reach it. The database credentials
+# below are public, throw-away local fallbacks; the cloud gets its values from Secret Manager.
+#
+# Demo accounts (F-03.1): the seed is OFF unless you opt in. No demo password is committed.
+# To sign in, create a git-ignored `.env` file next to this one containing:
+#   SEED_DEMO_DATA=true
+#   STUDENT_DEMO_PASSWORD=<your choice>
+#   SUPERVISOR_DEMO_PASSWORD=<your choice>
 services:
   db:
     image: postgres:16-alpine
@@ -23,6 +33,55 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    image: cpms-server:local
+    container_name: cpms-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cpms}:${POSTGRES_PASSWORD:-cpms}@db:5432/${POSTGRES_DB:-cpms}?schema=public
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      STUDENT_DEMO_PASSWORD: ${STUDENT_DEMO_PASSWORD:-}
+      SUPERVISOR_DEMO_PASSWORD: ${SUPERVISOR_DEMO_PASSWORD:-}
+    # `&&`: the seed never runs on a database whose migration failed.
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
+
+  server:
+    image: cpms-server:local
+    container_name: cpms-server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Bangkok
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cpms}:${POSTGRES_PASSWORD:-cpms}@db:5432/${POSTGRES_DB:-cpms}?schema=public
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: cpms-client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "127.0.0.1:5173:80"
 
 volumes:
   postgres_data:

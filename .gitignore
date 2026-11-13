@@ -12,3 +12,7 @@ Thumbs.db
 .idea/
 playwright-report/
 test-results/
+
+# Python (deploy/ smoke test)
+__pycache__/
+*.pyc
