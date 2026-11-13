@@ -89,6 +89,22 @@ run_cmd() {
   fi
 }
 
+# True only when `<secret>:latest` can be read, i.e. its newest version exists and is
+# ENABLED. A secret whose create succeeded but whose `versions add` failed or was
+# interrupted has no version: it is NOT usable, and the next run initializes it.
+secret_usable() {
+  [ "$(gcloud secrets versions describe latest --secret="$1" --project "$PROJECT_ID" \
+        --format='value(state)' 2>/dev/null)" = "ENABLED" ]
+}
+
+# Creates the secret container only if it is missing (a retry after an interrupted
+# run finds it already there).
+ensure_secret() {
+  if ! gcloud secrets describe "$1" --project "$PROJECT_ID" >/dev/null 2>&1; then
+    run_cmd gcloud secrets create "$1" --replication-policy="automatic" --project "$PROJECT_ID"
+  fi
+}
+
 # Resolve the GCP project: $PROJECT_ID, else the active gcloud project.
 if [ "$DRY_RUN" = "1" ]; then
   PROJECT_ID="${PROJECT_ID:-example-gcp-project}"
@@ -228,20 +244,25 @@ run_cmd gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --quiet
 
 # ==============================================================================
-# 6. Create DB User & Store DATABASE_URL in Secret Manager (only if secret does not exist yet)
+# 6. Create DB User & Store DATABASE_URL in Secret Manager (only if no usable version exists yet)
 #    ⭐ IMPORTANT: the DB user's password and the password inside DATABASE_URL
 #       must be the same value (checked by test_deploy_stub.sh). Never echo it.
 #    CHANGE ME: the URL format below is PostgreSQL + Prisma specific
 #       (host=/cloudsql/... unix socket, schema=public, connection_limit=3).
 # ==============================================================================
+#    Re-runs keep the credentials when the secret has a usable version. If the
+#    secret is missing, or exists without an ENABLED latest version (interrupted
+#    run), nothing can use it yet, so a new password is set on the DB user and
+#    added as a new version.
 if [ "$DRY_RUN" = "1" ]; then
+  run_cmd gcloud secrets versions describe latest --secret="$SECRET_DB_URL" --project "$PROJECT_ID" --format="value(state)"
   run_cmd gcloud secrets describe "$SECRET_DB_URL" --project "$PROJECT_ID"
   run_cmd gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)"
   run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="<GENERATED_HEX_PASSWORD>" --project "$PROJECT_ID"
   run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
   run_cmd gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
 else
-  if ! gcloud secrets describe "$SECRET_DB_URL" --project "$PROJECT_ID" >/dev/null 2>&1; then
+  if ! secret_usable "$SECRET_DB_URL"; then
     DB_PASS="$(openssl rand -hex 24)"
     if gcloud sql users list --instance="$SQL_INSTANCE" --project "$PROJECT_ID" --format="value(name)" | grep -qx "$DB_USER"; then
       run_cmd gcloud sql users set-password "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
@@ -249,7 +270,7 @@ else
       run_cmd gcloud sql users create "$DB_USER" --instance="$SQL_INSTANCE" --password="$DB_PASS" --project "$PROJECT_ID"
     fi
     DB_URL_VALUE="postgresql://${DB_USER}:${DB_PASS}@localhost/${DB_NAME}?host=/cloudsql/${SQL_CONN_NAME}&schema=public&connection_limit=3"
-    run_cmd gcloud secrets create "$SECRET_DB_URL" --replication-policy="automatic" --project "$PROJECT_ID"
+    ensure_secret "$SECRET_DB_URL"
     printf "%s" "$DB_URL_VALUE" | gcloud secrets versions add "$SECRET_DB_URL" --data-file=- --project "$PROJECT_ID"
   fi
 fi
@@ -265,13 +286,15 @@ JOB_SECRETS="DATABASE_URL=${SECRET_DB_URL}:latest"
 if [ "$SEED_DEMO_DATA" = "true" ]; then
   for secret in "$SECRET_STUDENT_PASS" "$SECRET_SUPERVISOR_PASS"; do
     if [ "$DRY_RUN" = "1" ]; then
+      run_cmd gcloud secrets versions describe latest --secret="$secret" --project "$PROJECT_ID" --format="value(state)"
       run_cmd gcloud secrets describe "$secret" --project "$PROJECT_ID"
       run_cmd gcloud secrets create "$secret" --replication-policy="automatic" --project "$PROJECT_ID"
       run_cmd gcloud secrets versions add "$secret" --data-file=- --project "$PROJECT_ID"
     else
-      if ! gcloud secrets describe "$secret" --project "$PROJECT_ID" >/dev/null 2>&1; then
+      # Same rule as the DB URL: keep a usable password, initialize a missing or empty secret.
+      if ! secret_usable "$secret"; then
         GENERATED_DEMO_PASSWORD="$(openssl rand -base64 16 | tr -d '/+=' | cut -c1-14)Dd1!"
-        run_cmd gcloud secrets create "$secret" --replication-policy="automatic" --project "$PROJECT_ID"
+        ensure_secret "$secret"
         printf "%s" "$GENERATED_DEMO_PASSWORD" | gcloud secrets versions add "$secret" --data-file=- --project "$PROJECT_ID"
       fi
     fi

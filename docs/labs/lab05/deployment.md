@@ -114,23 +114,39 @@ The kit files were committed unchanged first, then adapted, so the diff shows ea
 
 | File | Adaptation |
 | --- | --- |
-| `deploy.sh` | `toktickit*` names became `cpms*`. **No admin password secret**, because this app has no admin role. `--demo` generates one password per demo role (`STUDENT_DEMO_PASSWORD`, `SUPERVISOR_DEMO_PASSWORD`, read by `server/prisma/demo-seed.ts`) and gives them to the migration job only; the service gets only `DATABASE_URL`. `--no-storage-auto-increase` is set when the instance is created, so Guide 5.4 is only a check |
+| `deploy.sh` | `toktickit*` names became `cpms*`. **No admin password secret**, because this app has no admin role. `--demo` generates one password per demo role (`STUDENT_DEMO_PASSWORD`, `SUPERVISOR_DEMO_PASSWORD`, read by `server/prisma/demo-seed.ts`) and gives them to the migration job only; the service gets only `DATABASE_URL`. `--no-storage-auto-increase` is set when the instance is created, so Guide 5.4 is only a check. A secret counts as initialized only when its `latest` version is `ENABLED`, not when the secret merely exists, so a run interrupted between `secrets create` and `versions add` recovers on the next run (review of PR #46) |
 | `smoke_test.py` | The kit's `/api/categories` check does not exist here, and every data endpoint needs sign-in. It is replaced by a sign-in with an unknown account, which must get `401 INVALID_CREDENTIALS`: that query needs the migrated `users` table (a missing table gives 500) and creates nothing. The optional `SMOKE_EMAIL`/`SMOKE_PASSWORD` login can use `smoke.student@example.test` |
 | `release.sh`, `teardown.sh` | Same names as `deploy.sh`; teardown deletes our three secrets |
-| `tests/` | Updated for the names. New assertions: no admin secret, both demo secrets granted and passed to the job in `--demo` mode, no demo password on the service, storage auto-increase off, a login that answers 500 fails the smoke test |
+| `tests/` | Updated for the names. New assertions: no admin secret, both demo secrets granted and passed to the job in `--demo` mode, no demo password on the service, storage auto-increase off, a login that answers 500 fails the smoke test. Scenarios `empty` and `disabled` cover the retry after an interrupted run for the DB URL and both demo secrets; `demo_rerun` checks that usable credentials are kept |
 
 Offline checks (stub `gcloud`/`openssl`, no GCP access): `bash deploy/tests/test_deploy_stub.sh`, `bash deploy/tests/test_release_stub.sh`, `python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'`.
 
 ### Running it (Cloud Shell, by the project owner)
 
+**Prerequisite: deploy only a reviewed release on `main`.** Merging this PR into `staging/sprint-1` is not enough: `main` gets `deploy/` and the root `Dockerfile` only through the release PR `staging/sprint-1` → `main` and its tag. Run the commands below after that release is merged and tagged, and check out that tag, not the default branch head. Record the printed SHA in #19 and the Lab 5 PDF; it is the commit being deployed.
+
 ```bash
 export PROJECT_ID=cpe334-course-p-m-s REGION=asia-southeast1
+export RELEASE_TAG=v0.2.0          # the release tag on main that contains deploy/ (set to the real tag)
 gcloud config set project "$PROJECT_ID"
 git clone https://github.com/Nuggetkub/cpe334-course-project-management-system.git
-cd cpe334-course-project-management-system && git rev-parse --short HEAD
+cd cpe334-course-project-management-system
+git checkout "$RELEASE_TAG" && git merge-base --is-ancestor HEAD origin/main && git rev-parse HEAD   # tag must be on main; record the SHA
+test -f deploy/deploy.sh && test -f Dockerfile                                     # stop if either is missing
 DRY_RUN=1 PROJECT_ID="$PROJECT_ID" REGION="$REGION" bash deploy/deploy.sh --demo   # creates nothing
 PROJECT_ID="$PROJECT_ID" REGION="$REGION" bash deploy/deploy.sh --demo             # 10-20 min, costs start
 gcloud sql instances describe cpms-pg --format='value(settings.storageAutoResize)' # must print False
 ```
 
+Re-running `deploy.sh` is safe: a secret whose latest version is usable is kept, and a secret left without a usable version by an interrupted run gets a new one (for the database URL, together with a new password on the `cpms` user).
+
 `--demo` is needed for C-04, because without it nobody can sign in. Never print, paste or screenshot a demo password; read one only when signing in, with `gcloud secrets versions access latest --secret=cpms-student-demo-password`.
+
+**C-04 smoke check with a successful sign-in.** The unknown-account 401 check only shows that the `users` table can be queried. For C-04, also run the optional sign-in, which reads the password into the environment without printing it:
+
+```bash
+URL="$(gcloud run services describe cpms --region "$REGION" --format='value(status.url)')"
+SMOKE_EMAIL=smoke.student@example.test \
+SMOKE_PASSWORD="$(gcloud secrets versions access latest --secret=cpms-student-demo-password)" \
+python3 deploy/smoke_test.py "$URL"     # expect PASS for login, /api/auth/me and logout
+```

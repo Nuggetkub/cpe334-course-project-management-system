@@ -9,6 +9,10 @@
 #     partial   : DB secret missing   -> DB user password reset + secret created
 #     job-fail  : migration fails     -> script exits 1, service NOT deployed
 #     demo      : --demo flag         -> both demo secrets created, granted, given to the job
+#     demo_rerun: --demo, all usable  -> no secret or DB password replaced
+#     empty     : --demo, secrets exist without a version (interrupted run)
+#                                     -> new versions added, DB password reset, nothing re-created
+#     disabled  : --demo, :latest versions DISABLED -> same recovery as empty
 #   It also checks: `--edition=enterprise` and `--no-storage-auto-increase`,
 #   no admin secret (this app has no admin role), no project-wide secretAccessor role,
 #   DB password == password inside DATABASE_URL, and that no password/secret
@@ -67,6 +71,17 @@ if [ "${1:-} ${2:-} ${3:-}" = 'run jobs execute' ]; then
   [ "$STUB_MODE" != job-fail ]
   exit $?
 fi
+if [ "${1:-} ${2:-} ${3:-}" = 'secrets versions describe' ]; then
+  # State of <secret>:latest. empty = created but `versions add` never ran.
+  case "$STUB_MODE" in
+    first_run|empty) exit 1 ;;
+    disabled) echo DISABLED; exit 0 ;;
+    partial)
+      case "$*" in *--secret=cpms-database-url*) exit 1 ;; esac ;;
+  esac
+  echo ENABLED
+  exit 0
+fi
 if [ "${1:-} ${2:-} ${3:-}" = 'secrets versions add' ]; then
   cat > "$TEST_STATE_DIR/payload-${4}"
   exit 0
@@ -98,13 +113,17 @@ export REGION=asia-southeast1
 export DRY_RUN=0
 
 # --- Run every scenario and assert on what deploy.sh did ------------------------
-for MODE in first_run rerun partial job-fail demo; do
-  export STUB_MODE="$MODE"
-  [ "$MODE" != demo ] || export STUB_MODE=first_run
+for MODE in first_run rerun partial job-fail demo demo_rerun empty disabled; do
+  case "$MODE" in
+    demo) export STUB_MODE=first_run ;;
+    demo_rerun) export STUB_MODE=rerun ;;
+    *) export STUB_MODE="$MODE" ;;
+  esac
   export GCLOUD_LOG="$TEST_STATE_DIR/gcloud-$MODE.log"
   rm -f "$TEST_STATE_DIR/sql-pass" "$TEST_STATE_DIR"/payload-*
   args=()
-  if [ "$MODE" = demo ]; then args+=(--demo); fi
+  DEMO=0
+  case "$MODE" in demo|demo_rerun|empty|disabled) DEMO=1; args+=(--demo) ;; esac
   result=0
   bash "$DEPLOY_SCRIPT" "${args[@]}" > "$TEST_STATE_DIR/output" 2>&1 || result=$?
   expected=0
@@ -127,7 +146,7 @@ for MODE in first_run rerun partial job-fail demo; do
   if grep -qi 'admin-password\|ADMIN_PASSWORD' "$GCLOUD_LOG"; then
     echo 'FAIL: admin secret used, but this app has no admin role'; exit 1
   fi
-  if [ "$MODE" = demo ]; then
+  if [ "$DEMO" = 1 ]; then
     for secret in cpms-student-demo-password cpms-supervisor-demo-password; do
       grep -q "^secrets add-iam-policy-binding $secret .*roles/secretmanager.secretAccessor" "$GCLOUD_LOG"
     done
@@ -146,10 +165,23 @@ for MODE in first_run rerun partial job-fail demo; do
       grep -q -- '--no-storage-auto-increase' "$GCLOUD_LOG"
       grep -q '^sql users create ' "$GCLOUD_LOG" ;;
     partial) grep -q '^sql users set-password ' "$GCLOUD_LOG" ;;
-    rerun)
-      if grep -Eq '^(secrets create|sql users (create|set-password)) ' "$GCLOUD_LOG"; then
-        echo 'FAIL: rerun replaced existing credentials'; exit 1
+    rerun|demo_rerun)
+      if grep -Eq '^(secrets create|secrets versions add|sql users (create|set-password)) ' "$GCLOUD_LOG"; then
+        echo "FAIL $MODE: rerun replaced existing credentials"; exit 1
       fi ;;
+    empty|disabled)
+      # Retry after an interrupted run: the secrets exist but :latest is unusable.
+      # The containers are reused, every secret gets a new version, and the DB
+      # user's password is reset to the one stored in the new DATABASE_URL.
+      if grep -q '^secrets create ' "$GCLOUD_LOG"; then
+        echo "FAIL $MODE: re-created a secret that already exists"; exit 1
+      fi
+      for secret in cpms-database-url cpms-student-demo-password cpms-supervisor-demo-password; do
+        if ! grep -q "^secrets versions add $secret " "$GCLOUD_LOG"; then
+          echo "FAIL $MODE: no new version for $secret"; exit 1
+        fi
+      done
+      grep -q '^sql users set-password ' "$GCLOUD_LOG" ;;
   esac
   if [ -f "$TEST_STATE_DIR/sql-pass" ]; then
     db_pass="$(cat "$TEST_STATE_DIR/sql-pass")"
