@@ -1,0 +1,105 @@
+name: CI & Docker Build
+
+on:
+  workflow_call:
+  pull_request:
+    branches: [main, 'staging/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cpms
+          POSTGRES_PASSWORD: cpms_ci_only
+          POSTGRES_DB: cpms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cpms -d cpms"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+
+      - name: Check deployment tooling offline
+        id: deploy-tools
+        run: |
+          bash -n deploy/deploy.sh deploy/release.sh deploy/teardown.sh
+          node --test scripts/ci-summary.test.mjs
+          bash deploy/tests/test_deploy_stub.sh
+          bash deploy/tests/test_release_stub.sh
+          python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+
+      - name: Install, migrate, seed, test and build server
+        id: server
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://cpms:cpms_ci_only@127.0.0.1:5432/cpms?schema=public
+        run: |
+          npm ci
+          npx prisma generate
+          npx prisma migrate deploy
+          SEED_DEMO_DATA=true STUDENT_DEMO_PASSWORD=ci-student-only SUPERVISOR_DEMO_PASSWORD=ci-supervisor-only npm run prisma:seed
+          npm run typecheck
+          mkdir -p ../artifacts/ci
+          npm test -- --reporter=default --reporter=json --outputFile=../artifacts/ci/server-tests.json
+          npm run build
+
+      - name: Install, test and build client
+        id: client
+        working-directory: client
+        run: |
+          npm ci
+          mkdir -p ../artifacts/ci
+          npm test -- --reporter=default --reporter=json --outputFile=../artifacts/ci/client-tests.json
+          npm run build
+
+      - name: Build unified production image
+        id: docker
+        run: |
+          docker build --tag cpms-ci:local .
+
+      - name: Write verification summary
+        if: ${{ always() }}
+        env:
+          DEPLOY_TOOLS_OUTCOME: ${{ steps.deploy-tools.outcome }}
+          SERVER_OUTCOME: ${{ steps.server.outcome }}
+          CLIENT_OUTCOME: ${{ steps.client.outcome }}
+          DOCKER_OUTCOME: ${{ steps.docker.outcome }}
+        run: node scripts/ci-summary.mjs
+
+      - name: Preserve test reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-test-reports-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/ci/*-tests.json
+          if-no-files-found: ignore
+          retention-days: 7

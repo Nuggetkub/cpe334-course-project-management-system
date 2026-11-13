@@ -91,6 +91,51 @@ The seven starter-kit files were committed unchanged first (`88bd832`), then ada
 
 With the fix, `docker compose up --build -d` exited 0, `migrate` exited (0), `:3000/api/health`, `:3000/api/ready`, `:5173/api/ready` and `:5173/` returned 200, and Supervisor and Student signed in.
 
+## Issue #18 — Pull-request CI (Guide Ep. 4, check C-01)
+
+`.github/workflows/ci-docker.yml` runs on PRs targeting `main` or `staging/**`,
+supports manual dispatch, and exposes `workflow_call` for the later deploy workflow.
+The job ID stays **`test-and-docker`** so Issue #20 can select it as a required
+status check after its first real run. The workflow uses only `contents: read`,
+checks out without persisted credentials, pins all actions to full commit SHAs,
+and receives no GCP credentials. It builds an image but does not push or deploy it.
+
+| Gate | Verification |
+| --- | --- |
+| Deploy tooling | Bash syntax; summary-renderer tests; all deployment and release stub scenarios; Python smoke unit tests. No GCP calls. |
+| Server | `npm ci`, explicit Prisma generation, committed migrations, opt-in CI seed, application/test typecheck, Vitest, production build. PostgreSQL 16 is an ephemeral runner service. Integration tests reset only `cpms_test`, not `public`. |
+| Client | `npm ci`, Vitest and TypeScript/Vite production build. |
+| Container | Build the root unified production Dockerfile as `cpms-ci:local`; do not publish it. |
+| Evidence | Run Summary includes step outcomes and counts read from the actual server/client Vitest JSON reports. Test reports are uploaded for seven days, including on failure when available. Missing valid reports after a successful step fail the summary check. |
+
+CI-only database and demo passwords are disposable fixture values, not live
+credentials. They must never be reused for Cloud SQL or partner accounts. The
+application's ordinary server/client tests remain unchanged. The browser E2E
+suite is separate; this workflow does not claim to run it.
+
+Local helper checks:
+
+```bash
+node --test scripts/ci-summary.test.mjs
+bash -n deploy/deploy.sh deploy/release.sh deploy/teardown.sh
+bash deploy/tests/test_deploy_stub.sh
+bash deploy/tests/test_release_stub.sh
+python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
+```
+
+**C-01 acceptance is still pending a real GitHub run.** Record the staging PR,
+its successful `test-and-docker` run and Summary, then the release PR into `main`
+and its successful check. Do not label Issue #18 Done from local tests alone.
+Issue #20 separately configures the active ruleset and demonstrates a blocked
+merge with a failing temporary PR; adding this YAML does not enforce that gate.
+
+Local verification on 13 November 2026: actionlint 1.7.12 accepted the workflow;
+the summary-renderer tests passed 4/4; client tests passed 50/50 and the client
+production build passed. Server typecheck and production build passed after
+explicit Prisma generation. PostgreSQL tests, shell stubs and the Docker build
+still need confirmation from a Docker-enabled run; the desktop sandbox cannot
+access the Docker Engine pipe. These are not recorded as passing yet.
+
 ## Issue #19 first deployment (Guide Ep. 5, check C-04)
 
 ### GCP project and resource names
