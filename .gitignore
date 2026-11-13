@@ -16,3 +16,6 @@ test-results/
 # Python (deploy/ smoke test)
 __pycache__/
 *.pyc
+
+# Machine-generated CI JSON reports; retained by Actions artifacts, not Git.
+artifacts/ci/
