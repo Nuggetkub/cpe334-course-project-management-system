@@ -4,6 +4,9 @@ import { E2E_PASSWORD } from "./support";
 test("TEST-01.7b student signs in, sees Student navigation, logs out and is locked out", async ({ page }) => {
   await page.goto("/login");
 
+  await expect(page.getByRole("region", { name: "Release information" }))
+    .toHaveText("Lab 5 deployment demo — release 2");
+
   await page.getByLabel("Email").fill("student@e2e.test");
   await page.getByLabel("Password").fill(E2E_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();

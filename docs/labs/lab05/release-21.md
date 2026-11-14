@@ -58,16 +58,18 @@ second release while collecting the first release's evidence.
 
 | Evidence | Actual result |
 | --- | --- |
-| Release PR and main merge SHA | Awaiting reviewed release |
-| Deploy demo run URL and conclusion | Not run by this preparation |
-| WIF authentication | Awaiting first main workflow run |
-| Image tag and digest | Awaiting image push |
-| Migration job execution | Awaiting workflow execution |
-| Serving revision, digest and traffic | Awaiting Cloud Run verification |
-| Health commit, readiness and UI | Awaiting live smoke checks |
+| Release PR and main merge SHA | PR #54 merged: `297dafe897445b8fd3993accf5a284005832349d` |
+| Deploy demo run URL and conclusion | [43602099175](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43602099175), success |
+| WIF authentication | Keyless authentication step succeeded in that run |
+| Image tag and digest | Build/push and digest-based release steps succeeded; exact digest still to be copied from Summary/Cloud Run |
+| Migration job execution | Combined verify/migrate/deploy step succeeded; execution identifier still to be recorded |
+| Serving revision, digest and traffic | Direct Cloud Run revision/digest/traffic evidence still to be recorded |
+| Health commit, readiness and UI | Independent HTTP checks on 14 Nov: health reports the full `297dafe` SHA, readiness reports `db: connected`, root HTML loads; all HTTP 200 |
 
-These entries are a collection checklist, not passing evidence. Optional login
-smoke checks remain optional; do not describe `SKIP login` as a successful login.
+The checks above distinguish observed results from evidence still to be collected.
+The public service is https://cpms-137792226556.asia-southeast1.run.app . Optional
+login smoke checks remain optional; do not describe `SKIP login` as a successful
+login. Issue #21 remains open for the outstanding evidence and second release.
 
 ## Second release: visible-change proof (C-06)
 
