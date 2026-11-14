@@ -42,5 +42,13 @@ revision/traffic and the visible label from the public URL. Do not close #21 yet
 
 ## Verification record
 
-Results will be added after actual red/green runs; no passing result is implied
-by this contract.
+- Contract/test commit `ceeddc8`: `npm --prefix client test --
+  tests/deploy-proof.test.tsx` exited 1, with both tests failing on the missing
+  release region/text. No import or environment failure caused this red result.
+- After adding the marker, `npm --prefix client test` exited 0: **8 files,
+  52 tests passed**, including both new tests and the existing auth regression.
+- `npm --prefix client run build` exited 0 (TypeScript and Vite).
+- The E2E login assertion is added but **not yet executed** for this increment:
+  Docker Engine was unavailable locally. Run the auth browser suite against its
+  disposable `cpms_e2e` schema before considering the browser check passed.
+- No CSS or server changes were needed. No claim of a second live release is made.
