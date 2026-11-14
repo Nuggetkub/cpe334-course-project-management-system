@@ -6,7 +6,9 @@ The application uses a React/Vite frontend, a Node.js/Express API, and PostgreSQ
 through Prisma. The intended deployment is a single Cloud Run service serving the
 built frontend and API on the same origin, with Cloud SQL for PostgreSQL and
 Secret Manager for database credentials. This document covers the cloud-readiness
-audit for issue #16; it does not record a live deployment.
+audit for Issue #16 and the subsequent deployment and CI increments. Recorded
+results below are scoped to their linked checks; the Issue #21 automatic release
+still needs its first live verification.
 
 The container holds the application and built static assets, not mutable application
 data. Sessions and application records live in PostgreSQL. Submissions store links,
@@ -21,6 +23,7 @@ serving traffic; do not run development migrations or test-schema resets there.
 | `PORT` | API listen port, defaults to 3000 locally | No | Cloud Run injects it |
 | `HOST` | Listen address; default `0.0.0.0` | No | Leave unset on Cloud Run |
 | `NODE_ENV` | Set to `production` to serve built frontend assets | No | Deployment environment |
+| `APP_COMMIT` | Full source commit reported by `/api/health`; defaults to `unknown` | No | Baked into the release image by `deploy.yml`, not a credential |
 | `CLIENT_ORIGINS` | Comma-separated origins allowed for cross-origin API calls | No | Deployment configuration if needed; local default is Vite |
 | `CLIENT_DIST_DIR` | Override the built frontend directory | No | Optional runtime setting; otherwise use the image's default layout |
 | `BCRYPT_COST` | Password hashing work factor; default 12, minimum 10 | No | Optional runtime setting |
@@ -130,10 +133,13 @@ tooling checks, PostgreSQL-backed server checks, client tests/build, unified
 Docker build, verification Summary and JSON-report upload. This is an actual
 GitHub-hosted run, separate from the local verification below.
 
-**C-01 release verification remains pending.** Record the release PR into `main`
-and its successful `test-and-docker` check before marking Issue #18 Done.
-Issue #20 separately configures the active ruleset and demonstrates a blocked
-merge with a failing temporary PR; adding this YAML does not enforce that gate.
+**C-01 release verification passed.** [PR #50](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/50)
+promoted the CI gates into `main` as `0b17151` (tag `v0.2.1`). Its
+[Actions run 43451966656](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43451966656)
+passed for release head `005c7f2`. Issue #18 is closed. The separate
+[Issue #20 evidence](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/20)
+records the active ruleset and intentionally failing, closed-unmerged PR #51;
+adding the CI YAML alone did not enforce that gate.
 
 Local verification on 13 November 2026: actionlint 1.7.12 accepted the workflow;
 the summary-renderer tests passed 4/4; client tests passed 50/50 and the client
@@ -242,3 +248,13 @@ Nobody types a deploy command. A manual run with `image_tag` = an existing full 
 The WIF provider condition accepts only `deploy.yml` on `refs/heads/main` in environment `demo`. The workflow can therefore sign in only after it is merged into `main`, and the first release is also the first real test of #20.
 
 **The deployer's permissions are enough.** Docker push and the digest lookup need Artifact Registry Writer on `cpms`. Updating and executing `cpms-migrate` and updating `cpms` and its traffic need Cloud Run Developer. Deploying them as `cpms-runner` needs Service Account User on `cpms-runner`. The deployer cannot read secrets: the service and the job read them as `cpms-runner`.
+
+**Implementation merged; live acceptance remains open.**
+[PR #53](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/53)
+was reviewed and merged into `staging/sprint-1` as `c77da87` on 14 November 2026.
+The synchronized head `a5a36cc` passed
+[CI run 43554168192](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43554168192).
+This staging merge did not trigger a GCP deployment. Follow the
+[Issue #21 release and evidence checklist](release-21.md) for the release to
+`main`, live verification and subsequent visible-change release. Do not close
+Issue #21 based on the staging CI result alone.

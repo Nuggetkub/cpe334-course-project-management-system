@@ -54,6 +54,9 @@ export function LoginPage() {
     <main className="login">
       <h1>Sign in</h1>
       <p className="muted">Course Project Management System</p>
+      <section aria-label="Release information">
+        <p>Lab 5 deployment demo — release 2</p>
+      </section>
       <form onSubmit={handleSubmit} noValidate>
         {state.status === "anonymous" && state.expired && !formError && (
           <p role="status" className="banner">
