@@ -5,7 +5,8 @@ CI runs it too (.github/workflows/ci-docker.yml).
 
 Covers: public checks pass + login skipped without credentials; a DB that is not
 ready fails even if HTTP answers; a login that is not rejected with 401 (e.g. a 500
-from a missing users table) fails; the session is logged out even if a check fails.
+from a missing users table) fails; the session is logged out even if a check fails;
+with EXPECTED_COMMIT set, /api/health must report that commit.
 CHANGE ME: if you change the endpoints in smoke_test.py, update `response()` below.
 """
 import importlib.util
@@ -20,6 +21,9 @@ smoke = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(smoke)
 
 
+COMMIT = '0123456789abcdef0123456789abcdef01234567'
+
+
 def http_error(code, body):
     return urllib.error.HTTPError('https://demo.test', code, 'error', {}, io.BytesIO(body))
 
@@ -29,7 +33,7 @@ class SmokeTests(unittest.TestCase):
         if path == '/api/auth/login' and data == smoke.UNKNOWN_LOGIN:
             raise http_error(401, b'{"error":{"code":"INVALID_CREDENTIALS","message":"x"}}')
         return {
-            '/api/health': b'{"status":"ok"}',
+            '/api/health': b'{"status":"ok","commit":"' + COMMIT.encode() + b'"}',
             '/api/ready': b'{"db":"connected"}',
             '/': b'<html></html>',
             '/api/auth/login': b'{"token":"test-session"}',
@@ -71,6 +75,18 @@ class SmokeTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Login smoke'):
                 smoke.check('https://demo.test')
             self.assertEqual(req.call_args.args[1], '/api/auth/logout')
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': COMMIT}, clear=True)
+    def test_expected_commit_passes_when_health_reports_it(self):
+        with patch.object(smoke, 'request', side_effect=self.response), patch('builtins.print') as out:
+            smoke.check('https://demo.test')
+        out.assert_any_call('PASS running commit ' + COMMIT)
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': 'f' * 40}, clear=True)
+    def test_old_release_still_answering_fails(self):
+        with patch.object(smoke, 'request', side_effect=self.response), patch.object(smoke.time, 'sleep'):
+            with self.assertRaisesRegex(RuntimeError, '/api/health'):
+                smoke.check('https://demo.test')
 
 
 if __name__ == '__main__':

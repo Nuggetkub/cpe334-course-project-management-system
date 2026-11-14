@@ -11,15 +11,30 @@ afterAll(async () => {
 });
 
 describe("GET /api/health", () => {
-  it("returns 200 { status: 'ok' } without touching the database", async () => {
+  it("returns 200 with status 'ok' and the running commit, without touching the database", async () => {
     const app = createApp({
       checkDatabase: () => Promise.reject(new Error("must not be called")),
+      commit: "0123456789abcdef0123456789abcdef01234567",
     });
 
     const res = await request(app).get("/api/health");
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: "ok" });
+    expect(res.body).toEqual({ status: "ok", commit: "0123456789abcdef0123456789abcdef01234567" });
+  });
+
+  it("reports APP_COMMIT from the environment, or 'unknown' when it is not set", async () => {
+    const saved = process.env.APP_COMMIT;
+    try {
+      process.env.APP_COMMIT = "fedcba9876543210fedcba9876543210fedcba98";
+      expect((await request(createApp()).get("/api/health")).body.commit).toBe("fedcba9876543210fedcba9876543210fedcba98");
+
+      delete process.env.APP_COMMIT;
+      expect((await request(createApp()).get("/api/health")).body.commit).toBe("unknown");
+    } finally {
+      if (saved === undefined) delete process.env.APP_COMMIT;
+      else process.env.APP_COMMIT = saved;
+    }
   });
 });
 
