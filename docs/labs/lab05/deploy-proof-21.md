@@ -48,7 +48,11 @@ revision/traffic and the visible label from the public URL. Do not close #21 yet
 - After adding the marker, `npm --prefix client test` exited 0: **8 files,
   52 tests passed**, including both new tests and the existing auth regression.
 - `npm --prefix client run build` exited 0 (TypeScript and Vite).
-- The E2E login assertion is added but **not yet executed** for this increment:
-  Docker Engine was unavailable locally. Run the auth browser suite against its
-  disposable `cpms_e2e` schema before considering the browser check passed.
+- Developer-run browser verification: `npm run e2e -- e2e/auth.spec.ts
+  --reporter=list` completed with **2 passed (15.4s)**. The supplied output lists
+  the updated login/logout/lockout journey (`TEST-01.7b`, including the exact
+  release marker assertion) and generic wrong-password message (`TEST-01.8b`).
+  The developer ran this against the disposable `cpms_e2e` schema after installing
+  the root Playwright dependencies; this is developer-supplied terminal evidence,
+  not an independent sandbox rerun or a Cloud Run check.
 - No CSS or server changes were needed. No claim of a second live release is made.
