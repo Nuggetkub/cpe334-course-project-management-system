@@ -6,7 +6,9 @@ The application uses a React/Vite frontend, a Node.js/Express API, and PostgreSQ
 through Prisma. The intended deployment is a single Cloud Run service serving the
 built frontend and API on the same origin, with Cloud SQL for PostgreSQL and
 Secret Manager for database credentials. This document covers the cloud-readiness
-audit for issue #16; it does not record a live deployment.
+audit for Issue #16 and the subsequent deployment and CI increments. Recorded
+results below are scoped to their linked checks; the Issue #21 automatic release
+still needs its first live verification.
 
 The container holds the application and built static assets, not mutable application
 data. Sessions and application records live in PostgreSQL. Submissions store links,
@@ -21,6 +23,7 @@ serving traffic; do not run development migrations or test-schema resets there.
 | `PORT` | API listen port, defaults to 3000 locally | No | Cloud Run injects it |
 | `HOST` | Listen address; default `0.0.0.0` | No | Leave unset on Cloud Run |
 | `NODE_ENV` | Set to `production` to serve built frontend assets | No | Deployment environment |
+| `APP_COMMIT` | Full source commit reported by `/api/health`; defaults to `unknown` | No | Baked into the release image by `deploy.yml`, not a credential |
 | `CLIENT_ORIGINS` | Comma-separated origins allowed for cross-origin API calls | No | Deployment configuration if needed; local default is Vite |
 | `CLIENT_DIST_DIR` | Override the built frontend directory | No | Optional runtime setting; otherwise use the image's default layout |
 | `BCRYPT_COST` | Password hashing work factor; default 12, minimum 10 | No | Optional runtime setting |
@@ -130,10 +133,13 @@ tooling checks, PostgreSQL-backed server checks, client tests/build, unified
 Docker build, verification Summary and JSON-report upload. This is an actual
 GitHub-hosted run, separate from the local verification below.
 
-**C-01 release verification remains pending.** Record the release PR into `main`
-and its successful `test-and-docker` check before marking Issue #18 Done.
-Issue #20 separately configures the active ruleset and demonstrates a blocked
-merge with a failing temporary PR; adding this YAML does not enforce that gate.
+**C-01 release verification passed.** [PR #50](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/50)
+promoted the CI gates into `main` as `0b17151` (tag `v0.2.1`). Its
+[Actions run 43451966656](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43451966656)
+passed for release head `005c7f2`. Issue #18 is closed. The separate
+[Issue #20 evidence](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/20)
+records the active ruleset and intentionally failing, closed-unmerged PR #51;
+adding the CI YAML alone did not enforce that gate.
 
 Local verification on 13 November 2026: actionlint 1.7.12 accepted the workflow;
 the summary-renderer tests passed 4/4; client tests passed 50/50 and the client
@@ -209,3 +215,46 @@ SMOKE_EMAIL=smoke.student@example.test \
 SMOKE_PASSWORD="$(gcloud secrets versions access latest --secret=cpms-student-demo-password)" \
 python3 deploy/smoke_test.py "$URL"     # expect PASS for login, /api/auth/me and logout
 ```
+
+## Issue #21 automatic deployment (Guide Ep. 7, check C-06)
+
+`.github/workflows/deploy.yml` (**Deploy demo**) comes from the kit. On every push to `main` it runs, in order:
+1. `ci-docker.yml` as job `test`;
+2. a keyless sign-in to Google Cloud as `cpms-deployer`, through Workload Identity Federation (#20);
+3. a build and push of the image tagged with the full commit SHA;
+4. `deploy/release.sh` (resolve the digest → migration job → service update → 100 % traffic);
+5. `deploy/smoke_test.py` against the public URL;
+6. a run summary with the tag, digest and URL.
+
+Nobody types a deploy command. A manual run with `image_tag` = an existing full SHA rolls the service back without tests, build or migration.
+
+| Kit setting (7.2) | CPMS value |
+| --- | --- |
+| `SERVICE_NAME` / `MIGRATE_JOB_NAME` | `cpms` / `cpms-migrate` |
+| Image path (`deploy.yml`, `release.sh`) | `asia-southeast1-docker.pkg.dev/cpe334-course-p-m-s/cpms/cpms:<sha>` |
+| GitHub environment | `demo` (deploys from `main` only); variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`; no secrets |
+| Migration command | Prisma, unchanged from #19: `npx prisma migrate deploy && npm run prisma:seed`. The demo seed only upserts with `update: {}`, so rerunning it changes no account, password or milestone. |
+| Smoke test endpoints | `/api/health`, `/api/ready`, `/`, plus the unknown-account login (401) that replaces `/api/categories` (#19). Optional login (7.3) is not set, so the step prints `SKIP login`. The sign-in was already proven by hand in #19. |
+
+**Changes beyond the names:**
+
+| File | Change |
+| --- | --- |
+| `Dockerfile` | `ARG APP_COMMIT=unknown` / `ENV APP_COMMIT` in the runtime stage. `deploy.yml` passes the full SHA with `--build-arg`. Local and CI builds show `unknown`. |
+| `server/src/app.ts` | `/api/health` returns `{"status":"ok","commit":"<sha>"}`, so anyone can see which release is running (#21: "expose running commit"). A commit SHA of a public repository is not secret. |
+| `deploy/smoke_test.py` | When `EXPECTED_COMMIT` is set (`deploy.yml` sets it to the image tag), `/api/health` must report that commit, so an old revision still answering fails the run. It prints `PASS running commit <sha>`. |
+| `deploy.yml` | Concurrency group `deploy-demo`, different from `ci-docker.yml`'s `ci-docker-<workflow>-<ref>`. Inside the called CI workflow, `<workflow>` is "Deploy demo", so the two groups never block each other. |
+
+The WIF provider condition accepts only `deploy.yml` on `refs/heads/main` in environment `demo`. The workflow can therefore sign in only after it is merged into `main`, and the first release is also the first real test of #20.
+
+**The deployer's permissions are enough.** Docker push and the digest lookup need Artifact Registry Writer on `cpms`. Updating and executing `cpms-migrate` and updating `cpms` and its traffic need Cloud Run Developer. Deploying them as `cpms-runner` needs Service Account User on `cpms-runner`. The deployer cannot read secrets: the service and the job read them as `cpms-runner`.
+
+**Implementation merged; live acceptance remains open.**
+[PR #53](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/53)
+was reviewed and merged into `staging/sprint-1` as `c77da87` on 14 November 2026.
+The synchronized head `a5a36cc` passed
+[CI run 43554168192](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43554168192).
+This staging merge did not trigger a GCP deployment. Follow the
+[Issue #21 release and evidence checklist](release-21.md) for the release to
+`main`, live verification and subsequent visible-change release. Do not close
+Issue #21 based on the staging CI result alone.

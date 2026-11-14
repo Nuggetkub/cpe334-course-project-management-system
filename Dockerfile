@@ -94,6 +94,12 @@ ENV TZ=Asia/Bangkok
 ENV PORT=3000
 EXPOSE 3000
 
+# Commit this image was built from (deploy.yml passes the full SHA as a build
+# argument); /api/health reports it. Local and CI builds show "unknown".
+# Declared last so changing it does not invalidate the cached layers above.
+ARG APP_COMMIT=unknown
+ENV APP_COMMIT=$APP_COMMIT
+
 # Do not run as root inside the container.
 USER node
 

@@ -8,7 +8,9 @@ WHAT THIS SCRIPT DOES
     tolerate Cloud Run cold starts.
 
     Checks (in order)
-      1. GET /api/health      -> {"status": "ok"}
+      1. GET /api/health      -> {"status": "ok"}; when EXPECTED_COMMIT is set
+         (deploy.yml sets it to the image tag), "commit" must equal it, which
+         proves the new release is the one answering
       2. GET /api/ready       -> {"db": "connected"}   (proves the DB works)
       3. GET /                -> HTML page (the built React app is served)
       4. POST /api/auth/login with an unknown account -> 401 INVALID_CREDENTIALS
@@ -69,10 +71,16 @@ def login_rejected(base):
     return False
 
 
+def health_ok(base, expected_commit):
+    health = json.loads(request(base, '/api/health'))
+    return health.get('status') == 'ok' and (not expected_commit or health.get('commit') == expected_commit)
+
+
 def check(base):
+    expected_commit = os.getenv('EXPECTED_COMMIT', '')
     # --- Public checks (CHANGE ME: paths + predicates for your own API) -------
     for path, probe in (
-        ('/api/health', lambda: json.loads(request(base, '/api/health')).get('status') == 'ok'),
+        ('/api/health', lambda: health_ok(base, expected_commit)),
         ('/api/ready', lambda: json.loads(request(base, '/api/ready')).get('db') == 'connected'),
         ('/', lambda: b'<html' in request(base, '/').lower()),
         ('/api/auth/login (unknown account -> 401)', lambda: login_rejected(base)),
@@ -88,6 +96,8 @@ def check(base):
                     raise RuntimeError('Smoke check failed: ' + path) from None
                 time.sleep(3)
         print('PASS ' + path)
+        if path == '/api/health' and expected_commit:
+            print('PASS running commit ' + expected_commit)
 
     # --- Optional login check (only when both credentials are provided) -------
     email, password = os.getenv('SMOKE_EMAIL'), os.getenv('SMOKE_PASSWORD')

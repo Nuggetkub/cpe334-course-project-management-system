@@ -18,6 +18,8 @@ export interface AppOptions {
   checkDatabase?: () => Promise<unknown>;
   /** Directory of the built client to serve, or null to serve API only. */
   clientDistDir?: string | null;
+  /** Commit the running image was built from; defaults to APP_COMMIT (set by the Dockerfile). */
+  commit?: string;
 }
 
 const defaultCheckDatabase = () => prisma().$queryRaw`SELECT 1`;
@@ -25,6 +27,7 @@ const defaultCheckDatabase = () => prisma().$queryRaw`SELECT 1`;
 export function createApp(options: AppOptions = {}) {
   const checkDatabase = options.checkDatabase ?? defaultCheckDatabase;
   const clientDistDir = options.clientDistDir !== undefined ? options.clientDistDir : IS_PRODUCTION ? CLIENT_DIST_DIR : null;
+  const commit = options.commit ?? (process.env.APP_COMMIT || "unknown");
 
   const app = express();
   app.locals.now = options.now ?? (() => new Date());
@@ -32,9 +35,10 @@ export function createApp(options: AppOptions = {}) {
   app.use(cors({ origin: CLIENT_ORIGINS }));
 
   // Liveness: the process is up. Never touches the database, so a DB outage
-  // does not make the platform restart a healthy container.
+  // does not make the platform restart a healthy container. `commit` shows which
+  // release is running (the deploy smoke test compares it with the image tag).
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", commit });
   });
 
   // Readiness: the app can serve real requests. Used by the deploy smoke test.
