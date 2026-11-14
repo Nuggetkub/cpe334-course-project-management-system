@@ -1,6 +1,6 @@
 # Issue #21 — Automatic release and C-06 evidence
 
-## Reviewed starting point
+## Release A preparation (historical)
 
 - Target: `main`; source: `release/21-auto-deploy-main`, based on
   `staging/sprint-1` merge `c77da87` ([PR #53](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/53)).
@@ -12,7 +12,7 @@
 - The release branch also updates documentation; it does not change GCP IAM,
   secrets, resource limits or database settings.
 
-## Before merging the release PR
+## Pre-release verification (recorded before PR #54)
 
 Local preparation checks on 14 November 2026, on the release branch based on
 `c77da87` (the additional edits are documentation only):
@@ -27,14 +27,12 @@ Local preparation checks on 14 November 2026, on the release branch based on
 | actionlint 1.7.12, CI and deploy workflows | Passed |
 
 The database-backed server suite and Docker build were not rerun locally for
-these documentation edits. The linked staging CI includes both; the new release
-PR must pass its own required CI check. No live deployment result is claimed.
+these documentation edits. The linked staging CI includes both. These local
+preparation results are separate from the subsequent live runs below.
 
-- [ ] Teammate reviews the release diff into `main`.
-- [ ] Required `test-and-docker` check succeeds on the current release head.
-- [ ] The branch includes current `main`; synchronize through the protected PR
-  process if `main` advances.
-- [ ] Release owner confirms readiness to update the shared demo service.
+- [x] Teammate reviewed release PR #54 and merged it into `main`.
+- [x] Required CI passed; the release included then-current `main`.
+- [x] Live release A workflow completed successfully.
 
 Merging into `main` starts **Deploy demo** automatically. It builds and pushes an
 image, executes the existing migration/opt-in seed job, and updates public Cloud
@@ -61,28 +59,53 @@ second release while collecting the first release's evidence.
 | Release PR and main merge SHA | PR #54 merged: `297dafe897445b8fd3993accf5a284005832349d` |
 | Deploy demo run URL and conclusion | [43602099175](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43602099175), success |
 | WIF authentication | Keyless authentication step succeeded in that run |
-| Image tag and digest | Build/push and digest-based release steps succeeded; exact digest still to be copied from Summary/Cloud Run |
-| Migration job execution | Combined verify/migrate/deploy step succeeded; execution identifier still to be recorded |
-| Serving revision, digest and traffic | Direct Cloud Run revision/digest/traffic evidence still to be recorded |
+| Image tag and digest | Full-SHA tag equals the main merge SHA; owner records digest prefix `sha256:12c8359c20e3…` in the linked evidence |
+| Migration job execution | Owner records `cpms-migrate-2mqvh`, succeeded |
+| Serving revision, digest and traffic | Owner records `cpms-00003-lx9`, 100% traffic at release A verification |
 | Health commit, readiness and UI | Independent HTTP checks on 14 Nov: health reports the full `297dafe` SHA, readiness reports `db: connected`, root HTML loads; all HTTP 200 |
 
-The checks above distinguish observed results from evidence still to be collected.
+The Cloud Run identifiers above come from the
+[project owner's evidence record](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/21#issuecomment-6881304126),
+not an independent authenticated Cloud Run inspection. Digest prefixes in this
+document are abbreviated for reference, not complete deployment inputs.
 The public service is https://cpms-137792226556.asia-southeast1.run.app . Optional
 login smoke checks remain optional; do not describe `SKIP login` as a successful
-login. Issue #21 remains open for the outstanding evidence and second release.
+login.
 
 ## Second release: visible-change proof (C-06)
 
-After the first deployment passes, create `feature/21-deploy-proof` from current
-staging. Add a small, clearly labelled UI change with a matching test, without
-changing authorization, data or credentials. Record the visible text before and
-after. Use a teammate-reviewed feature PR into staging, followed by a reviewed
-release PR into `main` and the required CI checks.
+Feature PR #55 was reviewed by @Nuggetkub and merged into staging as `dab69e4`.
+Release PR #56 was reviewed by @Earth2509 and merged into main as
+`fda467204f8209b1ee11fb1176765d608e3b4dbe`. The release tree matches the reviewed
+feature head `eb07374`; client tests 52/52 and build were independently rerun on
+`dab69e4` before approval. Required CI run 43615575031 passed.
 
-Record the second main merge SHA, its successful `Deploy demo` run, image digest,
-serving revision, matching health commit and the visible UI change. Only after
-this chain is verified should Issue #21 be closed and its Project status become
-Released. Until then it remains open, even though PR #53 is in staging.
+| Evidence | Release B result |
+| --- | --- |
+| Automatic trigger | Push to main after PR #56; no manual deploy command |
+| Deploy demo | [43617566286](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43617566286), success; independently checked through Actions API |
+| CI, WIF, image push, migration/deploy and smoke | Both CI and deploy jobs completed successfully |
+| Image tag / digest | Owner records tag equal to the full main SHA; digest prefix `sha256:eeac97e17b1a…` |
+| Migration execution | Owner records `cpms-migrate-j8v8c`, succeeded |
+| Serving revision | Owner records `cpms-00004-49r`, 100% traffic at release B verification |
+| Running commit | Owner records `PASS running commit fda4672…` and the matching health SHA |
+| Visible change | Owner records login before (14 Nov 23:12 ICT, no marker) and after (15 Nov 00:00 ICT, `Lab 5 deployment demo — release 2`) |
+
+Cloud Run identifiers and before/after visual evidence are attributed to the same
+[owner record](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/21#issuecomment-6881304126).
+The owner closed Issue #21 as Released after recording this chain.
+
+### Current runtime versus historical release evidence
+
+At the independent HTTP recheck on 15 November, health reported release A
+`297dafe…` and readiness reported `db: connected`. Actions also records successful
+manual dispatch [43621609806](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43621609806),
+with the test job skipped and deploy job successful. This is consistent with the
+separate rollback exercise for Issue #22; the run's `head_sha` still identifies
+the workflow source on main, not necessarily the `image_tag` selected for rollback.
+Do not count this manual run as a third automatic C-06 release or overwrite the
+historical release B result with the current serving version. No rollback or
+roll-forward was initiated while preparing this documentation update.
 
 ## Failure and rollback boundaries
 
