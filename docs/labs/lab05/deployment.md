@@ -123,9 +123,15 @@ bash deploy/tests/test_release_stub.sh
 python3 -m unittest discover -s deploy/tests -p 'test_smoke.py'
 ```
 
-**C-01 acceptance is still pending a real GitHub run.** Record the staging PR,
-its successful `test-and-docker` run and Summary, then the release PR into `main`
-and its successful check. Do not label Issue #18 Done from local tests alone.
+**C-01 staging verification passed.** [PR #49](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/49)
+was peer-reviewed and merged as `5ce0fc1`. Its [GitHub Actions run 43449912271](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43449912271)
+completed successfully for head `c199594`: `test-and-docker` passed the offline
+tooling checks, PostgreSQL-backed server checks, client tests/build, unified
+Docker build, verification Summary and JSON-report upload. This is an actual
+GitHub-hosted run, separate from the local verification below.
+
+**C-01 release verification remains pending.** Record the release PR into `main`
+and its successful `test-and-docker` check before marking Issue #18 Done.
 Issue #20 separately configures the active ruleset and demonstrates a blocked
 merge with a failing temporary PR; adding this YAML does not enforce that gate.
 
@@ -141,7 +147,7 @@ summary tests, Linux deploy/release stubs, Python smoke tests and the unified
 Docker build all passed. Each command is checked for a successful exit before
 that line is printed. The Docker-dependent results are developer-run evidence;
 the desktop sandbox itself cannot access the Docker Engine pipe. This local
-verification does not replace the pending C-01 GitHub Actions runs.
+verification is separate from the C-01 GitHub Actions evidence above.
 
 ## Issue #19 first deployment (Guide Ep. 5, check C-04)
 
