@@ -19,6 +19,8 @@ No outgoing findings are recorded yet. Do not add a fabricated example as an act
 
 Preserve every received finding, even duplicates or rejected reports. A receipt record identifies the reporter/team, date, tested release and original report. Do not rewrite the original observation to match a later fix.
 
+Use the existing [GitHub Defect issue template](../../../.github/ISSUE_TEMPLATE/defect.md) for a reported CPMS defect; it includes the tested version, case/step, inputs, evidence and independent retest fields. Its default `bug` label identifies a report, **not an accepted classification**. Add `lab6` for this lab, record every report below, and explicitly decide its classification. A partner can also report through Discord as allowed by the handoff; Earth2509 records the source and creates/links the tracking issue without publishing private message contents. Do not require a partner to have repository write access just to report a finding.
+
 | Finding ID / original report | Reporter / received (ICT) | CPMS version / case | Classification | Contract / AC and reason | Severity / owner | Bug / fix / retest / disposition |
 | --- | --- | --- | --- | --- | --- | --- |
 
