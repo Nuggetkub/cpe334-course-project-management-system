@@ -19,7 +19,7 @@ No outgoing findings are recorded yet. Do not add a fabricated example as an act
 
 Preserve every received finding, even duplicates or rejected reports. A receipt record identifies the reporter/team, date, tested release and original report. Do not rewrite the original observation to match a later fix.
 
-Use the existing [GitHub Defect issue template](../../../.github/ISSUE_TEMPLATE/defect.md) for a reported CPMS defect; it includes the tested version, case/step, inputs, evidence and independent retest fields. Its default `bug` label identifies a report, **not an accepted classification**. Add `lab6` for this lab, record every report below, and explicitly decide its classification. A partner can also report through Discord as allowed by the handoff; Earth2509 records the source and creates/links the tracking issue without publishing private message contents. Do not require a partner to have repository write access just to report a finding.
+Use the existing [GitHub Defect issue template](../../../.github/ISSUE_TEMPLATE/defect.md) for a reported CPMS defect; it includes the tested version, case/step, inputs, evidence and independent retest fields. Its default `bug` label identifies a report, **not an accepted classification**. Only `bug` is applied automatically by this template. We (the Product Team) add `lab6` + `uat` when a report arrives, record every report below, and explicitly decide its classification. The partner instructions in [uat-cases.md](uat-cases.md) ask for `uat`; partner testers do not need label permissions, because we apply it for them. An accepted defect keeps `bug` + `lab6`, and we retain `uat` for traceability. A partner can also report through Discord as allowed by the handoff; Earth2509 records the source and creates/links the tracking issue without publishing private message contents. Do not require a partner to have repository write access just to report a finding.
 
 | Finding ID / original report | Reporter / received (ICT) | CPMS version / case | Classification | Contract / AC and reason | Severity / owner | Bug / fix / retest / disposition |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ No incoming findings have been entered. Once the agreed UAT session is completed
 | Accepted defect | Observable behavior violates the agreed Sprint 1 contract on the stated release; cite the AC and create a separate CPMS issue with `bug` and `lab6` labels. |
 | Duplicate | Link the original finding/bug and explain the matching behavior; retain this reporter's evidence and cross-reference the original retest. |
 | Not a defect | Cite the contract/scope and evidence explaining the actual behavior. Missing reproduction is a request for information, not grounds to silently reject the report. |
-| Enhancement | Explain why the requested behavior extends the agreed Sprint 1 scope; track separately from acceptance-blocking defects. |
+| Enhancement | Explain why the requested behavior extends the agreed Sprint 1 scope; track separately from acceptance-blocking defects. Never relabel a failing Sprint 1 requirement as an enhancement; reproduce and clarify before dismissing. |
 
 Pending triage / needs information is a temporary status, not a final classification. Record the question, owner and follow-up date until a reasoned disposition is available.
 

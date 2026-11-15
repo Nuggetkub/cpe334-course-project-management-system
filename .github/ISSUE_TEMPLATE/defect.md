@@ -17,7 +17,10 @@ labels: bug
 - User impact and verified workaround (or not investigated):
 
 <!-- A bug label means a reported defect, not an accepted triage decision.
-For Lab 6 CPMS reports also add lab6; the Product Team records the decision below.
+For Lab 6 CPMS reports, we (the Product Team) add lab6 and uat on receipt.
+Partner testers are not required to have label permissions; only bug is applied
+automatically by this template. An accepted defect keeps bug and lab6, and we
+retain uat for traceability. The Product Team records the decision below.
 Keep StudyTrack product findings in its designated tracker/channel, not as CPMS bugs.
 Do not include passwords, tokens, cookies, connection strings or private messages. -->
 
