@@ -7,8 +7,8 @@ through Prisma. The intended deployment is a single Cloud Run service serving th
 built frontend and API on the same origin, with Cloud SQL for PostgreSQL and
 Secret Manager for database credentials. This document covers the cloud-readiness
 audit for Issue #16 and the subsequent deployment and CI increments. Recorded
-results below are scoped to their linked checks; the Issue #21 automatic release
-still needs its first live verification.
+results below are scoped to their linked checks. Issue #21 completed both
+automatic releases and its visible-change proof; see the release evidence below.
 
 The container holds the application and built static assets, not mutable application
 data. Sessions and application records live in PostgreSQL. Submissions store links,
@@ -249,12 +249,18 @@ The WIF provider condition accepts only `deploy.yml` on `refs/heads/main` in env
 
 **The deployer's permissions are enough.** Docker push and the digest lookup need Artifact Registry Writer on `cpms`. Updating and executing `cpms-migrate` and updating `cpms` and its traffic need Cloud Run Developer. Deploying them as `cpms-runner` needs Service Account User on `cpms-runner`. The deployer cannot read secrets: the service and the job read them as `cpms-runner`.
 
-**Implementation merged; live acceptance remains open.**
+**Implementation and C-06 releases completed.**
 [PR #53](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/53)
 was reviewed and merged into `staging/sprint-1` as `c77da87` on 14 November 2026.
 The synchronized head `a5a36cc` passed
 [CI run 43554168192](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43554168192).
-This staging merge did not trigger a GCP deployment. Follow the
-[Issue #21 release and evidence checklist](release-21.md) for the release to
-`main`, live verification and subsequent visible-change release. Do not close
-Issue #21 based on the staging CI result alone.
+That staging merge did not itself trigger GCP deployment. Release PR #54 then
+deployed main `297dafe` automatically, followed by the visible-change feature
+PR #55 and release PR #56, which deployed main `fda4672`. Both Deploy demo runs
+succeeded. The [release evidence](release-21.md) links the runs and the project
+owner's Cloud Run/visible-change verification. Issue #21 is closed; Issue #22
+separately verified persistence, rollback and roll-forward. Those checks are now
+complete: the service is back on release B, with health reporting full main SHA
+`fda467204f8209b1ee11fb1176765d608e3b4dbe` at the 15 November recheck. The
+owner records revision `cpms-00006-bhh` at 100%; both manual runs are documented
+in [the release evidence](release-21.md).
