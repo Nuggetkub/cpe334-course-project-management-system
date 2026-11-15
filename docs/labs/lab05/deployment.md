@@ -259,5 +259,8 @@ deployed main `297dafe` automatically, followed by the visible-change feature
 PR #55 and release PR #56, which deployed main `fda4672`. Both Deploy demo runs
 succeeded. The [release evidence](release-21.md) links the runs and the project
 owner's Cloud Run/visible-change verification. Issue #21 is closed; Issue #22
-separately tests persistence, rollback and roll-forward. The currently serving
-SHA can intentionally differ from main during those rollback checks.
+separately verified persistence, rollback and roll-forward. Those checks are now
+complete: the service is back on release B, with health reporting full main SHA
+`fda467204f8209b1ee11fb1176765d608e3b4dbe` at the 15 November recheck. The
+owner records revision `cpms-00006-bhh` at 100%; both manual runs are documented
+in [the release evidence](release-21.md).

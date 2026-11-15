@@ -97,15 +97,36 @@ The owner closed Issue #21 as Released after recording this chain.
 
 ### Current runtime versus historical release evidence
 
-At the independent HTTP recheck on 15 November, health reported release A
-`297dafe…` and readiness reported `db: connected`. Actions also records successful
-manual dispatch [43621609806](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43621609806),
-with the test job skipped and deploy job successful. This is consistent with the
-separate rollback exercise for Issue #22; the run's `head_sha` still identifies
-the workflow source on main, not necessarily the `image_tag` selected for rollback.
-Do not count this manual run as a third automatic C-06 release or overwrite the
-historical release B result with the current serving version. No rollback or
-roll-forward was initiated while preparing this documentation update.
+The first independent HTTP recheck on 15 November caught the middle of Issue #22:
+health reported release A `297dafe…`, with connected readiness. The exercise then
+completed its roll-forward back to B. The
+[Issue #22 closing record](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/22#issuecomment-6881938175)
+documents both steps:
+
+| Manual step | Run | Selected `image_tag` | Revision at 100% (owner evidence) |
+| --- | --- | --- | --- |
+| Rollback to A | [43621609806](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43621609806) | `297dafe897445b8fd3993accf5a284005832349d` | `cpms-00005-xxf` |
+| Roll-forward to B | [43623678634](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/43623678634) | `fda467204f8209b1ee11fb1176765d608e3b4dbe` | `cpms-00006-bhh` |
+
+Both manual runs succeeded, independently checked through the Actions API, with
+`test` skipped and `deploy` successful. The owner's step evidence records that
+build was skipped and `release.sh` reused the existing image without migration or
+seed. The Summary calls both operations `Rollback: true`, including roll-forward,
+because both use the manual existing-image path.
+
+After roll-forward, a fresh independent HTTP check on 15 November returned HTTP
+200 for both endpoints: health reported full SHA
+`fda467204f8209b1ee11fb1176765d608e3b4dbe`, equal to main at verification, and
+readiness reported `db: connected`. The owner records serving revision
+`cpms-00006-bhh` at 100% and the restored release-2 label. Cloud Run revision,
+traffic and data-persistence assertions are attributed to the linked owner record,
+not to the public HTTP check.
+
+Neither manual run counts as a third automatic C-06 release. A manual run's
+`head_sha` identifies the workflow source on main, not necessarily its selected
+image tag. The earlier A response remains a historical mid-exercise observation,
+not the final serving state. No rollback or roll-forward was initiated while
+preparing this documentation update.
 
 ## Failure and rollback boundaries
 
