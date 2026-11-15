@@ -35,7 +35,7 @@ All Students share one password and both Supervisors share another. We send thes
 - The database already has data from our earlier checks (for example the milestones "C-04 cloud check" and "C-05 rollback check" in Team A). Leave them alone and do not use them as test data.
 - **Every title you create starts with `UAT-ST-<case ID>`**, for example `UAT-ST-03`. This keeps your data separate and makes each run repeatable.
 - Sprint 1 has no delete function, so nothing needs cleaning up. Records you create stay as test evidence. To run a case again, create a new milestone with a new suffix (`-r2`).
-- Run the cases in order 01 → 07. Cases 04 and 05 reuse the milestone created in case 01; the others are independent.
+- Run the cases in order 01 → 06. Only UAT-04 reuses the milestone created in UAT-01. Every other case creates its own milestone.
 
 ## 2. Cases
 
@@ -55,7 +55,7 @@ Each case lists the acceptance criteria it covers. Record what you actually see,
 1. Sign in as SUP-A. → The header shows "Demo Supervisor 1", the role and **Log out**. The navigation shows *My teams* and *Milestones*.
 2. Open **Milestones**, select **Demo Team A**, fill in the inputs above, then select **Create milestone**. → "Milestone created." appears, and the milestone is in the list with the due time you entered (ICT), "Window: Open" and "Team status: Not submitted".
 3. Log out. Sign in as STU-A1, open **Milestones**, then open `UAT-ST-01 Proposal`. → "Not submitted yet" and the **Submit work** form are shown.
-4. Enter the submission title and link, then select **Submit**. → The submission appears with your title, link, submitter "Demo Student 1" and a time. The status changes to "Team status: Submitted". **Write down the page URL** (`/milestones/<id>`); cases 04 and 05 need it.
+4. Enter the submission title and link, then select **Submit**. → The submission appears with your title, link, submitter "Demo Student 1" and a time. The status changes to "Team status: Submitted". **Write down the page URL** (`/milestones/<id>`); UAT-04 needs it.
 5. Log out. Sign in as SUP-A and open the same milestone. → The same submission is shown, and the **Feedback** section says "No feedback yet".
 6. Enter the feedback text and select **Add feedback**. → "Feedback added." appears. The entry shows author "Demo Supervisor 1", a time (ICT) and the submission version.
 7. Log out. Sign in as STU-A2 (the other member of Team A) and open the milestone. → The same submission and the feedback entry are shown. STU-A2 has no feedback form.
@@ -93,7 +93,7 @@ Each case lists the acceptance criteria it covers. Record what you actually see,
 
 ### UAT-04: Forbidden role and other team's records
 - **Category:** forbidden role / ownership
-- **Covers:** AC-02.2, AC-02.4, AC-03.3, AC-03.6, AC-04.7, AC-05.5, AC-06.4
+- **Covers:** AC-02.4, AC-03.3, AC-03.6, AC-04.7 (hidden scope), AC-05.5, AC-06.4. Also AC-02.2, **UI part only**: the role guard in step 5. The HTTP 403 on Supervisor-only operations is covered by automated tests (section 3).
 - **Roles:** STU-B1, SUP-B, STU-A1
 - **Preconditions:** UAT-01 is done, and you have its milestone URL `/milestones/<id>`.
 
@@ -102,7 +102,7 @@ Each case lists the acceptance criteria it covers. Record what you actually see,
 2. As STU-B1, open **Milestones**. → `UAT-ST-01 Proposal` (Team A) is **not** listed.
 3. As STU-B1, type the Team A milestone URL from UAT-01 into the address bar. → "Milestone not found." is shown. No title, submission or feedback is shown.
 4. As STU-B1, type `/milestones/999999` into the address bar. → The same "Milestone not found." is shown. You cannot tell an existing hidden milestone from a missing one.
-5. As STU-B1, type `/teams` (the Supervisor page). → "You do not have permission to view this page." is shown.
+5. As STU-B1, type `/teams` (the Supervisor page). → "You do not have permission to view this page." is shown. On **Milestones**, STU-B1 sees no **Create milestone** form.
 6. Sign in as SUP-B (Team B's supervisor). Open **My teams**. → Only Demo Team B is listed. Open the UAT-01 milestone URL. → "Milestone not found."
 7. Sign in as STU-A1 and open the UAT-01 milestone. → The submission and feedback are unchanged from UAT-01, so nothing was changed or revealed.
 
@@ -121,15 +121,23 @@ Each case lists the acceptance criteria it covers. Record what you actually see,
 6. Log out of every tab. Wait at least 5 minutes, then sign in again as STU-A2 and open the milestone. → The same submission (same title and time) and both feedback entries are still there, in the same order.
 7. After logging out, type the milestone URL. → You are sent to the Sign in page.
 
-### UAT-06: Team views and a student with no team
+### UAT-06: Team views
 - **Category:** normal / role view
-- **Covers:** AC-03.3, AC-03.4, AC-03.6
+- **Covers:** AC-03.3, AC-03.6
 - **Roles:** STU-A1, SUP-A
 - **Steps and expected results:**
   1. As STU-A1, open **My team**. → Demo Team A, members Demo Student 1 and Demo Student 2, and supervisor Demo Supervisor 1 are shown.
-  2. As SUP-A, open **My teams**. → Only Demo Team A is listed. **View team milestones** opens the Team A list.
+  2. As SUP-A, open **My teams**. → Only Demo Team A is listed. Select **Demo Team A**. → Team A's milestone list opens.
 
-  (The no-team state of AC-03.4 is covered by our automated tests. We keep the no-team account for our own smoke test and do not hand it out.)
 
-## 3. Recording results (for the UAT Team)
+## 3. Covered by automated tests only (not executed by the UAT Team)
+
+These criteria can't be tested through the user interface with the accounts we hand out. Our CI covers them on every PR.
+
+| AC | Why it is not a manual case | Automated tests |
+| --- | --- | --- |
+| AC-02.2 (API part) | The UI never sends a wrong-role request, so a 403 can only be produced by calling the API directly | `server/tests/milestones.test.ts` TEST-04.7i, `server/tests/submissions.test.ts` TEST-05.9b, `server/tests/authz.test.ts` TEST-02.2a–c |
+| AC-03.4 | The only account with no team is used by our deployment smoke test and is not handed out | `server/tests/team-views.test.ts` TEST-03.4, client TEST-03.4c |
+
+## 4. Recording results (for the UAT Team)
 For each case, record: case ID, tester name and team, date and time (ICT), the `/api/health` commit, the inputs used, the actual result for each step, PASS / FAIL / BLOCKED, and evidence (a screenshot ID). If a step fails, open a GitHub issue in our repository (label `uat`), or send it on Discord. Include the case and step, what you expected, what happened and a screenshot.
