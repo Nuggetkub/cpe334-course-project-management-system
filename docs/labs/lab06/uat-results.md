@@ -137,7 +137,7 @@ Nuggetkub checked on 20 Nov (view only): G2's reading-schedule status is `ยั
 | Event | Date/time (ICT) | Sender / recipient | Version / cases | Public or redacted acknowledgement reference |
 | --- | --- | --- | --- | --- |
 | Results sent to StudyTrack (includes the serving-revision confirmation request) | 20 Nov 2026 (time not recorded) | Nuggetkub → auto4496, Datakung | `ef0de7f`; ST-UAT-01 to 04 | Discord DM (private; contents not published) |
-| StudyTrack acknowledged receipt | 20 Nov 2026, by 17:13 | auto4496, Datakung → Nuggetkub, Earth2509 | `ef0de7f`; "four cases passed with no findings" | Discord DM, in StudyTrack's "Lab 6 UAT results for CPMS" message (private; see [findings.md section 2](findings.md#2-findings-received-about-cpms-incoming)) |
+| StudyTrack acknowledged receipt | 20 Nov 2026, by 17:13 | auto4496, Datakung → Nuggetkub, Earth2509 | `ef0de7f`; "four cases passed with no findings" | Owner-reported: Discord DM, in StudyTrack's "Lab 6 UAT results for CPMS" message (private, not published; see [findings.md section 2](findings.md#2-findings-received-about-cpms-incoming)). A public acknowledgement comment on [#59](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/59) was requested from StudyTrack on 20 Nov 2026; pending. |
 
 - [ ] Partner handoff and all required prerequisites confirmed (all received except confirmation of the serving revision during the run windows; requested 20 Nov 2026, not yet answered).
 - [x] Every supplied case has a recorded actual outcome and evidence.
