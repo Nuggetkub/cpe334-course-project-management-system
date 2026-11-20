@@ -13,7 +13,7 @@ Separate defects (violations of the agreed scope/contract) from enhancements (ne
 | Finding ID | Partner case / execution | Tested release | Report / evidence | Proposed severity and impact | Partner disposition / reason | Delivery / retest |
 | --- | --- | --- | --- | --- | --- | --- |
 
-**No outgoing findings.** All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) passed on tag `uat-lab6-2026-11-18` (`ef0de7f`, revision `studytrack-gef0de7f877dc-r44090861325-1`), executed 19 November 2026 with rechecks on 20 November 2026; see the [execution register](uat-results.md#3-case-register). Every step matched the partner's expected result, so there was no FAIL to triage. This zero-finding statement cites that completed run; StudyTrack's acknowledgement is recorded in [uat-results.md section 4](uat-results.md#4-delivery-and-completion) once received.
+**No outgoing findings.** All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) passed against the agreed release, tag `uat-lab6-2026-11-18` (`ef0de7f`, revision `studytrack-gef0de7f877dc-r44090861325-1`; serving during the run windows inferred, confirmation requested), executed 19 November 2026 with rechecks on 20 November 2026; see the [execution register](uat-results.md#3-case-register). Every step matched the partner's expected result, so there was no FAIL to triage. This zero-finding statement cites that completed run; StudyTrack's acknowledgement is recorded in [uat-results.md section 4](uat-results.md#4-delivery-and-completion) once received.
 
 ## 2. Findings received about CPMS (incoming)
 

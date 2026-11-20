@@ -15,7 +15,7 @@ Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496
 | Partner case document and immutable version/link | Received: [`uat-cases.md` @ `200db98`](https://github.com/auto4496/studytrack/blob/200db98bc942743afbc580efdd2f5a8d6fa69566/docs/labs/lab06/uat-cases.md) (identical at staging merge `8b03af2`) | auto4496, Issue [#59](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/59) coordination |
 | Accepted Sprint 1 scope and contract/AC links | F-01 to F-04, as listed in the case document | Case document; auto4496 |
 | Exact tested tag/full commit and deployment revision | Tag `uat-lab6-2026-11-18` = `ef0de7f877dcabe8ec330eb2c0029d9cebf8ed40`; [Deploy demo run 44090861325](https://github.com/auto4496/studytrack/actions/runs/44090861325); Cloud Run revision `studytrack-gef0de7f877dc-r44090861325-1` | auto4496 |
-| Live URL and a way to verify the running version | `https://studytrack-981693883236.asia-southeast1.run.app`; Cloud Run revision/traffic screenshot from StudyTrack (evidence `ST-UAT-00-version`, cropped) showing the revision above at **100%** traffic and every older revision at 0% | Received 19 Nov 21:44 ICT, after the first executions (11:19–19:15). No revision newer than `ef0de7f`'s exists, so the same revision served the whole run. Supporting public check: `main` = `ef0de7f`, last deploy run 44090861325 (17 Nov 13:15 UTC). |
+| Live URL and a way to verify the running version | `https://studytrack-981693883236.asia-southeast1.run.app`; Cloud Run revision/traffic screenshot from StudyTrack (evidence `ST-UAT-00-version`, cropped) showing the revision above at **100%** traffic and every older revision at 0% | Received 19 Nov 21:44 ICT; the image does not show its capture time. It confirms the traffic split at that moment only. **Session-start verification was not done for any run**, and serving during the run windows (19 Nov 11:19–22:40, 20 Nov 11:28–11:40) is **inferred, not confirmed**: traffic can move between existing revisions without a new deployment. Explicit confirmation covering those windows (traffic/deployment history) has been requested from StudyTrack. Supporting public check: `main` = `ef0de7f`, last deploy run 44090861325 (17 Nov 13:15 UTC). |
 | Account labels, roles and ownership boundaries | MGR `manager@studytrack.test` (Program Manager); P1 `student1@studytrack.test` and P2 `student2@studytrack.test` (นักศึกษา). StudyTrack keeps one sign-in per browser. | Case document |
 | Credentials delivered through the agreed private channel | Received by private DM; values not recorded | auto4496 |
 | Synthetic inputs, fixtures, timezone and setup/cleanup rules | Synthetic titles from the case document; date D = actual run date **2026-11-19** (ICT) instead of the planned 18 Nov | Case document; plan variation below |
@@ -36,7 +36,7 @@ Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496
 
 ## 3. Case register
 
-All executions used the release in section 1 (`ef0de7f`, revision `studytrack-gef0de7f877dc-r44090861325-1`).
+"Tested version" below is the agreed release (`ef0de7f`, revision `studytrack-gef0de7f877dc-r44090861325-1`). The outcomes are what we observed in the live app; that this revision served each run is inferred until StudyTrack confirms it (section 1).
 
 | Partner case ID / title | Requirement / category | Tester | Execution ID / ICT time | Tested version | Outcome | Evidence | Finding / reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -123,10 +123,10 @@ Fixtures created by this run (synthetic, left in StudyTrack):
 | 1 | P1 opens G1, selects D | Title, target 60, `45 / 60`, `75%`, `ยังไม่ครบเป้าหมาย` | G1 URL; `UAT-CPMS-01 Template-R1-20261118-A`, `Active`, `60 นาที`, start `19 พ.ย. 2569`; `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, `บันทึกแล้ว 45 นาทีสำหรับวันที่เลือก` | ST-UAT-04-B-s1-goal, ST-UAT-04-B-s1 |
 | 2 | Refresh | Same values, no sign-in, no second entry form | Same values; still signed in; no entry form | ST-UAT-04-B-s2 |
 | 3 | Sign out, type G1 URL | `/login`, no goal data | URL `/login`; empty `อีเมล` / `รหัสผ่าน`; no goal data | ST-UAT-04-B-s3 |
-| 4 | Sign in as P1, open G1, select D | Same G1 and 45/60/75% | Same URL, title, `Active`, `60 นาที`, start date | ST-UAT-04-B-s4-goal |
+| 4 | Sign in as P1, open G1, select D | Same G1 and 45/60/75% | Same URL, title, `Active`, `60 นาที`, start date; for 19 Nov `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย` | ST-UAT-04-B-s4-goal, ST-UAT-04-B-s4 |
 | 5 | Refresh | Matches step 1 | History `พบ 1 รายการ`, `19 พ.ย. 2569 · 45 / 60 นาที · 75%` | ST-UAT-04-B-s5 |
 
-- Outcome: **PASS**. The handoff's step 4 progress capture was a duplicate of step 2, so it is not used. Supporting recheck by Nuggetkub on 20 Nov 11:40 (Chrome; sign-out redirect, sign in as P1, D = 19/11/2026): `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, one history entry (`ST-UAT-04-A-recheck-s4b`).
+- Outcome: **PASS**. `ST-UAT-04-B-s2` (22:27:35) and `ST-UAT-04-B-s4` (22:29:59) are separate captures of an unchanged view: the files are byte-identical, and between them P1 was signed out, the G1 link redirected to `/login` and P1 signed in again (step 3). Supporting recheck by Nuggetkub on 20 Nov 11:40 (Chrome; sign-out redirect, sign in as P1, D = 19/11/2026): `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, one history entry (`ST-UAT-04-A-recheck-s4b`).
 
 ### Out-of-scope controls: confirmation
 
@@ -138,7 +138,7 @@ Nuggetkub checked on 20 Nov (view only): G2's reading-schedule status is `ยั
 | --- | --- | --- | --- | --- |
 | Results sent to StudyTrack | Pending | Nuggetkub → auto4496, Datakung | `ef0de7f`; ST-UAT-01 to 04 | Pending |
 
-- [x] Partner handoff and all required prerequisites confirmed.
+- [ ] Partner handoff and all required prerequisites confirmed (all received except confirmation of the serving revision during the run windows; requested from StudyTrack).
 - [x] Every supplied case has a recorded actual outcome and evidence.
 - [x] Both CPMS members have traceable execution contributions.
 - [x] Normal and negative/access evidence includes persistence/no unauthorized change checks as applicable.
