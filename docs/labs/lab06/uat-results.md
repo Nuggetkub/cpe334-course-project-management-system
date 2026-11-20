@@ -1,30 +1,28 @@
 # Partner UAT execution register (Lab 6 Part B)
 
-Related Issue: [#61](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/61). Owners/testers: Earth2509 and Nuggetkub; reviewer: Nuggetkub.
+Related Issue: [#61](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/61). Testers: Nuggetkub (A) and Earth2509 (B); reviewer of this register: Earth2509.
 
 ## Current execution status
 
-Prepared 15 November 2026 (Asia/Bangkok). **NOT STARTED: the StudyTrack UAT handoff has not been received**, as confirmed by Earth2509 on this date. There are no executed cases or acceptance results in this register. An empty register is not a claim of zero defects or a passing product.
+First run completed 19 November 2026 (ICT), with view-only rechecks on 20 November 2026. **All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) were executed: 4 PASS, 0 FAIL, 0 BLOCKED. No findings were raised.** Results have not yet been delivered to StudyTrack; see section 4.
 
-Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496 and Datakung. The public repository is context only: its current main branch, Sprint 1 tag and previous cloud URL must not be assumed to identify the release agreed for UAT. Sprint 2/3 work is outside the agreed Sprint 1 scope unless both teams explicitly revise the scope.
+Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496 and Datakung. Scope agreed with the partner: F-01 to F-04 only. Controls for F-05 (goal management), F-06 (edit time / history) and F-07 (reading schedule) appear on the same pages and were not used.
 
 ## 1. Handoff and session prerequisites
 
-Record the source and confirmation for each item before starting. Do not invent cases on the partner's behalf or turn a preliminary inspection into an executed UAT case.
-
 | Required item | Status / value | Source or confirmation |
 | --- | --- | --- |
-| Partner case document and immutable version/link | Awaiting partner | Not received |
-| Accepted Sprint 1 scope and contract/AC links | Awaiting confirmation | Not received |
-| Exact tested tag/full commit and deployment revision | Awaiting partner | Not received |
-| Live URL and a way to verify the running version | Awaiting partner | Not received |
-| Account labels, roles and ownership boundaries | Awaiting partner | Not received |
-| Credentials delivered through the agreed private channel | Awaiting partner; do not record values here | Not received |
-| Synthetic inputs, fixtures, timezone and setup/cleanup rules | Awaiting partner | Not received |
-| First-run session, correction window and independent retest session (ICT) | To be agreed under Issue #59 | Not recorded |
-| Both CPMS testers' allocation / attendance | To be recorded | Not yet executed |
+| Partner case document and immutable version/link | Received: [`uat-cases.md` @ `200db98`](https://github.com/auto4496/studytrack/blob/200db98bc942743afbc580efdd2f5a8d6fa69566/docs/labs/lab06/uat-cases.md) (identical at staging merge `8b03af2`) | auto4496, Issue [#59](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/59) coordination |
+| Accepted Sprint 1 scope and contract/AC links | F-01 to F-04, as listed in the case document | Case document; auto4496 |
+| Exact tested tag/full commit and deployment revision | Tag `uat-lab6-2026-11-18` = `ef0de7f877dcabe8ec330eb2c0029d9cebf8ed40`; [Deploy demo run 44090861325](https://github.com/auto4496/studytrack/actions/runs/44090861325); Cloud Run revision `studytrack-gef0de7f877dc-r44090861325-1` | auto4496 |
+| Live URL and a way to verify the running version | `https://studytrack-981693883236.asia-southeast1.run.app`; Cloud Run revision/traffic screenshot from StudyTrack (evidence `ST-UAT-00-version`, cropped) showing the revision above at **100%** traffic and every older revision at 0% | Received 19 Nov 21:44 ICT, after the first executions (11:19–19:15). No revision newer than `ef0de7f`'s exists, so the same revision served the whole run. Supporting public check: `main` = `ef0de7f`, last deploy run 44090861325 (17 Nov 13:15 UTC). |
+| Account labels, roles and ownership boundaries | MGR `manager@studytrack.test` (Program Manager); P1 `student1@studytrack.test` and P2 `student2@studytrack.test` (นักศึกษา). StudyTrack keeps one sign-in per browser. | Case document |
+| Credentials delivered through the agreed private channel | Received by private DM; values not recorded | auto4496 |
+| Synthetic inputs, fixtures, timezone and setup/cleanup rules | Synthetic titles from the case document; date D = actual run date **2026-11-19** (ICT) instead of the planned 18 Nov | Case document; plan variation below |
+| First-run session, correction window and independent retest session (ICT) | Planned 18 Nov 20:00–22:00; actually run 19 Nov (11:19–22:40) with rechecks 20 Nov 11:28–11:40. Retest/decision session 22 Nov 13:00–15:00. | Issue #59 |
+| Both CPMS testers' allocation / attendance | A = Nuggetkub: ST-UAT-01, ST-UAT-03. B = Earth2509: ST-UAT-02, ST-UAT-04. | Execution records below |
 
-Check the agreed release at session start and again if a version change is reported. If it cannot be established, record the affected cases as BLOCKED with evidence and ask the partner to confirm it. Do not infer a commit from an HTTP 200 response or an unversioned health response. Coordinate with the partner and notify the TA promptly if access or availability prevents the required testing; record the notification link/date without private message contents or credentials.
+**Plan variation.** The run moved from 18 to 19 November, so D = 2026-11-19 everywhere. The T1 title keeps the suffix `R1-20261118-A` because it was typed before the move; it is only an identifier.
 
 ## 2. Execution rules
 
@@ -38,46 +36,113 @@ Check the agreed release at session start and again if a version change is repor
 
 ## 3. Case register
 
-No case rows have been entered because the partner cases are not available. Add actual IDs after receipt; do not submit placeholder rows as completed evidence.
+All executions used the release in section 1 (`ef0de7f`, revision `studytrack-gef0de7f877dc-r44090861325-1`).
 
 | Partner case ID / title | Requirement / category | Tester | Execution ID / ICT time | Tested version | Outcome | Evidence | Finding / reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| ST-UAT-01 normal journey | F-01–F-04 / normal | Nuggetkub (A) | ST-UAT-01-1 / 19 Nov 11:19–11:58 | `ef0de7f` | PASS (7/7) | `ST-UAT-01-A-s1`…`s7` | None |
+| ST-UAT-02 boundary | F-02–F-04 / boundary, negative | Earth2509 (B) | ST-UAT-02-1 / 19 Nov 20:49–20:51 | `ef0de7f` | PASS (6/6) | `ST-UAT-02-B-r1-s0`…`s5` (no address bar) | None |
+| ST-UAT-02 boundary | F-02–F-04 / boundary, negative | Earth2509 (B) | ST-UAT-02-2 / 19 Nov 22:35–22:40 | `ef0de7f` | PASS (6/6) | `ST-UAT-02-B-r2-s0`…`s5` | None |
+| ST-UAT-03 privacy and forbidden role | F-02–F-04 / access | Nuggetkub (A) | ST-UAT-03-1 / 19 Nov 19:07–19:15 | `ef0de7f` | PASS (5/5) | `ST-UAT-03-A-s1`…`s5` | None |
+| ST-UAT-04 persistence | F-03–F-04 / persistence, access | Earth2509 (B) | ST-UAT-04-1 / 19 Nov 20:52–20:55; evidence recheck 22:26–22:30 | `ef0de7f` | PASS (5/5) | `ST-UAT-04-B-s1`…`s5`; supporting `ST-UAT-04-A-recheck-s4b` | None |
 
-### Per-execution record template
+Evidence screenshots are kept by the team for the Lab 6 PDF and are not committed here. Browser address bars are visible except where noted; no passwords, cookies or tokens appear.
 
-Copy this section once per actual attempt and replace the instructions. Retain initial failures and retests as distinct records.
+Fixtures created by this run (synthetic, left in StudyTrack):
+- **T1** `UAT-CPMS-01 Template-R1-20261118-A`.
+- **G1** = `/goals/43ff5cd9-6807-466a-abee-330092079b54` (P1, T1, target 60, start 2026-11-19); **E1** = its 45-minute entry for 2026-11-19.
+- **T2** `UAT-CPMS-02 Boundary-R1-20261119-B`; **G2** = `/goals/29800ad6-8e3a-4f20-beb4-d7277eaa68cc` (P1, T2, target 30), one 30-minute entry.
+- **R2** `UAT-CPMS-02 Boundary-R2-20261119-B`; **G3** = `/goals/d708e38f-1f2c-47e6-a9f1-fe8a9c4104ad` (P1, R2, target 30), one 30-minute entry.
 
-- Execution ID: `<partner-case-id>-<attempt>`
-- Partner case source/revision and requirement:
-- Tester name, GitHub username and team:
-- Started / finished (date, time and UTC+07:00):
-- Product URL, tag/full commit, revision and version-verification evidence:
-- Browser/version:
-- Account label/role (no password or session token):
-- Preconditions and synthetic inputs actually used:
+### ST-UAT-01-1
 
-| Step | Action / actual input | Expected result from partner case | Observed result | Evidence ID / link |
+- Partner case: ST-UAT-01 @ `200db98`. Tester: Nuggetkub (67070501046), CPMS. 19 Nov 2026 11:19–11:58 (UTC+07:00). Chrome on Windows. Accounts MGR, P1.
+
+| Step | Action / actual input | Expected result from partner case | Observed result | Evidence ID |
 | --- | --- | --- | --- | --- |
+| 1 | 11:19 sign in as MGR | Manager catalog | URL `/manager/templates`; heading `Activity Templates`; sidebar `ผู้ดูแลกิจกรรม` / `Program Manager`; `＋ สร้าง Template` | ST-UAT-01-A-s1 |
+| 2 | 11:21 create T1, description `Synthetic reading journey for CPMS UAT`, 30–120 | T1 card shows `30–120 นาทีต่อวัน` | T1 card first with the exact title, description and `30–120 นาทีต่อวัน` | ST-UAT-01-A-s2 |
+| 3 | 11:26 sign out, sign in as P1, open `/templates` | T1 visible with `ตั้งเป้าหมาย →`; no create button | `กิจกรรมการอ่าน`; user `นักอ่านคนที่หนึ่ง`; T1 card with `ตั้งเป้าหมาย →`; no create-template button or manager menu | ST-UAT-01-A-s3 (retaken 11:38) |
+| 4 | 11:29 T1 → target 60, start 19/11/2026 | `/goals/<UUID>`, `Active`, `60 นาที`, `30–120 นาที` | URL G1; `Active`; `60 นาที`; `เริ่มต้น 19 พ.ย. 2569`; `30–120 นาที` | ST-UAT-01-A-s4 |
+| 5 | 11:34 select D | `0 / 60 นาที`, `0%`, `ยังไม่มีบันทึกสำหรับวันที่เลือก` | As expected, with entry field and `บันทึกเวลา →` | ST-UAT-01-A-s5 |
+| 6 | 11:35 enter 45, submit once | Saved; `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย` | `บันทึกเวลาอ่านเรียบร้อยแล้ว`; `45 / 60 นาที`; `75%`; `ยังไม่ครบเป้าหมาย`; `บันทึกแล้ว 45 นาทีสำหรับวันที่เลือก`; form replaced by saved state | ST-UAT-01-A-s6 |
+| 7 | 11:38 / 11:58 reopen G1 from `/goals` | Same G1, target 60, 45/60/75% | Same URL, title, `Active`, `60 นาที`; 45/60/75% re-shown in ST-UAT-03 step 5 and ST-UAT-04 | ST-UAT-01-A-s7 |
 
-- Outcome: `<PASS / FAIL / BLOCKED, only after an attempt>`
-- Negative/access check: `<what was rejected; what record/data was inspected afterwards>`
-- Finding link or blocking reason:
-- Retest relationship, if any: `<prior execution ID and finding; otherwise not applicable>`
+- Outcome: **PASS**. Note: the 11:26 step 3 capture and the 11:38 step 7 capture were overwritten by retakes; the retakes are the evidence.
 
-Evidence IDs should be unique (for example `ST-UAT-<case>-<attempt>-<step>`). Put approved, masked images under `artifacts/lab06/uat/` only when captured. Exclude passwords, tokens, cookies, connection strings, private messages and unrelated personal data.
+### ST-UAT-02-1 (attempt 1)
+
+- Tester: Earth2509 (67070501069), CPMS, with OpenAI Codex operating the browser; Earth2509 entered credentials. 19 Nov 2026 20:49–20:51. Accounts MGR, P1. Captures have no address bar, so attempt 2 was run for complete evidence.
+
+| Step | Action / actual input | Expected result | Observed result | Evidence ID |
+| --- | --- | --- | --- | --- |
+| 0 | 20:49 MGR creates T2, `Synthetic lower-bound check for CPMS UAT`, 30–120 | Card saved | T2 card with exact title, description, `30–120 นาทีต่อวัน` | ST-UAT-02-B-r1-s0 |
+| 1 | 20:51:13 P1, T2, target 29, start 19/11/2026 | Browser blocks it (minimum 30); no goal created | `Value must be greater than or equal to 30.`; still on the form with 29 | ST-UAT-02-B-r1-s1 |
+| 2 | 20:51:32 target 30 | Goal created: `30 นาที`, `30–120 นาที`, `Active` | G2: `Active`, `30 นาที`, start `19 พ.ย. 2569`, `30–120 นาที` | ST-UAT-02-B-r1-s2 |
+| 3 | 20:51:37 entry 29 for D | `ระบุจำนวนเต็ม 30–120 นาที`; `0 / 30 นาที`, `0%` | As expected; `ยังไม่มีบันทึกสำหรับวันที่เลือก` | ST-UAT-02-B-r1-s3 |
+| 4 | 20:51:43 entry 30, once | `30 / 30 นาที`, `100%`, `อ่านครบเป้าหมายแล้ว` | As expected, with `บันทึกแล้ว 30 นาทีสำหรับวันที่เลือก` | ST-UAT-02-B-r1-s4 |
+| 5 | 20:51:56 refresh G2, select D | Only one 30-minute entry | 30/30, 100%; history `พบ 1 รายการ` | ST-UAT-02-B-r1-s5 |
+
+- Outcome: **PASS**. G2 rechecked by Nuggetkub at 21:27–21:29: its history shows only its own 30/30 entry.
+
+### ST-UAT-02-2 (attempt 2)
+
+- Tester: Earth2509, as above. 19 Nov 2026 22:35–22:40, Opera, address bar visible. New template R2 and goal G3 so that G1 and G2 were not modified.
+
+| Step | Action / actual input | Expected result | Observed result | Evidence ID |
+| --- | --- | --- | --- | --- |
+| 0 | 22:35 MGR creates R2, same description, 30–120 | Card saved | `/manager/templates`: R2 card with exact title, description, `30–120 นาทีต่อวัน` | ST-UAT-02-B-r2-s0 |
+| 1 | 22:39 P1, R2, target 29, start 19/11/2026 | Blocked; no goal created | URL `/goals/new`; `Value must be greater than or equal to 30.`; field still 29 | ST-UAT-02-B-r2-s1 |
+| 2 | 22:39 target 30 | Goal created | URL G3; `Active`, `30 นาที`, start `19 พ.ย. 2569`, `30–120 นาที` | ST-UAT-02-B-r2-s2 |
+| 3 | 22:40 entry 29 for D | Rejected; `0 / 30`, `0%` | `ระบุจำนวนเต็ม 30–120 นาที`; `0 / 30 นาที`, `0%` | ST-UAT-02-B-r2-s3 |
+| 4 | 22:40 entry 30, once | `30 / 30`, `100%` | `บันทึกเวลาอ่านเรียบร้อยแล้ว`; `30 / 30 นาที`; `100%`; `อ่านครบเป้าหมายแล้ว` | ST-UAT-02-B-r2-s4 |
+| 5 | 22:40 refresh G3 | One entry only | History `พบ 1 รายการ`, `19 พ.ย. 2569 · 30 / 30 นาที · 100%` | ST-UAT-02-B-r2-s5 |
+
+- Outcome: **PASS**. Negative check: the rejected target left the browser on `/goals/new` (no goal created), the rejected entry left progress at `0 / 30`, and the final history shows exactly one entry.
+
+### ST-UAT-03-1
+
+- Tester: Nuggetkub, CPMS. 19 Nov 2026 19:07–19:15. Chrome. Accounts P2, MGR, P1.
+
+| Step | Action / actual input | Expected result | Observed result | Evidence ID |
+| --- | --- | --- | --- | --- |
+| 1 | 19:07 P2 opens `/goals` | G1 not listed | `นักอ่านคนที่สอง`; `0 เป้าหมาย`; empty state | ST-UAT-03-A-s1 |
+| 2 | 19:08 P2 opens the G1 URL | `ไม่พบรายการที่ต้องการ`; no data | Alert `ไม่พบรายการที่ต้องการ`, `ลองใหม่`; no title, target, entry or progress | ST-UAT-03-A-s2 |
+| 3 | 19:11 P2 opens `/goals/00000000-0000-4000-8000-000000000099` | Same response | Identical alert; hidden and missing goals look the same | ST-UAT-03-A-s3 |
+| 4 | 19:13 MGR opens the G1 URL | `บัญชีนี้ไม่มีสิทธิ์เปิดหน้านี้`; no data | As expected, with `กลับหน้าหลัก`; no goal data | ST-UAT-03-A-s4 |
+| 5 | 19:15 P1 opens G1, selects D | Unchanged `45 / 60`, `75%` | `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, `บันทึกแล้ว 45 นาทีสำหรับวันที่เลือก` | ST-UAT-03-A-s5 |
+
+- Outcome: **PASS**. Negative/access check: step 5 confirms G1 and E1 were unchanged after the P2 and MGR attempts.
+
+### ST-UAT-04-1
+
+- Tester: Earth2509 (Codex-operated browser, as above), on a different machine from the one that created G1. Steps executed 19 Nov 2026 20:52–20:55; the address-bar evidence set is a read-only recheck in Opera at 22:26–22:30. Account P1.
+
+| Step | Action / actual input | Expected result | Observed result | Evidence ID |
+| --- | --- | --- | --- | --- |
+| 1 | P1 opens G1, selects D | Title, target 60, `45 / 60`, `75%`, `ยังไม่ครบเป้าหมาย` | G1 URL; `UAT-CPMS-01 Template-R1-20261118-A`, `Active`, `60 นาที`, start `19 พ.ย. 2569`; `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, `บันทึกแล้ว 45 นาทีสำหรับวันที่เลือก` | ST-UAT-04-B-s1-goal, ST-UAT-04-B-s1 |
+| 2 | Refresh | Same values, no sign-in, no second entry form | Same values; still signed in; no entry form | ST-UAT-04-B-s2 |
+| 3 | Sign out, type G1 URL | `/login`, no goal data | URL `/login`; empty `อีเมล` / `รหัสผ่าน`; no goal data | ST-UAT-04-B-s3 |
+| 4 | Sign in as P1, open G1, select D | Same G1 and 45/60/75% | Same URL, title, `Active`, `60 นาที`, start date | ST-UAT-04-B-s4-goal |
+| 5 | Refresh | Matches step 1 | History `พบ 1 รายการ`, `19 พ.ย. 2569 · 45 / 60 นาที · 75%` | ST-UAT-04-B-s5 |
+
+- Outcome: **PASS**. The handoff's step 4 progress capture was a duplicate of step 2, so it is not used. Supporting recheck by Nuggetkub on 20 Nov 11:40 (Chrome; sign-out redirect, sign in as P1, D = 19/11/2026): `45 / 60 นาที`, `75%`, `ยังไม่ครบเป้าหมาย`, one history entry (`ST-UAT-04-A-recheck-s4b`).
+
+### Out-of-scope controls: confirmation
+
+Nuggetkub checked on 20 Nov (view only): G2's reading-schedule status is `ยังไม่ได้ตั้งตารางอ่าน` (the pre-filled schedule form is the default for the current weekday), and on `/manager/templates` R2, R1 and T1 are all still open. No F-05, F-06 or F-07 action was taken during the run.
 
 ## 4. Delivery and completion
 
 | Event | Date/time (ICT) | Sender / recipient | Version / cases | Public or redacted acknowledgement reference |
 | --- | --- | --- | --- | --- |
+| Results sent to StudyTrack | Pending | Nuggetkub → auto4496, Datakung | `ef0de7f`; ST-UAT-01 to 04 | Pending |
 
-This table has no delivery entries yet. Record the partner's receipt of the actual results; a prepared draft is not a delivered report.
-
-- [ ] Partner handoff and all required prerequisites confirmed.
-- [ ] Every supplied case has a recorded actual outcome and evidence.
-- [ ] Both CPMS members have traceable execution contributions.
-- [ ] Normal and negative/access evidence includes persistence/no unauthorized change checks as applicable.
-- [ ] Findings linked to [findings.md](findings.md), including BLOCKED cases requiring follow-up.
+- [x] Partner handoff and all required prerequisites confirmed.
+- [x] Every supplied case has a recorded actual outcome and evidence.
+- [x] Both CPMS members have traceable execution contributions.
+- [x] Normal and negative/access evidence includes persistence/no unauthorized change checks as applicable.
+- [x] Findings linked to [findings.md](findings.md), including BLOCKED cases requiring follow-up (none raised).
 - [ ] Results sent to StudyTrack and delivery acknowledgement recorded.
 - [ ] Teammate review completed before Issue #61 is marked complete.
 
