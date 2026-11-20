@@ -4,7 +4,7 @@ Related Issue: [#61](https://github.com/Nuggetkub/cpe334-course-project-manageme
 
 ## Current execution status
 
-First run completed 19 November 2026 (ICT), with view-only rechecks on 20 November 2026. **All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) were executed: 4 PASS, 0 FAIL, 0 BLOCKED. No findings were raised.** Results have not yet been delivered to StudyTrack; see section 4.
+First run completed 19 November 2026 (ICT), with view-only rechecks on 20 November 2026. **All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) were executed: 4 PASS, 0 FAIL, 0 BLOCKED. No findings were raised.** Results were delivered to StudyTrack on 20 November 2026 and acknowledged the same day; see section 4.
 
 Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496 and Datakung. Scope agreed with the partner: F-01 to F-04 only. Controls for F-05 (goal management), F-06 (edit time / history) and F-07 (reading schedule) appear on the same pages and were not used.
 
@@ -15,7 +15,7 @@ Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496
 | Partner case document and immutable version/link | Received: [`uat-cases.md` @ `200db98`](https://github.com/auto4496/studytrack/blob/200db98bc942743afbc580efdd2f5a8d6fa69566/docs/labs/lab06/uat-cases.md) (identical at staging merge `8b03af2`) | auto4496, Issue [#59](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/59) coordination |
 | Accepted Sprint 1 scope and contract/AC links | F-01 to F-04, as listed in the case document | Case document; auto4496 |
 | Exact tested tag/full commit and deployment revision | Tag `uat-lab6-2026-11-18` = `ef0de7f877dcabe8ec330eb2c0029d9cebf8ed40`; [Deploy demo run 44090861325](https://github.com/auto4496/studytrack/actions/runs/44090861325); Cloud Run revision `studytrack-gef0de7f877dc-r44090861325-1` | auto4496 |
-| Live URL and a way to verify the running version | `https://studytrack-981693883236.asia-southeast1.run.app`; Cloud Run revision/traffic screenshot from StudyTrack (evidence `ST-UAT-00-version`, cropped) showing the revision above at **100%** traffic and every older revision at 0% | Received 19 Nov 21:44 ICT; the image does not show its capture time. It confirms the traffic split at that moment only. **Session-start verification was not done for any run**, and serving during the run windows (19 Nov 11:19–22:40, 20 Nov 11:28–11:40) is **inferred, not confirmed**: traffic can move between existing revisions without a new deployment. We will request explicit confirmation covering those windows (traffic/deployment history) when sending the UAT results to StudyTrack. Supporting public check: `main` = `ef0de7f`, last deploy run 44090861325 (17 Nov 13:15 UTC). |
+| Live URL and a way to verify the running version | `https://studytrack-981693883236.asia-southeast1.run.app`; Cloud Run revision/traffic screenshot from StudyTrack (evidence `ST-UAT-00-version`, cropped) showing the revision above at **100%** traffic and every older revision at 0% | Received 19 Nov 21:44 ICT; the image does not show its capture time. It confirms the traffic split at that moment only. **Session-start verification was not done for any run**, and serving during the run windows (19 Nov 11:19–22:40, 20 Nov 11:28–11:40) is **inferred, not confirmed**: traffic can move between existing revisions without a new deployment. Explicit confirmation covering those windows (traffic/deployment history) was requested in our results message on 20 Nov 2026; StudyTrack's reply did not address it, so it is still unconfirmed. Supporting public check: `main` = `ef0de7f`, last deploy run 44090861325 (17 Nov 13:15 UTC). |
 | Account labels, roles and ownership boundaries | MGR `manager@studytrack.test` (Program Manager); P1 `student1@studytrack.test` and P2 `student2@studytrack.test` (นักศึกษา). StudyTrack keeps one sign-in per browser. | Case document |
 | Credentials delivered through the agreed private channel | Received by private DM; values not recorded | auto4496 |
 | Synthetic inputs, fixtures, timezone and setup/cleanup rules | Synthetic titles from the case document; date D = actual run date **2026-11-19** (ICT) instead of the planned 18 Nov | Case document; plan variation below |
@@ -136,14 +136,15 @@ Nuggetkub checked on 20 Nov (view only): G2's reading-schedule status is `ยั
 
 | Event | Date/time (ICT) | Sender / recipient | Version / cases | Public or redacted acknowledgement reference |
 | --- | --- | --- | --- | --- |
-| Results sent to StudyTrack | Pending | Nuggetkub → auto4496, Datakung | `ef0de7f`; ST-UAT-01 to 04 | Pending |
+| Results sent to StudyTrack (includes the serving-revision confirmation request) | 20 Nov 2026 (time not recorded) | Nuggetkub → auto4496, Datakung | `ef0de7f`; ST-UAT-01 to 04 | Discord DM (private; contents not published) |
+| StudyTrack acknowledged receipt | 20 Nov 2026, by 17:13 | auto4496, Datakung → Nuggetkub, Earth2509 | `ef0de7f`; "four cases passed with no findings" | Discord DM, in StudyTrack's "Lab 6 UAT results for CPMS" message (private; see [findings.md section 2](findings.md#2-findings-received-about-cpms-incoming)) |
 
-- [ ] Partner handoff and all required prerequisites confirmed (all received except confirmation of the serving revision during the run windows; we will request it when sending the UAT results).
+- [ ] Partner handoff and all required prerequisites confirmed (all received except confirmation of the serving revision during the run windows; requested 20 Nov 2026, not yet answered).
 - [x] Every supplied case has a recorded actual outcome and evidence.
 - [x] Both CPMS members have traceable execution contributions.
 - [x] Normal and negative/access evidence includes persistence/no unauthorized change checks as applicable.
 - [x] Findings linked to [findings.md](findings.md), including BLOCKED cases requiring follow-up (none raised).
-- [ ] Results sent to StudyTrack and delivery acknowledgement recorded.
+- [x] Results sent to StudyTrack and delivery acknowledgement recorded.
 - [ ] Teammate review completed before Issue #61 is marked complete.
 
 Final product acceptance belongs to the independent UAT team testing that product. Our CPMS acceptance is recorded from StudyTrack's decision, not inferred from our outgoing test register or CI.
