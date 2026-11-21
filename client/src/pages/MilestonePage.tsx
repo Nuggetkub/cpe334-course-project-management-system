@@ -113,7 +113,7 @@ function FeedbackForm({ submissionId, onAdded }: { submissionId: number; onAdded
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
-    const trimmed = text;
+    const trimmed = text.trim();
     setError(null);
     if (length(trimmed) < 1 || length(trimmed) > 2000) {
       setFieldError(FEEDBACK_MESSAGE);
