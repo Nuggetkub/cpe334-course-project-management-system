@@ -2,7 +2,7 @@
 
 Related Issue: [#62](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/62). Owner: Earth2509; reviewer: Nuggetkub. Fix/retest work: [#63](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/63).
 
-Prepared 15 November 2026 (ICT); updated 22 November 2026. **Baseline: no findings in either direction.** StudyTrack ran our six CPMS cases twice (plus supplemental X01–X03), and we ran their four cases: all PASS. **Part D controlled exercise (the TA's procedure for teams with no UAT defects):** we reported F1 against StudyTrack's exercise build (section 1), and StudyTrack reported #70 against ours (section 2). Both were fixed and independently retested PASS (section 3). StudyTrack's final Sprint 1 decision for CPMS was requested and is still pending.
+Prepared 15 November 2026 (ICT); updated 22 November 2026. **Baseline: no findings in either direction.** StudyTrack ran our six CPMS cases twice (plus supplemental X01–X03), and we ran their four cases: all PASS. **Part D controlled exercise (the TA's procedure for teams with no UAT defects):** we reported F1 against StudyTrack's exercise build (section 1), and StudyTrack reported #70 against ours (section 2). Both were fixed and independently retested PASS (section 3). **StudyTrack's final Sprint 1 decision for CPMS `v0.3.0` (`b6cffa1`, `cpms-00007-7r8`): Accepted for the tested scope** (Datakung on [#70](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/70#issuecomment-7079679438), 22 Nov 2026 20:15 ICT; testers auto4496 and Datakung).
 
 ## 1. Reporting a finding in StudyTrack (outgoing)
 
@@ -39,7 +39,7 @@ Both StudyTrack testers used OpenAI Codex for browser actions and evidence captu
 
 Synthetic data StudyTrack left in CPMS: milestones #4–#7 (first run) and #8–#11 (repeat run, suffix `-r2-20261119-B`).
 
-StudyTrack will record its Sprint 1 acceptance decision for CPMS separately; it was requested on 22 Nov 2026 and is still pending. Because no defect was found in either direction, the Part D fix/retest work used the TA's controlled-defect procedure ([#63](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/63)); the exercise finding received is #70 above.
+**StudyTrack's final Sprint 1 decision for CPMS: Accepted for the tested scope**, recorded by Datakung on [#70](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/70#issuecomment-7079679438) on 22 Nov 2026 (20:15 ICT). Basis: auto4496's 6/6 run (18–19 Nov), Datakung's 6/6 run (19–20 Nov), supplemental CPMS-X01–X03 PASS (21 Nov) and the #70 retest PASS. Condition noted: CPMS-X04 was not run because no unassigned Student account was handed out (AC-03.4 is covered by automated tests, [uat-cases.md section 3](uat-cases.md#3-covered-by-automated-tests-only-not-executed-by-the-uat-team)). Because no defect was found in either direction, the Part D fix/retest work used the TA's controlled-defect procedure ([#63](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/63)); the exercise finding received is #70 above.
 
 ### Classification and severity
 
