@@ -6,6 +6,8 @@ Related Issue: [#61](https://github.com/Nuggetkub/cpe334-course-project-manageme
 
 First run completed 19 November 2026 (ICT), with view-only rechecks on 20 November 2026. **All four StudyTrack cases (ST-UAT-01 to ST-UAT-04) were executed: 4 PASS, 0 FAIL, 0 BLOCKED. No findings were raised.** Results were delivered to StudyTrack on 20 November 2026 and acknowledged the same day; see section 4.
 
+**Part D exercise (21–22 November 2026):** we tested StudyTrack's controlled-defect build blind (54/55 steps PASS, one FAIL reported as [studytrack#73](https://github.com/auto4496/studytrack/issues/73)), then retested their fix on 22 November: **all four checks PASS**. **Our final Sprint 1 decision for StudyTrack `ef0de7f`: Accepted with one documented minor limitation (F1-3).** See section 5.
+
 Partner: [StudyTrack](https://github.com/auto4496/studytrack), Theme 8; auto4496 and Datakung. Scope agreed with the partner: F-01 to F-04 only. Controls for F-05 (goal management), F-06 (edit time / history) and F-07 (reading schedule) appear on the same pages and were not used.
 
 ## 1. Handoff and session prerequisites
@@ -148,3 +150,49 @@ Nuggetkub checked on 20 Nov (view only): G2's reading-schedule status is `ยั
 - [ ] Teammate review completed before Issue #61 is marked complete.
 
 Final product acceptance belongs to the independent UAT team testing that product. Our CPMS acceptance is recorded from StudyTrack's decision, not inferred from our outgoing test register or CI.
+
+## 5. Part D: blind run of StudyTrack's exercise build, retest and decision
+
+Under the TA's "Clarification for Teams with No UAT Defects", StudyTrack planted one defect on its staging branch and deployed it to a separate service. We tested it **blind**: we did not open their commit, PRs or issues until our report was sent. The detailed per-step log and screenshots are kept by the team for the Lab 6 PDF.
+
+| Item | Value |
+| --- | --- |
+| Exercise URL | https://studytrack-partd-981693883236.asia-southeast1.run.app |
+| Tested build (partner-reported) | `832b8c8372c4d91a75915231edcf68850a45c838`, revision `studytrack-partd-g832b8c8-exercise`. StudyTrack's Cloud Run screenshot showed it at 100% (received 21 Nov 17:04 ICT). Their `/api/health` has no commit field. |
+| Window | 21 Nov 2026, 16:49–22:00 ICT. The session-start version check was done after testing began (recorded here as a limitation). |
+| Cases | StudyTrack ST-UAT-01 to 04 @ `200db98`, plus five additional cases we wrote and sent to StudyTrack: ST-X01 (login/session), X02 (template limits), X03 (goal limits, duplicates), X04 (progress arithmetic), X05 (access and 390×844 layout). Fixture suffix `PD-20261121-A`. |
+| Testers | A = Nuggetkub (Chrome), B = Earth2509 (Opera; some steps Codex-operated, credentials typed by Earth2509) |
+
+| Case | Tester | Steps | PASS | FAIL | BLOCKED |
+| --- | --- | --- | --- | --- | --- |
+| ST-UAT-01 | A | 7 | 7 | 0 | 0 |
+| ST-UAT-02 | B | 5 | 5 | 0 | 0 |
+| ST-UAT-03 | A | 5 | 5 | 0 | 0 |
+| ST-UAT-04 | A | 5 | 5 | 0 | 0 |
+| ST-X01 | A | 5 | 5 | 0 | 0 |
+| ST-X02 | B | 8 | 8 | 0 | 0 |
+| ST-X03 | B | 8 | 8 | 0 | 0 |
+| ST-X04 | B | 7 | 7 | 0 | 0 |
+| ST-X05 | A | 5 | 4 | **1** | 0 |
+
+**54/55 steps PASS.** ST-X05 step 3 (21 Nov 21:46, 390×844): a valid 100-character goal title with no spaces runs past the right edge of the goal page. Reported as F1, [studytrack#73](https://github.com/auto4496/studytrack/issues/73) (see [findings.md section 1](findings.md#1-reporting-a-finding-in-studytrack-outgoing)).
+
+### Independent retest of StudyTrack's fix (22 Nov 2026)
+
+StudyTrack fixed F1 in [StudyTrack PR #74](https://github.com/auto4496/studytrack/pull/74) and handed over `1aae2decccd00cb278a4e1adcd6abcb24843ebdb`, revision `studytrack-partd-g1aae2de-fix` (Datakung on #73, 12:54 ICT). Tester: Nuggetkub, Chrome DevTools device mode at 100%, existing fixtures (P1, G3, the 100/500-character template). Overflow check in the Console: `[document.documentElement.scrollWidth, innerWidth, document.documentElement.scrollWidth <= innerWidth]`.
+
+| Check | Viewport | Time (ICT) | Observed | Console | Result |
+| --- | --- | --- | --- | --- | --- |
+| F1-1 goal page G3 | 390×844 | 15:05 (retake; the 14:51 capture was scrolled past the title) | Full title wraps over 6 lines inside the screen; last `X` visible; `Active` on its own line | `[390, 390, true]` | PASS |
+| F1-2 goal page G3 | 1440×900 | 14:55 | Title wraps over 3 lines; `Active` clear, no overlap | `[1440, 1440, true]` | PASS |
+| F1-3 `/goals/new`, template selected | 1440×900 | 14:58 | 500-character description wraps inside the form card | `[1440, 1440, true]` | PASS |
+| F1-3 `/goals/new`, template selected | 390×844 | 15:01 | Description wraps inside the card | `[390, 390, true]` | PASS |
+
+Nothing was submitted on `/goals/new`. Results and screenshots are posted on [#73](https://github.com/auto4496/studytrack/issues/73#issuecomment-7076330686). Datakung corroborated the serving revision on #73 (19:37 ICT): `ReplaceService` at 12:51:04 ICT, no later service change, and all 55 logged requests from 14:50:33 to 15:06:29 ICT served by `studytrack-partd-g1aae2de-fix`.
+
+### Our final Sprint 1 UAT decision for StudyTrack
+
+**Accepted with one documented minor limitation.** UAT Team: Nuggetkub and Earth2509, 22 November 2026. Release: tag `uat-lab6-2026-11-18` = `ef0de7f877dcabe8ec330eb2c0029d9cebf8ed40`, revision `studytrack-gef0de7f877dc-r44090861325-1`.
+
+- Basis: ST-UAT-01 to 04 PASS on `ef0de7f` (section 3); Part D run 54/55, with the one FAIL fixed and retested PASS on `1aae2de`.
+- Limitation **F1-3** (Minor, layout only, no data loss): a long unbroken template description doesn't wrap on `/goals/new`. It wasn't part of StudyTrack's planted change, so we assume `ef0de7f` is affected too. Fixed and retested on `1aae2de`, not yet released to StudyTrack `main`. If StudyTrack shows `ef0de7f` isn't affected, the decision becomes plain Accepted.
