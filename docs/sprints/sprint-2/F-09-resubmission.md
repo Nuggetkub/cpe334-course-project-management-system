@@ -9,6 +9,7 @@
 | Version | Date | Author | Reviewer | Change |
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
+| 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #89 review of `503b0c3`: retry success and retry exhaustion tested separately with a deterministic collision (TEST-09.6u); each attempt in a fresh transaction; the changed Sprint 1 assertions TEST-05.1 (`late` key) and TEST-05.7 (form after a stored submission) named |
 
 ## 1. Feature design
 
@@ -38,6 +39,8 @@ window OPEN  ─► insert version = max(version) + 1, late = false ─► 201
 window LATE  ─► insert version = max(version) + 1, late = true  ─► 201
 unique (milestone_id, version) race ─► retry the insert (up to 3 attempts) ─► 201, else 409 SUBMISSION_CONFLICT
 ```
+
+**Retry design.** One attempt reads `max(version)` for the milestone and inserts `max + 1` inside **its own transaction**. A failed attempt is rolled back, and the next attempt starts a fresh transaction, so it re-reads the latest version instead of reusing the stale number. Only a uniqueness violation on `(milestone_id, version)` (Prisma `P2002`) is retried. Any other error is passed on unchanged. The loop lives in one small helper, `insertNextVersion(attempt, maxAttempts = 3)`, so tests can drive it with a fake attempt function that collides on demand.
 
 `409 ALREADY_SUBMITTED` is removed (BR-07 retired).
 
@@ -110,7 +113,7 @@ The migration is additive. It adds `late boolean NOT NULL DEFAULT false` to `sub
 | AC-09.3 | A milestone closed by a Supervisor (future due), or with the deadline passed and no late window | A member POSTs | 409 `MILESTONE_CLOSED` or 409 `DEADLINE_PASSED` respectively; no row | BR-11, BR-06 |
 | AC-09.4 | Team A has versions 1–3 | sA, sA2, pA or pA2 GETs the history; sB, s0 or pB GETs it | Team A members and assigned Supervisors get 200 with 3 versions newest-first, each with submitter, time and Late. The others get the fixed 404 | FR-16, BR-02, BR-03 |
 | AC-09.5 | Feedback exists on version 1 | Versions 2 and 3 are submitted | Version 1's feedback is still returned for version 1 only. Versions 2 and 3 have none until it is written. Team status follows the latest version | BR-10, DEC-13 |
-| AC-09.6 | Team A has version 1 | Two members POST at the same moment | Both get 201 with versions 2 and 3 (no duplicate or missing number), or one gets 409 `SUBMISSION_CONFLICT` with no partial row | BR-08 |
+| AC-09.6 | Team A has version 1 | Two members POST at the same moment, or a version is inserted between a request's read and its insert | The colliding request retries in a fresh transaction and gets the next free version: both 201 with versions 2 and 3, with no duplicate or missing number. 409 `SUBMISSION_CONFLICT` happens only after 3 colliding attempts, and leaves no partial row | BR-08 |
 | AC-09.7 | A Supervisor, a Student of another team, an anonymous user, a malformed ID | They POST or GET | 401, then 403 (Supervisor POST), then 404 (hidden scope), then 400; no write | NFR-02, NFR-03, NFR-05 |
 | AC-09.8 | A Student and a Supervisor on the milestone page | They submit a new version (valid, invalid, 5xx) or view the history | The F-05 form states; the Late notice in the Late window; no form when Closed; the history list with Late badges and per-version feedback; loading, empty and error states | NFR-10 |
 
@@ -126,7 +129,8 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 | TEST-09.3i | 09.3 | I | mC closed with future due; mP deadline passed, no window | POST to each | 409 `MILESTONE_CLOSED`; 409 `DEADLINE_PASSED`; counts unchanged |
 | TEST-09.4i | 09.4 | I | mA with v1–v3 | GET the history as sA, sA2, pA, pA2, sB, s0, pB | 200 newest-first ×4, fixed 404 ×3 |
 | TEST-09.5i | 09.5 | I | Feedback on v1 | Submit v2 and v3; GET feedback for v1, v2, v3 | v1 has its feedback; v2 and v3 are empty |
-| TEST-09.6i | 09.6 | I | mA with v1 (replaces TEST-05.4b) | Two POSTs with `Promise.all` | Versions {2, 3}, or a 201 plus a 409 `SUBMISSION_CONFLICT`. No duplicate. Row count matches the 201s |
+| TEST-09.6u | 09.6 | U | A fake version store holding v1, and an attempt function that reads `max(version)` from it and inserts `max + 1`. (a) Before the first insert, the test adds v2 to the store, so attempt 1 collides with `P2002`. (b) The store always collides. (c) The attempt throws a non-`P2002` error | Call `insertNextVersion` | (a) Two attempts; the second re-reads max = 2 and returns v3; the store holds v1, v2, v3 once each. (b) Exactly 3 attempts, then 409 `SUBMISSION_CONFLICT`, no row added. (c) One attempt; the original error is rethrown |
+| TEST-09.6i | 09.6 | I | mA with v1 (replaces TEST-05.4b) | Two members POST with `Promise.all`; read all rows | Both 201 with versions {2, 3}: no duplicate, no gap, 3 rows. (The deterministic collision and the exhausted budget are TEST-09.6u, because a real race can't be forced to collide on every run.) |
 | TEST-09.7i | 09.7 | I | pA, sB, anonymous, malformed ID, malformed JSON | POST and GET | 403 / 404 / 401 / 404 / 400 in F-02 order; no write |
 | TEST-09.8c | 09.8 | C | Mocked Open, Late and Closed milestones; history with 3 versions and feedback | Render; submit (valid, 400, 500); load the history | Form states; Late notice; no form when Closed; history list and badges; loading, empty and error states |
 | TEST-09.1e | 09.1, 09.4 | E | Journey team with one submission | The Student submits version 2 and reloads; the Supervisor opens the history | Two versions persist and are shown newest-first to both roles |
@@ -134,6 +138,8 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 **Revised and retired tests:**
 - TEST-05.4a and TEST-05.4b are retired; TEST-09.1i and TEST-09.6i replace them.
 - TEST-05.3b keeps checking the on-time/deadline boundary. With no late window, its expected 409 is still `DEADLINE_PASSED`.
+- **TEST-05.1** (server) asserts the exact `SUBMISSION_KEYS`. It adds `late` and checks `late: false` for an on-time submission.
+- **TEST-05.7** (client) "shows a persisted submission read-only" currently expects no submit button once a submission is stored. For a Student in an accepting window (Open or Late), the page now shows the stored submission **and** the "Submit a new version" form. The checks that a Closed milestone, a passed deadline and a Supervisor show no submission form stay as they are.
 - F-05 E2E and component tests that expect "already submitted" UI text are updated to the new-version form.
 - Every change is listed in the PR, with its reason.
 
