@@ -134,6 +134,8 @@ describe("F-05 milestone page", () => {
     submit();
     expect(await screen.findByText("Submitted by Somchai Student on 8 Nov 2026, 23:59 (ICT)")).toBeInTheDocument();
     expect(screen.getByText("Team status: Submitted")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument();
+    // F-09 (BR-08): the window still accepts work, so the form returns empty as "Submit a new version".
+    expect(screen.getByRole("heading", { name: "Submit a new version" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("");
   });
 });
