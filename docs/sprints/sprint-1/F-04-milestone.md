@@ -298,7 +298,7 @@ TEST-04.2u/i). No test is deleted, skipped or weakened.
 
 ### Planned order
 
-contract v0.4 (this PR, reviewed) → test commit with CR-01 boundary rows, run against the
+contract v0.5 (PR #74, approved on `5cd9f6a`, merged `b79aa82`) → test commit with CR-01 boundary rows, run against the
 pre-change code (red) → implementation commit (green) → regression run → PR to `staging/sprint-1`
 → release PR to `main` → Cloud Run deploy → deployed checks of the changed rule and a preserved
 access path.
