@@ -10,6 +10,7 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | Before implementation: §4 names every existing test that changes (response key lists, `submissionWindow` signature), the E2E fixture team, and the interface-stub step in the commit order |
+| 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #88 review of `51c42cd`: PATCH sends only changed fields (title-only save omits both dates, also when closed) with a new test; TEST-08.3i checks the extension-past-window rejection before clearing; TEST-08.1e verifies the Late window badge on a separate fixture milestone already between `dueAt` and `lateUntil` |
 
 ## 1. Feature design
 
@@ -51,7 +52,7 @@ There is **no delete endpoint** in Sprint 2. That satisfies BR-14 ("a milestone 
 
 ### Validation and rules
 
-The PATCH body is a JSON object with **at least one** of `title`, `description`, `dueAt` and `lateUntil`. Unknown fields are ignored, as in F-04 (`teamId`, `createdBy`, `closedAt`, `closedBy`). The server reads one server instant `now` per request.
+The PATCH body is a JSON object with **at least one** of `title`, `description`, `dueAt` and `lateUntil`. It carries **only the fields being changed**. A title or description save sends neither `dueAt` nor `lateUntil`, so BR-13 is never applied to an unchanged date, and this works the same on a closed milestone. An absent field is never treated as a change. Unknown fields are ignored, as in F-04 (`teamId`, `createdBy`, `closedAt`, `closedBy`). The server reads one server instant `now` per request.
 
 | Field / rule | Rule | Error |
 | --- | --- | --- |
@@ -123,6 +124,7 @@ No CHECK constraint is added, because BR-12 depends on the changing `due_at` and
 - **Close milestone**, with a confirmation ("Close this milestone? Students can no longer submit.").
 
 It also handles the request states:
+- **Save changes** sends only the fields whose value differs from the loaded milestone. The pre-filled due date and late-window end are omitted unless the user changed them.
 - Saving disables the section and shows "Saving…".
 - Field errors from the server appear beside their inputs, and the values are kept.
 - 5xx or network errors show "Could not save the milestone. Please try again.", and the user can retry.
@@ -159,19 +161,19 @@ Test levels:
 | --- | --- | --- | --- | --- | --- |
 | TEST-08.2u | 08.2, 08.3 | U | Fixed now, current D, existing lateUntil; valid, equal, earlier, < now + 24 h, = now + 24 h dueAt; lateUntil = D, D + 1 ms, ≤ now, null; empty body | Call `parseMilestoneUpdate` | Field errors and messages exactly as in §1. Valid input normalized. All errors returned together |
 | TEST-08.5u | 08.5 | U | Milestone states: open, with lateUntil, closed (before and after due) | `submissionWindow` at the listed instants; `teamStatus` with and without a submission | Window and team status exactly as in AC-08.5 |
-| TEST-08.1i | 08.1 | I | pA and pA2 assigned to A; milestone in A | PATCH title/description; GET detail | 200; persisted trimmed values; other fields unchanged |
+| TEST-08.1i | 08.1 | I | pA and pA2 assigned to A; milestone in A with `lateUntil` set; a second, closed milestone | PATCH title/description; GET detail. Then PATCH **only** `{title}` on each milestone, sending neither date | 200; persisted trimmed values. Title-only saves → 200 on both, and `dueAt`, `lateUntil` and `closedAt` are unchanged in the DB |
 | TEST-08.2i | 08.2 | I | Milestone M1 due D = now + 2 d; milestone M2 inserted directly with due now + 1 h | M1: PATCH D + 1 d; D; D − 1 h. M2: PATCH now + 24 h − 1 s; now + 24 h | M1: 200 / 400 BR-13 / 400 BR-13. M2: 400 CR-01 / 200. `dueAt` checked in the DB after every request |
-| TEST-08.3i | 08.3 | I | Milestone due D | PATCH lateUntil D + 1 h; D; null; then dueAt beyond the existing lateUntil | 200 / 400 / 200 (cleared) / 400; DB matches |
+| TEST-08.3i | 08.3 | I | Milestone due D | PATCH lateUntil L = D + 1 h; lateUntil D; then, **while L still exists**, dueAt L + 1 s; then lateUntil null | 200 / 400 BR-12 / 400 (extension past the window) with `dueAt` and `lateUntil` unchanged / 200 with the window cleared; DB checked after each request |
 | TEST-08.4i | 08.4 | I | Open milestone | POST close twice; PATCH dueAt; PATCH title | 200 with server `closedAt`/`closedBy`; 409; 409 with no change; 200 |
 | TEST-08.6i | 08.6 | I | Closed milestone with future due; another closed milestone with an existing submission and feedback | sA POSTs a submission; GET submission and feedback | 409 `MILESTONE_CLOSED`, count unchanged; existing data readable |
 | TEST-08.7i | 08.7 | I | Anonymous, sA, sB, sC (no team), pB (unassigned), malformed ID, malformed JSON | PATCH / close / DELETE each | Fixed 401 → 403 → 404 → 400 order, identical 404 body, no writes; DELETE 404 and the row remains |
 | TEST-08.8c | 08.8 | C | Supervisor detail page with mocked responses (200, 400 fields, 500, closed); Student page | Edit, save, retry, confirm close | Busy state; field errors beside inputs; values kept; success message; closed disables dates; Student sees no Manage section |
-| TEST-08.1e | 08.1, 08.4, 08.6 | E | Real seeded Supervisor and Student share the journey team | Supervisor edits the title, extends the due date, sets a late window, closes. The Student opens the milestone | Values persist after reload; badges show Late window, then Closed; the Student sees "Window: Closed" and no submit form |
+| TEST-08.1e | 08.1, 08.3, 08.4, 08.6 | E | "E2E Lifecycle Team" with its own Student. The fixture also seeds "F08 late milestone" with `dueAt` 1 day ago and `lateUntil` 1 day ahead | (a) Supervisor creates a milestone, edits its title, extends the due date by days and sets a late window; reloads. (b) Supervisor closes it and reloads. (c) The Student opens it. (d) The Student opens "F08 late milestone" | (a) Values persist; the window stays **Open** (the deadline is still ahead) and "Late until …" shows. (b) "Window: Closed" after reload. (c) "Window: Closed", "This milestone is closed.", no submit form, no Manage section. (d) "Window: Late window" |
 
 **Updated existing tests.** None is deleted or weakened, and their other expected results don't change:
 - TEST-04.4u and TEST-05.3a call `submissionWindow` with the milestone instead of `dueAt` (signature change only).
 - TEST-04.1i and the F-05 `MILESTONE_KEYS` assertion list the three new response fields `lateUntil`, `closedAt` and `closedBy` (additive API change, §2).
-- The E2E fixture (`server/scripts/e2e-prepare.ts`) adds its own "E2E Lifecycle Team" and Student, so TEST-08.1e never adds rows to the F-04 teams that TEST-04.1e and TEST-04.2e expect to be empty.
+- The E2E fixture (`server/scripts/e2e-prepare.ts`) adds its own "E2E Lifecycle Team" and Student, so TEST-08.1e never adds rows to the F-04 teams that TEST-04.1e and TEST-04.2e expect to be empty. It also seeds "F08 late milestone" directly in the database, already inside its late window, because the API can't create a past due date.
 
 **Commit order:**
 1. contract (this PR, reviewed);
