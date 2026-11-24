@@ -10,6 +10,7 @@
 | 0.2 | 2026-11-05 | @Earth2509 | @Nuggetkub (post-review corrections) | PR #35: Given/When/Then ACs, explicit STS preconditions and missing TEST-04.6i (15 rows); reviewer-reproduced API red evidence; staging integration retains PR #33's F-01 contract |
 | 0.3 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: last DoD item ticked after release `v0.1.0` (PR #35 merged, PR #39 released). No behaviour or test changes |
 | 0.4 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 CR-01 (#73): dueAt must be at least 24 h after server now (§1, AC-04.2, TEST-04.2u/i/e, new §7). Written before the test and code commits |
+| 0.5 | 2026-11-24 | @Nuggetkub | @Earth2509 | PR #74 review: §7 lists browser E2E separately (not run by `test-and-docker`); TEST-04.2e adds a real-server now + 1 h rejection case. Still before the test and code commits |
 
 ## 1. Feature design
 
@@ -139,7 +140,7 @@ mocked fetch; E = real Chromium/API/DB cpms_e2e. No public schema is reset.
 | TEST-04.3c | 04.3 | C/U | Known UTC deadline, datetime-local Bangkok input, Student session; ready/no-team/hidden responses | Convert/format time and render Student list/detail/no-team states | Bangkok output; no create form; safe no-team/not-found |
 | TEST-04.8c | 04.8 | C | More than one mocked page; two assigned teams and a deferred old-team fetch | Request Next; select another team, then resolve old fetch | Correct page; no old-team rows replace new-team content |
 | TEST-04.1e | 04.1,04.3 | E | Real seeded Supervisor/Student share an empty journey team | Supervisor creates; Student signs in, opens list/detail and reloads | Real persisted data, two badges, Bangkok due time, no Student form |
-| TEST-04.2e | 04.2,04.6 | E | Real seeded validation team has no milestones | Open list, submit empty form, then valid-looking past due date | Empty and field feedback; real server rejects past due400 and shows "Enter a due date at least 24 hours from now." (CR-01 message) |
+| TEST-04.2e | 04.2,04.6 | E | Real seeded validation team has no milestones | Open list, submit empty form, then valid-looking past due date; then (CR-01) a future due date only 1 h after the real server time | Empty and field feedback; real server rejects past due400 and shows "Enter a due date at least 24 hours from now." (CR-01 message). The now + 1 h date also returns 400 `VALIDATION_ERROR` with `fields.dueAt`, creates no milestone (list still empty), shows the field error and keeps the entered values |
 
 15 STS rows; parameterized inputs expand into multiple executable cases. Record actual counts.
 Commit order: contract → additive migration → tests/red run → implementation/green run. Missing
@@ -265,7 +266,7 @@ It is unchanged since `b6cffa1`.
 | Feature | Yes | F-04 create only. F-08 extend (Sprint 2, not built) inherits the same minimum |
 | SRS / Feature SDS / System SDS | Yes | SRS §5 BR-05; this contract §1 validation, §3 AC-04.2, §4 STS; System SDS Milestone `due_at` row |
 | Acceptance criteria | Yes | AC-04.2 (traceability v0.13) |
-| STS tests | Yes | TEST-04.2u, TEST-04.2i, TEST-04.2e (message). TEST-04.2c is unchanged: it does not assert the date message text |
+| STS tests | Yes | TEST-04.2u, TEST-04.2i (exact 24 h boundary on a fixed clock); TEST-04.2e (new message and a real-server now + 1 h case). TEST-04.2c is unchanged: it does not assert the date message text |
 | Code: API validation | Yes | `parseMilestone` in `server/src/milestones/validate.ts` |
 | Code: UI | Message only | `client/src/pages/MilestonesPage.tsx` shows the same message for an unparseable date. The client does not check the 24 h rule, because the server clock is authoritative (BR-06, NFR-06) |
 | Callers / dependencies | No change | `POST /api/teams/:teamId/milestones` is the only caller. Submissions (F-05) and feedback (F-06) read existing milestones and never call `parseMilestone` |
@@ -285,12 +286,15 @@ It is unchanged since `b6cffa1`.
 | Check order 401 → 403 → 404 → 400 with no write | TEST-04.7i, F-02 authz suite |
 | Submission deadline BR-06 and one submission per milestone (BR-07) | F-05 suite (TEST-05.x) |
 | Feedback on a submission | F-06 suite (TEST-06.x) |
-| Whole product | Full server, client and E2E suites in CI (`test-and-docker`) |
+| Server and client | Full server and client suites plus the Docker build in CI (`test-and-docker`, `.github/workflows/ci-docker.yml`) |
+| Browser journeys | Playwright E2E (`npm run e2e`, all `e2e/*.spec.ts`). **Not run by CI**: run locally on the implementation commit, and its passed/failed/skipped counts recorded separately |
 
 ### Revised expected results
 
 The only old expected result that changes is the `dueAt` message text in TEST-04.2e. The test still checks that a past due date is rejected with
-a 400 and a field error, so it keeps its purpose. No test is deleted, skipped or weakened.
+a 400 and a field error, so it keeps its purpose. TEST-04.2e also gains one new step: a due date 1 h after the
+real server time is rejected, which shows the new rule end to end (the exact boundary stays in the fixed-clock
+TEST-04.2u/i). No test is deleted, skipped or weakened.
 
 ### Planned order
 

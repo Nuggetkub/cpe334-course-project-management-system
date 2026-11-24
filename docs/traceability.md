@@ -193,6 +193,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
 | 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
 | 2026-11-04 | Submission rules made testable; team status "Submitted" owned by F-05 | F-05 contract v0.1 (PR review pending) | AC-05.1, AC-05.3–AC-05.5 wording; AC-05.8, AC-05.9 added; FR-09 also verified by F-05 |
-| 2026-11-24 | CR-01: a milestone's due date must be at least 24 h after server time on create (was: any future time) | Lab 7 change request #73 | BR-05 and AC-04.2 reworded; TEST-04.2u/i gain now + 24 h − 1 s (reject) and now + 24 h (accept) rows; TEST-04.2e expects the new message |
+| 2026-11-24 | CR-01: a milestone's due date must be at least 24 h after server time on create (was: any future time) | Lab 7 change request #73 | BR-05 and AC-04.2 reworded; TEST-04.2u/i gain now + 24 h − 1 s (reject) and now + 24 h (accept) rows; TEST-04.2e expects the new message and adds a real-server now + 1 h rejection (PR #74 review) |
 
 Later changes are added here with the PR that approved them.
