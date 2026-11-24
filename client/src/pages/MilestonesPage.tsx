@@ -38,7 +38,8 @@ function CreateMilestone({ teamId, onCreated }: { teamId: string; onCreated: () 
     const invalid: Record<string, string> = {};
     if (!title.trim() || [...title.trim()].length > 120) invalid.title = "Enter a title (1–120 characters).";
     if ([...description.trim()].length > 2000) invalid.description = "Description must be at most 2000 characters.";
-    if (!dueAt) invalid.dueAt = "Enter a valid future due date and time.";
+    // The 24 h rule (CR-01) is checked by the server clock; the client only rejects unparseable input.
+    if (!dueAt) invalid.dueAt = "Enter a due date at least 24 hours from now.";
     setFields(invalid); setError(null);
     if (Object.keys(invalid).length) return;
     setBusy(true);
