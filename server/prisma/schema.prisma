@@ -35,7 +35,8 @@ model User {
   sessions          Session[]
   teamMembership    TeamMember?
   supervisedTeams   SupervisorTeam[]
-  createdMilestones Milestone[]
+  createdMilestones Milestone[]      @relation("MilestoneCreator")
+  closedMilestones  Milestone[]      @relation("MilestoneCloser")
   submissions       Submission[]
   feedback          Feedback[]
 
@@ -109,8 +110,13 @@ model Milestone {
   description String       @default("") @db.VarChar(2000)
   dueAt       DateTime     @map("due_at") @db.Timestamp(3)
   createdBy   Int          @map("created_by")
-  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  creator     User         @relation("MilestoneCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
+  // F-08: optional late window (BR-12) and manual close (FR-11, BR-11). Nullable: no backfill.
+  lateUntil   DateTime?    @map("late_until") @db.Timestamp(3)
+  closedAt    DateTime?    @map("closed_at") @db.Timestamp(3)
+  closedBy    Int?         @map("closed_by")
+  closer      User?        @relation("MilestoneCloser", fields: [closedBy], references: [id], onDelete: Restrict)
   submissions Submission[]
 
   @@index([teamId, dueAt, id])

@@ -26,7 +26,7 @@ describe("F-04 unit contract", () => {
   it.each([[-1000, "OPEN", "NOT_SUBMITTED"], [0, "OPEN", "NOT_SUBMITTED"], [1, "CLOSED", "OVERDUE"], [1000, "CLOSED", "OVERDUE"]] as const)(
     "TEST-04.4u evaluates the deadline at offset %s ms", (offset, window, status) => {
       const at = new Date(now.getTime() + offset);
-      expect(submissionWindow(now, at)).toBe(window);
+      expect(submissionWindow({ dueAt: now }, at)).toBe(window);
       expect(teamStatus(now, false, at)).toBe(status);
     },
   );

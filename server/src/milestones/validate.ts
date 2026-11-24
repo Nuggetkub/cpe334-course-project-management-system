@@ -36,3 +36,12 @@ export function parseMilestone(body: unknown, now: Date): { title: string; descr
   if (Object.keys(fields).length) throw new HttpError(400, "VALIDATION_ERROR", "Check the highlighted fields", fields);
   return { title, description: description!, dueAt: dueAt! };
 }
+
+// F-08 (#81): PATCH body after validation. `lateUntil: null` removes the late window.
+export interface MilestoneUpdate { title?: string; description?: string; dueAt?: Date; lateUntil?: Date | null }
+export interface MilestoneDates { dueAt: Date; lateUntil: Date | null }
+
+// Interface only until the F-08 tests are committed (test-first); the rules are in the F-08 contract §1.
+export function parseMilestoneUpdate(_body: unknown, _current: MilestoneDates, _now: Date): MilestoneUpdate {
+  throw new HttpError(501, "NOT_IMPLEMENTED", "Milestone updates are not implemented yet.");
+}

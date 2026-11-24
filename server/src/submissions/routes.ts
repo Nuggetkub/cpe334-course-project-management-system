@@ -45,7 +45,7 @@ submissionsRouter.post("/submissions", requireAuth, requireRole("STUDENT"), requ
   const now: Date = req.app.locals.now();
   // Duplicate first: a team that already submitted gets that message after the deadline too.
   if (await prisma().submission.count({ where: { milestoneId: milestone.id } })) throw alreadySubmitted();
-  if (submissionWindow(milestone.dueAt, now) === "CLOSED") {
+  if (submissionWindow(milestone, now) === "CLOSED") {
     throw new HttpError(409, "DEADLINE_PASSED", "The deadline for this milestone has passed.");
   }
   try {

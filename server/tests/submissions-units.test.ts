@@ -8,7 +8,7 @@ describe("F-05 deadline and team status rules", () => {
   it.each([[-1000, "OPEN"], [0, "OPEN"], [1, "CLOSED"], [1000, "CLOSED"]] as const)(
     "TEST-05.3a window at due %+d ms is %s",
     (offset, expected) => {
-      expect(submissionWindow(due, at(offset))).toBe(expected);
+      expect(submissionWindow({ dueAt: due }, at(offset))).toBe(expected);
     },
   );
 

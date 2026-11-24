@@ -16,7 +16,7 @@ export function presentMilestone(row: Milestone, now: Date, hasSubmission: boole
   const { id, teamId, title, description, dueAt, createdBy, createdAt } = row;
   return {
     id, teamId, title, description, dueAt, createdBy, createdAt,
-    window: submissionWindow(dueAt, now), teamStatus: teamStatus(dueAt, hasSubmission, now),
+    window: submissionWindow(row, now), teamStatus: teamStatus(dueAt, hasSubmission, now),
   };
 }
 const withSubmissionCount = { _count: { select: { submissions: true } } } as const;
