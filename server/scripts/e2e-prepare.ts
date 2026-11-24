@@ -55,6 +55,15 @@ try {
   // F-06: a milestone that Student 2 has already submitted, ready for feedback.
   const reviewed = await prisma.milestone.create({ data: { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F06 submitted milestone", dueAt: new Date(Date.now() + 7 * day) } });
   await prisma.submission.create({ data: { milestoneId: reviewed.id, title: "F06 work", link: "https://example.com/f06-work", submittedBy: student2.id, submittedAt: new Date() } });
+  // F-08: its own team and Student, so the lifecycle journey never adds rows to F-04's empty teams.
+  const student3 = await prisma.user.create({ data: { email: "student3@e2e.test", name: "E2E Student 3", role: "STUDENT", passwordHash } });
+  const lifecycleTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Lifecycle Team" } });
+  await prisma.teamMember.create({ data: { studentId: student3.id, teamId: lifecycleTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: lifecycleTeam.id } });
+  await prisma.milestone.create({ data: {
+    teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F08 late milestone",
+    dueAt: new Date(Date.now() - day), lateUntil: new Date(Date.now() + day),
+  } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();
