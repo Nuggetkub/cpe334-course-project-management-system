@@ -8,6 +8,7 @@
 |---|---|---|---|---|
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial baseline draft (Issue #1) |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | Review on PR #14: zero-team students (DEC-02), milestone status model (§4.3.1, DEC-13; team status by deadline, independent of manual close), late-window scope (DEC-14), NFR-09 method, DEC-11/12 referenced |
+| 0.3 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 change CR-01 (#73): BR-05 due date must be at least 24 h after server time on create (was: any future time) |
 
 ---
 
@@ -181,7 +182,7 @@ Every row of both tables and every example above is covered by a status test (F-
 | BR-02 | A supervisor may read or act on a team's data only if they are assigned to that team. | API (ownership check) | 1 |
 | BR-03 | A student may read only their own team's milestones, submissions, feedback and released grades. Requests for another team's records are rejected without revealing them. | API (ownership check) | 1 |
 | BR-04 | A student belongs to at most one team in the course and may belong to none (DEC-02). A student with no team has no team-scoped data: their requests for team milestones, submissions or feedback return 404 (DEC-10), and the UI shows the FR-05 empty state. | DB unique constraint + API | 1 (seed), 2 (UI) |
-| BR-05 | A milestone's title is 1–120 characters and its due date must be in the future when the milestone is created or extended. | API validation | 1 |
+| BR-05 | A milestone's title is 1–120 characters. Its due date must be at least 24 hours after the server's current time when the milestone is created or extended (CR-01, #73; was: "in the future"). | API validation (+ UI message) | 1 (changed by CR-01 in Lab 7) |
 | BR-06 | A submission is rejected when the server time is later than the milestone's due date, unless it falls within an allowed late window (BR-12). The client's clock is never used. | API (server time) | 1 |
 | BR-07 | **Sprint 1 only:** a team has at most one submission per milestone; a second submission is rejected. Superseded by BR-08 in Sprint 2 (DEC-04). | API + DB unique constraint | 1 |
 | BR-08 | From Sprint 2, a submission made before the deadline when one already exists creates version N+1. Earlier versions are never changed or deleted. | API + DB | 2 |

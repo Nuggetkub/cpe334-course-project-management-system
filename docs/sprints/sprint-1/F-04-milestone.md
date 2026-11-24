@@ -9,6 +9,8 @@
 | 0.1 | 2026-11-05 | @Earth2509 | @Nuggetkub (approved `8adf0b1` in PR #35) | Contract and planned tests recorded before migration, tests and implementation |
 | 0.2 | 2026-11-05 | @Earth2509 | @Nuggetkub (post-review corrections) | PR #35: Given/When/Then ACs, explicit STS preconditions and missing TEST-04.6i (15 rows); reviewer-reproduced API red evidence; staging integration retains PR #33's F-01 contract |
 | 0.3 | 2026-11-06 | @Nuggetkub | @Earth2509 | §5: last DoD item ticked after release `v0.1.0` (PR #35 merged, PR #39 released). No behaviour or test changes |
+| 0.4 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 CR-01 (#73): dueAt must be at least 24 h after server now (§1, AC-04.2, TEST-04.2u/i/e, new §7). Written before the test and code commits |
+| 0.5 | 2026-11-24 | @Nuggetkub | @Earth2509 | PR #74 review: §7 lists browser E2E separately (not run by `test-and-docker`); TEST-04.2e adds a real-server now + 1 h rejection case. Still before the test and code commits |
 
 ## 1. Feature design
 
@@ -38,10 +40,10 @@ never by loading other teams' data and filtering it in memory.
 | --- | --- | --- |
 | title | Required string, trimmed; 1–120 Unicode code points | Enter a title (1–120 characters). |
 | description | Optional string; missing defaults to empty; trimmed; ≤2000 code points (feature-level bounded-text decision) | Description must be at most 2000 characters. |
-| dueAt | Required explicit-zone ISO timestamp `YYYY-MM-DDTHH:mm:ss[.SSS]Z` or ±HH:mm (offset ≤14:00); valid calendar/time, 1–9999 AD; strictly later than the server instant | Enter a valid future due date and time. |
+| dueAt | Required explicit-zone ISO timestamp `YYYY-MM-DDTHH:mm:ss[.SSS]Z` or ±HH:mm (offset ≤14:00); valid calendar/time, 1–9999 AD; at least 24 h after the server instant (`dueAt >= now + 24 h`, CR-01) | Enter a due date at least 24 hours from now. |
 
 Reject arrays/non-object JSON, non-string fields, timezone-free dates, impossible dates, leap
-seconds, invalid offsets, and dates equal to or before now. Read the injected clock once per
+seconds, invalid offsets, and dates earlier than now + 24 h (CR-01; exactly now + 24 h is accepted). Read the injected clock once per
 write; use that instant for validation and createdAt. Ignore unknown fields including teamId,
 createdBy and createdAt: URL ownership and the authenticated actor are authoritative.
 Description limit and deterministic ordering below are design details, not new SRS requirements.
@@ -109,7 +111,7 @@ existing app styles. F-01 session handling remains shared; do not add a competin
 | AC | Given | When | Then (observable result) | Requirements |
 | --- | --- | --- | --- | --- |
 | AC-04.1 | A signed-in Supervisor or co-supervisor is assigned to team A | They create a milestone for A with valid input, then read it again | POST returns 201; DB and later GET contain the same title, UTC due time and session-derived author | FR-08 |
-| AC-04.2 | The caller passed all guards; input has an invalid title/description/date, or dueAt is not later than server now | They submit the create form or POST the body | API returns 400 fields and writes no row; the form displays matching field errors, including server-time rejection | BR-05, NFR-10 |
+| AC-04.2 | The caller passed all guards; input has an invalid title/description/date, or dueAt is earlier than server now + 24 h (CR-01) | They submit the create form or POST the body | API returns 400 fields and writes no row; the form displays matching field errors, including server-time rejection ("Enter a due date at least 24 hours from now."). dueAt exactly now + 24 h is accepted (201) | BR-05, NFR-10 |
 | AC-04.3 | A signed-in Student belongs to team A, with milestones in A and B | They open A's milestone list and select a title | Only A's rows appear, with Asia/Bangkok due time and separate window/team status; the title opens authorized detail | FR-09, NFR-06 |
 | AC-04.4 | A milestone has no submission and a fixed dueAt | The server evaluates it at due−1s, due, due+1ms and due+1s | Window is OPEN/OPEN/CLOSED/CLOSED and team status is NOT_SUBMITTED/NOT_SUBMITTED/OVERDUE/OVERDUE | FR-09, NFR-06 |
 | AC-04.5 | A Supervisor has entered valid form values | Creation receives 5xx or fails on the network | Values remain, a safe error appears, submitting controls are re-enabled and the Supervisor can retry | NFR-10 |
@@ -124,10 +126,10 @@ mocked fetch; E = real Chromium/API/DB cpms_e2e. No public schema is reset.
 
 | Test | AC | Level | Precondition/input | Action | Expected |
 | --- | --- | --- | --- | --- | --- |
-| TEST-04.2u | 04.2 | U | Fixed server now; blank/trimmed/120/121 title, astral characters, optional/2000/2001 description, nonstrings/array; explicit UTC/offsets and invalid/equal/past dates | Call parseMilestone for each input | Valid values normalized; invalid HttpError fields; no silently rolled calendar dates |
+| TEST-04.2u | 04.2 | U | Fixed server now; blank/trimmed/120/121 title, astral characters, optional/2000/2001 description, nonstrings/array; explicit UTC/offsets and invalid/equal/past dates; CR-01 rows now + 1 s and now + 24 h − 1 s (reject), now + 24 h in `Z` and `+07:00` form (accept) | Call parseMilestone for each input | Valid values normalized; invalid HttpError fields; no silently rolled calendar dates |
 | TEST-04.4u | 04.4 | U | Fixed dueAt; no submission; now at due−1s, due, due+1ms, due+1s | Call submissionWindow and teamStatus | Window and no-submission statuses match AC |
 | TEST-04.1i | 04.1 | I | pA/pA2 assigned to A; valid body plus forged author/team/time | POST for A, inspect DB row and GET detail as sA | 201, persisted trimmed input, actual actor/team/time, no private fields |
-| TEST-04.2i | 04.2 | I | pA authorized for A; invalid fields or dueAt<=fixed now | POST each invalid body; count rows | 400 fields, unchanged count |
+| TEST-04.2i | 04.2 | I | pA authorized for A; invalid fields, dueAt<=fixed now, or dueAt = now + 24 h − 1 s (CR-01) | POST each invalid body; count rows; then POST dueAt = now + 24 h | 400 fields with the `dueAt` message "Enter a due date at least 24 hours from now." and unchanged count; the boundary body returns 201 |
 | TEST-04.3i | 04.3,04.4 | I | A and B have milestones; fixed now; sA,pA,pA2 authorized for A | Read A list/detail at due boundaries | Only A, UTC values and correct statuses/detail |
 | TEST-04.6i | 04.6 | I | Team A exists, sA is a member, and A has no milestones | GET A's milestone list as sA | 200 with milestones=[], page=1, pageSize=50, total=0; empty authorized collection is not hidden/missing scope |
 | TEST-04.7i | 04.7 | I | No auth, wrong role, other/no team, unassigned, missing/malformed ID; malformed JSON | POST/GET with combined invalid credentials/scope/body; compare fixed errors and DB count | Fixed 401→403→404→400 precedence and no write; extends TEST-02.1 |
@@ -138,7 +140,7 @@ mocked fetch; E = real Chromium/API/DB cpms_e2e. No public schema is reset.
 | TEST-04.3c | 04.3 | C/U | Known UTC deadline, datetime-local Bangkok input, Student session; ready/no-team/hidden responses | Convert/format time and render Student list/detail/no-team states | Bangkok output; no create form; safe no-team/not-found |
 | TEST-04.8c | 04.8 | C | More than one mocked page; two assigned teams and a deferred old-team fetch | Request Next; select another team, then resolve old fetch | Correct page; no old-team rows replace new-team content |
 | TEST-04.1e | 04.1,04.3 | E | Real seeded Supervisor/Student share an empty journey team | Supervisor creates; Student signs in, opens list/detail and reloads | Real persisted data, two badges, Bangkok due time, no Student form |
-| TEST-04.2e | 04.2,04.6 | E | Real seeded validation team has no milestones | Open list, submit empty form, then valid-looking past due date | Empty and field feedback; real server rejects past due400 |
+| TEST-04.2e | 04.2,04.6 | E | Real seeded validation team has no milestones | Open list, submit empty form, then valid-looking past due date; then (CR-01) a future due date only 1 h after the real server time | Empty and field feedback; real server rejects past due400 and shows "Enter a due date at least 24 hours from now." (CR-01 message). The now + 1 h date also returns 400 `VALIDATION_ERROR` with `fields.dueAt`, creates no milestone (list still empty), shows the field error and keeps the entered values |
 
 15 STS rows; parameterized inputs expand into multiple executable cases. Record actual counts.
 Commit order: contract → additive migration → tests/red run → implementation/green run. Missing
@@ -240,3 +242,63 @@ only this contract document. A reviewer can confirm the docs without a new featu
 - List reads are paginated at 50 and sorted dueAt ASC/id ASC; preserve ownership and status behavior
   when adding submission relations. The E2E fixture now has a shared journey team and a validation team.
 - Peer approval, integration, issue closure and release are separate gates, not claimed by local tests.
+
+## 7. Change CR-01: 24 h minimum due date (Lab 7, #73)
+
+**Type:** adaptive maintenance. The Sprint 1 behavior was correct against SRS v0.2, and the requirement changed.
+**Contract version:** v0.5 (v0.4 plus the PR #74 review fixes), approved by @Earth2509 on `5cd9f6a` and merged as `b79aa82` before any CR-01 test or code commit.
+
+| | Old (SRS v0.2, accepted Sprint 1 `v0.3.0` = `b6cffa1`) | New (SRS v0.3, CR-01) |
+| --- | --- | --- |
+| BR-05 due date | "must be in the future when the milestone is created or extended" | "must be at least 24 hours after the server's current time when the milestone is created or extended" |
+| Implemented check | reject when `dueAt <= now` | reject when `dueAt < now + 24 h` |
+| Boundary | now + 1 s → 201 | now + 24 h − 1 s → 400; now + 24 h → 201 |
+| `dueAt` field message | Enter a valid future due date and time. | Enter a due date at least 24 hours from now. |
+
+The pre-change implementation is `server/src/milestones/validate.ts` on `staging/sprint-1` `e1aeb90`.
+It is unchanged since `b6cffa1`.
+
+### Impact
+
+| Item | Affected? | Detail |
+| --- | --- | --- |
+| Requirement | Yes | BR-05 (SRS v0.3); FR-08 wording unchanged |
+| Feature | Yes | F-04 create only. F-08 extend (Sprint 2, not built) inherits the same minimum |
+| SRS / Feature SDS / System SDS | Yes | SRS §5 BR-05; this contract §1 validation, §3 AC-04.2, §4 STS; System SDS Milestone `due_at` row |
+| Acceptance criteria | Yes | AC-04.2 (traceability v0.13) |
+| STS tests | Yes | TEST-04.2u, TEST-04.2i (exact 24 h boundary on a fixed clock); TEST-04.2e (new message and a real-server now + 1 h case). TEST-04.2c is unchanged: it does not assert the date message text |
+| Code: API validation | Yes | `parseMilestone` in `server/src/milestones/validate.ts` |
+| Code: UI | Message only | `client/src/pages/MilestonesPage.tsx` shows the same message for an unparseable date. The client does not check the 24 h rule, because the server clock is authoritative (BR-06, NFR-06) |
+| Callers / dependencies | No change | `POST /api/teams/:teamId/milestones` is the only caller. Submissions (F-05) and feedback (F-06) read existing milestones and never call `parseMilestone` |
+| Roles / ownership | No change | Guards run before body validation (401 → 403 → 404 → 400, AC-04.7). The rule only changes which 400 bodies are rejected |
+| Persistence / migration | Not applicable | No column or constraint changes. The rule applies at create time only |
+| Historical data | Not applicable | Existing milestones keep their due dates, window and team status. Nothing is re-validated |
+| Seed / test fixtures | No change | The seed and fixtures write milestones directly through Prisma, not through `parseMilestone`. Existing valid API bodies are ≥ 3 days ahead (TEST-04.1i) or 7 days ahead (TEST-04.1e) |
+| Window / status (§4.3.1), deadline BR-06 | No change | `submissionWindow` and `teamStatus` are untouched |
+| Earlier lab records | Not edited | `docs/deliverables/d1/part-f.md` and `docs/labs/lab06/uat-cases.md` quote the old message as historical evidence of the accepted Sprint 1 behavior |
+
+### Unchanged behavior and its protection
+
+| Must stay the same | Protected by |
+| --- | --- |
+| Title/description rules, trimming, forged-field handling, UTC/offset normalization | TEST-04.1i, TEST-04.2u (non-date rows), TEST-04.3c |
+| Window and team status at `due − 1 s`, `due`, `due + 1 ms`, `due + 1 s` | TEST-04.4u, TEST-04.3i |
+| Check order 401 → 403 → 404 → 400 with no write | TEST-04.7i, F-02 authz suite |
+| Submission deadline BR-06 and one submission per milestone (BR-07) | F-05 suite (TEST-05.x) |
+| Feedback on a submission | F-06 suite (TEST-06.x) |
+| Server and client | Full server and client suites plus the Docker build in CI (`test-and-docker`, `.github/workflows/ci-docker.yml`) |
+| Browser journeys | Playwright E2E (`npm run e2e`, all `e2e/*.spec.ts`). **Not run by CI**: run locally on the implementation commit, and its passed/failed/skipped counts recorded separately |
+
+### Revised expected results
+
+The only old expected result that changes is the `dueAt` message text in TEST-04.2e. The test still checks that a past due date is rejected with
+a 400 and a field error, so it keeps its purpose. TEST-04.2e also gains one new step: a due date 1 h after the
+real server time is rejected, which shows the new rule end to end (the exact boundary stays in the fixed-clock
+TEST-04.2u/i). No test is deleted, skipped or weakened.
+
+### Planned order
+
+contract v0.5 (PR #74, approved on `5cd9f6a`, merged `b79aa82`) → test commit with CR-01 boundary rows, run against the
+pre-change code (red) → implementation commit (green) → regression run → PR to `staging/sprint-1`
+→ release PR to `main` → Cloud Run deploy → deployed checks of the changed rule and a preserved
+access path.

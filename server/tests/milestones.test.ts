@@ -46,6 +46,20 @@ describe("F-04 real API and database", () => {
     expect(await prisma().milestone.count()).toBe(0);
   });
 
+  it("TEST-04.2i CR-01 rejects now + 24 h - 1 s with the dueAt message and accepts exactly now + 24 h", async () => {
+    const auth = await as("pA");
+    for (const dueAt of ["2026-11-06T11:59:59Z", "2026-11-06T18:59:59+07:00"]) {
+      const res = await request(app).post(list()).set("Authorization", auth).send({ ...valid, dueAt });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatchObject({ code: "VALIDATION_ERROR", fields: { dueAt: "Enter a due date at least 24 hours from now." } });
+    }
+    expect(await prisma().milestone.count()).toBe(0);
+    const ok = await request(app).post(list()).set("Authorization", auth).send({ ...valid, dueAt: "2026-11-06T12:00:00Z" });
+    expect(ok.status).toBe(201);
+    expect(ok.body.milestone.dueAt).toBe("2026-11-06T12:00:00.000Z");
+    expect(await prisma().milestone.count()).toBe(1);
+  });
+
   it("TEST-04.3i reads owned milestones with server-calculated states at the deadline and after it", async () => {
     await insert(f.teamB.id);
     const overdue = await insert(f.teamA.id, new Date(now.getTime() - 1));

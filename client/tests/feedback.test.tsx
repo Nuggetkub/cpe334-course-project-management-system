@@ -77,6 +77,23 @@ describe("F-06 feedback on the milestone page", () => {
     expect(box()).toHaveAttribute("aria-describedby", message.id);
   });
 
+  it("TEST-06.2d (#70) rejects spaces-only feedback before sending and sends trimmed text", async () => {
+    const fetchMock = open("SUPERVISOR", () => Response.json({ feedback: [] }),
+      (init) => Response.json({ feedback: entry(9, JSON.parse(String(init?.body)).text, "2026-11-09T05:00:00.000Z") }, { status: 201 }));
+    await screen.findByText("No feedback yet");
+    fireEvent.change(box(), { target: { value: "   " } });
+    add();
+    expect(await screen.findByText(MESSAGE)).toBeInTheDocument();
+    expect(posts(fetchMock)).toHaveLength(0);
+    expect(screen.getByText("No feedback yet")).toBeInTheDocument();
+
+    fireEvent.change(box(), { target: { value: "  Good start  " } });
+    add();
+    expect(await screen.findByText("Good start")).toBeInTheDocument();
+    expect(posts(fetchMock)).toHaveLength(1);
+    expect(JSON.parse(String(posts(fetchMock)[0][1]?.body))).toEqual({ text: "Good start" });
+  });
+
   it("TEST-06.5b keeps the text after 5xx and network errors, then adds the entry on retry", async () => {
     const outcomes: Array<() => Response | Promise<Response>> = [
       () => Response.json({ error: { code: "INTERNAL", message: "Internal server error" } }, { status: 500 }),
