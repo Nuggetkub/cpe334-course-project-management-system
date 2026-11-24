@@ -14,10 +14,10 @@ export function submissionWindow(milestone: WindowFields, now: Date): Window {
 
 // SRS §4.3.1 Sprint 1 rows: a submission makes the team Submitted, before and after the deadline (F-05).
 // Team status depends on the deadline only, never on the window (DEC-13).
-export type TeamStatus = "SUBMITTED" | "NOT_SUBMITTED" | "OVERDUE";
+export type TeamStatus = "LATE" | "SUBMITTED" | "NOT_SUBMITTED" | "OVERDUE";
 /** `latest` is the team's latest version (F-09), or a plain "has a submission" flag (Sprint 1 callers). */
 export type Latest = boolean | { late: boolean } | null;
 export function teamStatus(dueAt: Date, latest: Latest, now: Date): TeamStatus {
-  if (latest) return "SUBMITTED";
+  if (latest) return typeof latest === "object" && latest.late ? "LATE" : "SUBMITTED";
   return now.getTime() <= dueAt.getTime() ? "NOT_SUBMITTED" : "OVERDUE";
 }
