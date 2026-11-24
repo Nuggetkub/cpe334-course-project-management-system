@@ -6,7 +6,9 @@ import { bangkokInputToIso, formatBangkok } from "../time";
 
 export interface Milestone {
   id: number; teamId: number; title: string; description: string; dueAt: string;
-  window: "OPEN" | "CLOSED"; teamStatus: "NOT_SUBMITTED" | "OVERDUE" | "SUBMITTED";
+  // F-08: late window and manual close (null when not set).
+  lateUntil: string | null; closedAt: string | null; closedBy: number | null;
+  window: "OPEN" | "LATE" | "CLOSED"; teamStatus: "NOT_SUBMITTED" | "OVERDUE" | "SUBMITTED";
 }
 type Team = { id: number; name: string };
 type Page = { milestones: Milestone[]; page: number; pageSize: number; total: number };
@@ -19,7 +21,8 @@ export function MilestoneFields({ milestone }: { milestone: Milestone }) {
   return <>
     {milestone.description && <p className="milestone-description">{milestone.description}</p>}
     <p>Due <time dateTime={milestone.dueAt}>{formatBangkok(milestone.dueAt)}</time></p>
-    <p className="badges"><span>Window: {milestone.window === "OPEN" ? "Open" : "Closed"}</span>
+    {milestone.lateUntil && <p>{`Late until ${formatBangkok(milestone.lateUntil)}`}</p>}
+    <p className="badges"><span>Window: {milestone.window === "OPEN" ? "Open" : milestone.window === "LATE" ? "Late window" : "Closed"}</span>
       <span>Team status: {milestone.teamStatus === "SUBMITTED" ? "Submitted" : milestone.teamStatus === "OVERDUE" ? "Overdue" : "Not submitted"}</span></p>
   </>;
 }

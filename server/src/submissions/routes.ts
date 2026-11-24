@@ -4,7 +4,7 @@ import { assertTeamAccess, parseId, requireRole } from "../auth/authorize.js";
 import { requireAuth } from "../auth/middleware.js";
 import { HttpError, asyncHandler, notFoundError } from "../errors.js";
 import { jsonBody } from "../json-body.js";
-import { presentMilestone } from "../milestones/routes.js";
+import { milestoneClosed, presentMilestone } from "../milestones/routes.js";
 import { submissionWindow } from "../milestones/status.js";
 import { prisma } from "../prisma.js";
 import { parseSubmission } from "./validate.js";
@@ -45,7 +45,9 @@ submissionsRouter.post("/submissions", requireAuth, requireRole("STUDENT"), requ
   const now: Date = req.app.locals.now();
   // Duplicate first: a team that already submitted gets that message after the deadline too.
   if (await prisma().submission.count({ where: { milestoneId: milestone.id } })) throw alreadySubmitted();
-  if (submissionWindow(milestone, now) === "CLOSED") {
+  if (milestone.closedAt) throw milestoneClosed(); // BR-11, regardless of the deadline
+  // F-09 adds acceptance in the Late window (FR-17); until then only OPEN accepts work.
+  if (submissionWindow(milestone, now) !== "OPEN") {
     throw new HttpError(409, "DEADLINE_PASSED", "The deadline for this milestone has passed.");
   }
   try {
