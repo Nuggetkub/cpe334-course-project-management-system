@@ -16,6 +16,7 @@
 | 0.10 | 2026-11-05 | @Earth2509 | @Nuggetkub | F-04 contract and create/view implementation; AC-04.7 ownership/check order and AC-04.8 pagination added. PR #35 review approved the implementation; v0.9 from merged PR #33 is retained above |
 | 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
 | 0.12 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-06 contract v0.1 (taken over from @Earth2509): AC-06.1–AC-06.4 made precise (server-set author/time, trimming, oldest-first list, readers' 404, check order) |
+| 0.13 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 CR-01 (#73): AC-04.2 and BR-05 row use the 24 h minimum due date |
 
 ## ID conventions
 
@@ -57,7 +58,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | AC-03.6 | **[F-03.2]** A Supervisor's team list contains only their assigned teams | FR-06, BR-02 |
 | AC-03.7 | **[F-03.2]** Team view and team list show a loading state while fetching; a Supervisor with no teams sees "No teams assigned yet" | FR-06, NFR-10 |
 | AC-04.1 | A Supervisor creates a milestone for an assigned team → 201, persisted | FR-08 |
-| AC-04.2 | Title outside 1–120 chars or due date not in the future → 400 with field errors shown in the form | BR-05, NFR-10 |
+| AC-04.2 | Title outside 1–120 chars or due date earlier than server now + 24 h (CR-01) → 400 with field errors shown in the form; exactly now + 24 h is accepted | BR-05, NFR-10 |
 | AC-04.3 | A Student sees their team's milestones with due date in Asia/Bangkok time, window and team status | FR-09, NFR-06 |
 | AC-04.4 | Window and team status follow SRS §4.3.1 Sprint 1 rows at `due_at − 1 s`, `due_at`, `due_at + 1 s` | FR-09, NFR-06 |
 | AC-04.5 | When creating a milestone fails on the server (5xx or network error), the form shows the error message, keeps the entered values and allows a retry | NFR-10 |
@@ -122,7 +123,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | BR-02 | F-02 | 1 → 2, 3 | AC-02.3, AC-03.6, AC-05.5, AC-06.4 / TEST-02.3, TEST-03.6, TEST-05.5, TEST-06.4 |
 | BR-03 | F-02 | 1 → 2, 3 | AC-02.4, AC-05.5 / TEST-02.4, TEST-05.5 |
 | BR-04 | F-03.1 (DB constraint), F-02 + F-03.2 (API); F-07 (UI) | 1 → 2 | AC-02.4, AC-03.4, AC-03.5 / TEST-02.4b, TEST-03.4, TEST-03.5; Sprint 2 contract |
-| BR-05 | F-04 (create); F-08 (extend) | 1 → 2 | AC-04.2 / TEST-04.2; Sprint 2 contract |
+| BR-05 | F-04 (create); F-08 (extend) | 1 → 2; changed by CR-01 (Lab 7) | AC-04.2 / TEST-04.2u/i (24 h boundary rows), TEST-04.2c/e; Sprint 2 contract uses the same minimum |
 | BR-06 | F-05 | 1 → 2 (late window) | AC-05.3 / TEST-05.3 |
 | BR-07 | F-05 — **Sprint 1 only**, superseded by BR-08 | 1 | AC-05.4 / TEST-05.4 (replaced in S2) |
 | BR-08 | F-09 | 2 | Sprint 2 contract |
@@ -192,5 +193,6 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-04 | Authorization rules made testable: identical 404 body, check order, malformed IDs | F-02 contract v0.1 (PR review pending) | AC-02.1–AC-02.4 wording; AC-02.5 added; BR-04 also verified by TEST-02.4b |
 | 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
 | 2026-11-04 | Submission rules made testable; team status "Submitted" owned by F-05 | F-05 contract v0.1 (PR review pending) | AC-05.1, AC-05.3–AC-05.5 wording; AC-05.8, AC-05.9 added; FR-09 also verified by F-05 |
+| 2026-11-24 | CR-01: a milestone's due date must be at least 24 h after server time on create (was: any future time) | Lab 7 change request #73 | BR-05 and AC-04.2 reworded; TEST-04.2u/i gain now + 24 h − 1 s (reject) and now + 24 h (accept) rows; TEST-04.2e expects the new message |
 
 Later changes are added here with the PR that approved them.
