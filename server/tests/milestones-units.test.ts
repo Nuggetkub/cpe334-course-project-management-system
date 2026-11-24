@@ -30,4 +30,19 @@ describe("F-04 unit contract", () => {
       expect(teamStatus(now, false, at)).toBe(status);
     },
   );
+
+  // CR-01 (#73): the due date must be at least 24 h after server now (inclusive).
+  it.each(["2026-11-06T12:00:00Z", "2026-11-06T19:00:00+07:00"])(
+    "TEST-04.2u CR-01 accepts dueAt exactly now + 24 h (%s)", (dueAt) => {
+      expect(parseMilestone({ ...valid, dueAt }, now).dueAt).toEqual(new Date("2026-11-06T12:00:00Z"));
+    },
+  );
+
+  it.each(["2026-11-05T12:00:01Z", "2026-11-05T13:00:00Z", "2026-11-06T11:59:59Z", "2026-11-06T18:59:59+07:00", "2026-11-06T11:59:59.999Z"])(
+    "TEST-04.2u CR-01 rejects dueAt less than 24 h after now (%s)", (dueAt) => {
+      expect(() => parseMilestone({ ...valid, dueAt }, now)).toThrow(expect.objectContaining({
+        status: 400, code: "VALIDATION_ERROR", fields: { dueAt: "Enter a due date at least 24 hours from now." },
+      }));
+    },
+  );
 });

@@ -59,7 +59,23 @@ test("TEST-04.2e empty list and field feedback, with a real server rejection of 
   const res = await rejected;
   expect(res.status()).toBe(400);
   expect((await res.json()).error.fields).toHaveProperty("dueAt");
-  await expect(page.getByText("Enter a valid future due date and time.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Enter a due date at least 24 hours from now.", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Past deadline");
+  await expect(page.getByText("No milestones yet", { exact: true })).toBeVisible();
+
+  // CR-01 (#73): a future due date only 1 h after the real server time is rejected too.
+  const soon = new Date(Date.now() + 60 * 60 * 1000 + 7 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  await page.getByLabel("Title", { exact: true }).fill("Due too soon");
+  await page.getByLabel("Due date and time (Asia/Bangkok)", { exact: true }).fill(soon);
+  const tooSoon = page.waitForResponse((r) => r.request().method() === "POST" && /\/milestones$/.test(r.url()));
+  await page.getByRole("button", { name: "Create milestone", exact: true }).click();
+  const soonRes = await tooSoon;
+  expect(soonRes.status()).toBe(400);
+  const soonBody = await soonRes.json();
+  expect(soonBody.error.code).toBe("VALIDATION_ERROR");
+  expect(soonBody.error.fields).toHaveProperty("dueAt");
+  await expect(page.getByText("Enter a due date at least 24 hours from now.", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Due too soon");
+  await expect(page.getByLabel("Due date and time (Asia/Bangkok)", { exact: true })).toHaveValue(soon);
   await expect(page.getByText("No milestones yet", { exact: true })).toBeVisible();
 });
