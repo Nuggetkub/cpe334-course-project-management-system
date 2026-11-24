@@ -7,20 +7,18 @@ import { jsonBody } from "../json-body.js";
 import { presentMilestone } from "../milestones/routes.js";
 import { submissionWindow } from "../milestones/status.js";
 import { prisma } from "../prisma.js";
+import { createSubmission, withSubmitter, type SubmissionRow } from "./service.js";
 import { parseSubmission } from "./validate.js";
 
 // F-05: mounted at /api/milestones/:milestoneId. Guard order 401 → 403 → 404 → 400 → 409 (F-02).
 export const submissionsRouter = Router({ mergeParams: true });
 
-const withSubmitter = { submitter: { select: { id: true, name: true } } } as const;
-type SubmissionRow = Prisma.SubmissionGetPayload<{ include: typeof withSubmitter }>;
 
 function presentSubmission(row: SubmissionRow) {
   const { id, milestoneId, version, title, description, link, submittedAt, submitter } = row;
   return { id, milestoneId, version, title, description, link, submittedAt, submittedBy: submitter };
 }
 
-const alreadySubmitted = () => new HttpError(409, "ALREADY_SUBMITTED", "Your team has already submitted work for this milestone.");
 
 /** Loads the milestone the caller may see; missing, malformed and other teams' IDs are one 404 (DEC-10). */
 const requireMilestoneAccess = asyncHandler(async (req, res, next) => {
@@ -43,22 +41,8 @@ submissionsRouter.post("/submissions", requireAuth, requireRole("STUDENT"), requ
   const input = parseSubmission(req.body);
   // One server instant for the deadline check and the stored time; client times are ignored.
   const now: Date = req.app.locals.now();
-  // Duplicate first: a team that already submitted gets that message after the deadline too.
-  if (await prisma().submission.count({ where: { milestoneId: milestone.id } })) throw alreadySubmitted();
-  if (submissionWindow(milestone.dueAt, now) === "CLOSED") {
-    throw new HttpError(409, "DEADLINE_PASSED", "The deadline for this milestone has passed.");
-  }
-  try {
-    const row = await prisma().submission.create({
-      data: { ...input, milestoneId: milestone.id, version: 1, submittedBy: req.user!.id, submittedAt: now },
-      include: withSubmitter,
-    });
-    res.status(201).json({ submission: presentSubmission(row) });
-  } catch (error) {
-    // A teammate's simultaneous request won the UNIQUE (milestone_id, version) race.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw alreadySubmitted();
-    throw error;
-  }
+  const row = await createSubmission(milestone.id, input, req.user!.id, now);
+  res.status(201).json({ submission: presentSubmission(row) });
 }));
 
 submissionsRouter.get("/submission", requireAuth, requireMilestoneAccess, asyncHandler(async (req, res) => {

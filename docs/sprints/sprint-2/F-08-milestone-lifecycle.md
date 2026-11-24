@@ -11,6 +11,7 @@
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | Before implementation: §4 names every existing test that changes (response key lists, `submissionWindow` signature), the E2E fixture team, and the interface-stub step in the commit order |
 | 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #88 review of `51c42cd`: PATCH sends only changed fields (title-only save omits both dates, also when closed) with a new test; TEST-08.3i checks the extension-past-window rejection before clearing; TEST-08.1e verifies the Late window badge on a separate fixture milestone already between `dueAt` and `lateUntil` |
+| 0.4 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #90 review of `f27ae65`: PATCH, close and the submission insert each run in one transaction that locks the milestone row and validates against that locked row (BR-11, BR-12, BR-13 under concurrency); explicit F-05 order MILESTONE_CLOSED → ALREADY_SUBMITTED → DEADLINE_PASSED; TEST-08.9i and TEST-08.10i added. Recorded before the fix commit |
 
 ## 1. Feature design
 
@@ -84,7 +85,14 @@ All field errors are collected and returned together. The 409 rules are checked 
 
 Team status keeps the Sprint 1 rows and ignores the window (DEC-13): closing never changes the team status. F-09 adds the `LATE` team status.
 
-Every caller is updated to pass the milestone: the F-04 present function and the F-05 submission POST. The F-05 POST checks **CLOSED by a Supervisor first** and returns `409 MILESTONE_CLOSED` (BR-11, regardless of the deadline). It keeps `409 DEADLINE_PASSED` for a deadline that has passed with no late window. The `409 ALREADY_SUBMITTED` duplicate check keeps its Sprint 1 position until F-09 replaces it.
+Every caller is updated to pass the milestone: the F-04 present function and the F-05 submission POST.
+
+**Concurrency (v0.4).** A check made on an earlier read is not enough when two writes race. Three writes each run in **one database transaction** that first locks the milestone row (`SELECT … FOR UPDATE`, parameterized) and then decides from that locked row:
+- **PATCH** re-reads `dueAt`, `lateUntil` and `closedAt`, then validates BR-12, BR-13 and the CR-01 minimum against them, and writes. Two concurrent PATCHes are serialized, so the second one is validated against the first one's result. A deadline can't move backwards, and `lateUntil > dueAt` holds after every commit.
+- **Close** re-reads `closedAt`. Already closed → 409.
+- **Submission insert (F-05 POST)** re-reads the milestone and decides in this order: closed by a Supervisor → 409 `MILESTONE_CLOSED` (BR-11); the team already submitted → 409 `ALREADY_SUBMITTED` (BR-07, until F-09); window not Open → 409 `DEADLINE_PASSED`; otherwise insert. A submission that starts while a close holds the lock waits, sees the close, and is rejected. A submission that committed first stays, and the milestone is then closed (BR-11 keeps existing work).
+
+The early F-02 guards (401 → 403 → 404 → 400) stay before the transaction. The writes live in two small service functions (`milestones/service.ts`, `submissions/service.ts`) so tests can call them directly. Lock order for any later feature that also locks a membership row (F-07): **milestone row first, then membership row**.
 
 ### Dependencies and scope
 
@@ -167,6 +175,8 @@ Test levels:
 | TEST-08.4i | 08.4 | I | Open milestone | POST close twice; PATCH dueAt; PATCH title | 200 with server `closedAt`/`closedBy`; 409; 409 with no change; 200 |
 | TEST-08.6i | 08.6 | I | Closed milestone with future due; another closed milestone with an existing submission and feedback | sA POSTs a submission; GET submission and feedback | 409 `MILESTONE_CLOSED`, count unchanged; existing data readable |
 | TEST-08.7i | 08.7 | I | Anonymous, sA, sB, sC (no team), pB (unassigned), malformed ID, malformed JSON | PATCH / close / DELETE each | Fixed 401 → 403 → 404 → 400 order, identical 404 body, no writes; DELETE 404 and the row remains |
+| TEST-08.9i | 08.6 | I | mA: the team has a submission, and mA is closed with a future due date; mB: the team has a submission, not closed, future due | sA POSTs to each | mA → 409 `MILESTONE_CLOSED` (close wins over the duplicate); mB → 409 `ALREADY_SUBMITTED` (unchanged). No new rows |
+| TEST-08.10i | 08.2, 08.3, 08.6 | I | Real concurrency. A second database transaction locks the milestone row, changes it, and holds the lock for about 300 ms before committing, while the service function under test runs: (a) the holder extends `dueAt` to X; `updateMilestone` sets `lateUntil` between the old due date and X. (b) The holder extends `dueAt` to X; `updateMilestone` sets `dueAt` to Y, with old < Y < X. (c) The holder closes the milestone; `createSubmission` inserts | (a) 400 `fields.lateUntil` (BR-12), and the row keeps `lateUntil` null with `dueAt` = X. (b) 400 BR-13, and `dueAt` stays X. (c) 409 `MILESTONE_CLOSED` and no submission row. In each case the final row satisfies `lateUntil` null or > `dueAt`, and `dueAt` ≥ the original |
 | TEST-08.8c | 08.8 | C | Supervisor detail page with mocked responses (200, 400 fields, 500, closed); Student page | Edit, save, retry, confirm close | Busy state; field errors beside inputs; values kept; success message; closed disables dates; Student sees no Manage section |
 | TEST-08.1e | 08.1, 08.3, 08.4, 08.6 | E | "E2E Lifecycle Team" with its own Student. The fixture also seeds "F08 late milestone" with `dueAt` 1 day ago and `lateUntil` 1 day ahead | (a) Supervisor creates a milestone, edits its title, extends the due date by days and sets a late window; reloads. (b) Supervisor closes it and reloads. (c) The Student opens it. (d) The Student opens "F08 late milestone" | (a) Values persist; the window stays **Open** (the deadline is still ahead) and "Late until …" shows. (b) "Window: Closed" after reload. (c) "Window: Closed", "This milestone is closed.", no submit form, no Manage section. (d) "Window: Late window" |
 
