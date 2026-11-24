@@ -6,7 +6,8 @@ import { HttpError, asyncHandler, notFoundError } from "../errors.js";
 import { jsonBody } from "../json-body.js";
 import { prisma } from "../prisma.js";
 import { submissionWindow, teamStatus } from "./status.js";
-import { parseMilestone, parseMilestoneUpdate } from "./validate.js";
+import { closeMilestone, updateMilestone } from "./service.js";
+import { parseMilestone } from "./validate.js";
 
 export const teamMilestonesRouter = Router({ mergeParams: true });
 export const milestonesRouter = Router();
@@ -55,7 +56,6 @@ milestonesRouter.get("/:milestoneId", requireAuth, asyncHandler(async (req, res)
 }));
 
 // F-08: lifecycle changes. Guards 401 → 403 → 404 → 400, then 409 (F-02 order); denied requests write nothing.
-export const milestoneClosed = () => new HttpError(409, "MILESTONE_CLOSED", "This milestone is closed.");
 
 async function loadOwnMilestone(req: Request) {
   const id = parseId(req.params.milestoneId);
@@ -77,19 +77,13 @@ const requireOwnMilestone = asyncHandler(async (req, _res, next) => { await load
 milestonesRouter.patch("/:milestoneId", requireAuth, requireRole("SUPERVISOR"), requireOwnMilestone, jsonBody, asyncHandler(async (req, res) => {
   const now: Date = req.app.locals.now();
   const row = await loadOwnMilestone(req);
-  const update = parseMilestoneUpdate(req.body, row, now);
-  const dateChange = update.dueAt !== undefined || update.lateUntil !== undefined;
-  if (row.closedAt && dateChange) throw milestoneClosed();
-  // Conditional write: a close that lands between the read and this update is never overwritten.
-  const result = await prisma().milestone.updateMany({ where: { id: row.id, ...(dateChange ? { closedAt: null } : {}) }, data: update });
-  if (result.count === 0) throw milestoneClosed();
+  await updateMilestone(row.id, req.body, now);
   await respondWith(res, row.id, now);
 }));
 
 milestonesRouter.post("/:milestoneId/close", requireAuth, requireRole("SUPERVISOR"), requireOwnMilestone, jsonBody, asyncHandler(async (req, res) => {
   const now: Date = req.app.locals.now();
   const row = await loadOwnMilestone(req);
-  const result = await prisma().milestone.updateMany({ where: { id: row.id, closedAt: null }, data: { closedAt: now, closedBy: req.user!.id } });
-  if (result.count === 0) throw milestoneClosed();
+  await closeMilestone(row.id, req.user!.id, now);
   await respondWith(res, row.id, now);
 }));
