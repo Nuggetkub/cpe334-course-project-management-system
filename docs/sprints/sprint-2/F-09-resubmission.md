@@ -10,6 +10,7 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #89 review of `503b0c3`: retry success and retry exhaustion tested separately with a deterministic collision (TEST-09.6u); each attempt in a fresh transaction; the changed Sprint 1 assertions TEST-05.1 (`late` key) and TEST-05.7 (form after a stored submission) named |
+| 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | Found during implementation, recorded before the implementation commit: TEST-05.6 (client) and TEST-05.1e (E2E, Student step) also asserted BR-07 (no form after a first submission) and now expect the "Submit a new version" form. Pending @Earth2509's review in the F-09 PR |
 
 ## 1. Feature design
 
@@ -141,6 +142,9 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 - **TEST-05.1** (server) asserts the exact `SUBMISSION_KEYS`. It adds `late` and checks `late: false` for an on-time submission.
 - **TEST-05.7** (client) "shows a persisted submission read-only" currently expects no submit button once a submission is stored. For a Student in an accepting window (Open or Late), the page now shows the stored submission **and** the "Submit a new version" form. The checks that a Closed milestone, a passed deadline and a Supervisor show no submission form stay as they are.
 - F-05 E2E and component tests that expect "already submitted" UI text are updated to the new-version form.
+- **Added in v0.3:**
+  - **TEST-05.6** (client) ended by asserting that the form disappears after a first successful submission (BR-07). Its 409, 5xx and network value-retention checks are unchanged. Its last step now expects the empty "Submit a new version" form.
+  - **TEST-05.1e** (E2E) asserted that the Student sees no Submit button after reload (BR-07). It now expects "Submit a new version". The Supervisor's no-form check in the same test is unchanged.
 - Every change is listed in the PR, with its reason.
 
 **Commit order:**
