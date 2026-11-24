@@ -9,6 +9,7 @@
 | Version | Date | Author | Reviewer | Change |
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
+| 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | Before implementation: §4 names every existing test that changes (response key lists, `submissionWindow` signature), the E2E fixture team, and the interface-stub step in the commit order |
 
 ## 1. Feature design
 
@@ -167,12 +168,15 @@ Test levels:
 | TEST-08.8c | 08.8 | C | Supervisor detail page with mocked responses (200, 400 fields, 500, closed); Student page | Edit, save, retry, confirm close | Busy state; field errors beside inputs; values kept; success message; closed disables dates; Student sees no Manage section |
 | TEST-08.1e | 08.1, 08.4, 08.6 | E | Real seeded Supervisor and Student share the journey team | Supervisor edits the title, extends the due date, sets a late window, closes. The Student opens the milestone | Values persist after reload; badges show Late window, then Closed; the Student sees "Window: Closed" and no submit form |
 
-**Updated existing tests:** TEST-04.4u and TEST-05.x call `submissionWindow` with the milestone instead of `dueAt` (the signature change). Their expected results don't change. No existing test is deleted or weakened.
+**Updated existing tests.** None is deleted or weakened, and their other expected results don't change:
+- TEST-04.4u and TEST-05.3a call `submissionWindow` with the milestone instead of `dueAt` (signature change only).
+- TEST-04.1i and the F-05 `MILESTONE_KEYS` assertion list the three new response fields `lateUntil`, `closedAt` and `closedBy` (additive API change, §2).
+- The E2E fixture (`server/scripts/e2e-prepare.ts`) adds its own "E2E Lifecycle Team" and Student, so TEST-08.1e never adds rows to the F-04 teams that TEST-04.1e and TEST-04.2e expect to be empty.
 
 **Commit order:**
 1. contract (this PR, reviewed);
-2. additive migration;
-3. tests, with a RED run on the pre-implementation commit;
+2. additive migration, the behavior-preserving `submissionWindow(milestone, now)` signature change, and a `parseMilestoneUpdate` interface stub that always returns 501, so the new tests fail on behavior rather than on a missing import;
+3. tests, with a RED run on that commit;
 4. implementation, with a GREEN run;
 5. full regression: server, client, Docker in CI, and local Playwright.
 
