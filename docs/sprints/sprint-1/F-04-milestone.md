@@ -246,7 +246,7 @@ only this contract document. A reviewer can confirm the docs without a new featu
 ## 7. Change CR-01: 24 h minimum due date (Lab 7, #73)
 
 **Type:** adaptive maintenance. The Sprint 1 behavior was correct against SRS v0.2, and the requirement changed.
-**Contract version:** v0.4, written and reviewed before any CR-01 test or code commit.
+**Contract version:** v0.5 (v0.4 plus the PR #74 review fixes), approved by @Earth2509 on `5cd9f6a` and merged as `b79aa82` before any CR-01 test or code commit.
 
 | | Old (SRS v0.2, accepted Sprint 1 `v0.3.0` = `b6cffa1`) | New (SRS v0.3, CR-01) |
 | --- | --- | --- |

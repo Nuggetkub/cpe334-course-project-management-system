@@ -19,6 +19,11 @@ export function parseDueAt(value: unknown): Date | null {
   return Number.isFinite(result.getTime()) && result.getUTCFullYear() >= 1 && result.getUTCFullYear() <= 9999 ? result : null;
 }
 
+// CR-01 (#73), BR-05: a new milestone's due date must be at least 24 h after
+// server now (inclusive: exactly now + 24 h is accepted). Server clock only.
+export const MIN_DUE_NOTICE_MS = 24 * 60 * 60 * 1000;
+export const DUE_AT_MESSAGE = "Enter a due date at least 24 hours from now.";
+
 export function parseMilestone(body: unknown, now: Date): { title: string; description: string; dueAt: Date } {
   const input = body !== null && typeof body === "object" && !Array.isArray(body) ? body as Record<string, unknown> : {};
   const title = typeof input.title === "string" ? input.title.trim() : "";
@@ -27,7 +32,7 @@ export function parseMilestone(body: unknown, now: Date): { title: string; descr
   const fields: Record<string, string> = {};
   if (!title || [...title].length > 120) fields.title = "Enter a title (1–120 characters).";
   if (description === null || [...description].length > 2000) fields.description = "Description must be at most 2000 characters.";
-  if (!dueAt || dueAt.getTime() <= now.getTime()) fields.dueAt = "Enter a valid future due date and time.";
+  if (!dueAt || dueAt.getTime() < now.getTime() + MIN_DUE_NOTICE_MS) fields.dueAt = DUE_AT_MESSAGE;
   if (Object.keys(fields).length) throw new HttpError(400, "VALIDATION_ERROR", "Check the highlighted fields", fields);
   return { title, description: description!, dueAt: dueAt! };
 }
