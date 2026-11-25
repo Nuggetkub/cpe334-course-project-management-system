@@ -14,23 +14,24 @@ const withLatest = {
 } as const;
 
 /**
- * F-11 board data for one page, read in one consistent snapshot. Called after the route's guards; the team,
- * the page and the count are all scoped to the caller again inside the snapshot, so access lost after the
- * guard (for example an F-07 removal) gives the same fixed 404 and never the team's name. `rawPage` is the
- * unparsed `?page=` value (400 `fields.page` when invalid).
+ * F-11 board data for one page, read in one RepeatableRead snapshot after the route's guards. Inside it:
+ * the team is read with the caller's scope (none → fixed 404, so access lost after the guard, for example an
+ * F-07 removal, never returns the team's name); only then is the raw `?page=` value validated (400
+ * `fields.page`), so 401 → 404 → 400 holds here too; then the page of milestones and the count.
  */
 export async function readProgress(user: AuthUser, teamId: number, rawPage: unknown, now: Date) {
-  const page = parsePage(rawPage);
   const scope = teamScope(user);
   const where = { teamId, team: scope };
-  const [team, milestones, total] = await prisma().$transaction([
-    prisma().team.findFirst({ where: { id: teamId, ...scope }, select: { id: true, name: true } }),
-    prisma().milestone.findMany({
+  const { team, page, milestones, total } = await prisma().$transaction(async (tx) => {
+    const team = await tx.team.findFirst({ where: { id: teamId, ...scope }, select: { id: true, name: true } });
+    if (!team) throw notFoundError();
+    const page = parsePage(rawPage);
+    const milestones = await tx.milestone.findMany({
       where, include: withLatest, orderBy: [{ dueAt: "asc" }, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
-    }),
-    prisma().milestone.count({ where }),
-  ], { isolationLevel: "RepeatableRead" });
-  if (!team) throw notFoundError();
+    });
+    const total = await tx.milestone.count({ where });
+    return { team, page, milestones, total };
+  }, { isolationLevel: "RepeatableRead" });
   const rows = milestones.map((m) => {
     const latest = m.submissions[0];
     return progressRow(m, latest ? { ...latest, feedbackCount: latest._count.feedback } : null, now);
