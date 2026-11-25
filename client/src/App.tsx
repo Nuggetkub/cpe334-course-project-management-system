@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { AppShell } from "./components/AppShell";
 import { LoginPage } from "./pages/LoginPage";
 import { TeamPage } from "./pages/TeamPage";
+import { TeamManagementPage } from "./pages/TeamManagementPage";
 import { MilestonesPage } from "./pages/MilestonesPage";
 import { MilestonePage } from "./pages/MilestonePage";
 
@@ -32,6 +33,7 @@ export function App() {
           <Route index element={<Placeholder title="Home" />} />
           <Route path="team" element={<TeamPage role="STUDENT" />} />
           <Route path="teams" element={<TeamPage role="SUPERVISOR" />} />
+          <Route path="teams/:teamId/manage" element={<TeamManagementPage />} />
           <Route path="milestones" element={<MilestonesPage />} />
           <Route path="teams/:teamId/milestones" element={<MilestonesPage />} />
           <Route path="milestones/:milestoneId" element={<MilestonePage />} />
