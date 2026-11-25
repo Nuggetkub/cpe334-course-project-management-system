@@ -1,17 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support";
 
 // Uses "E2E Submission Team" from server/scripts/e2e-prepare.ts: student2@e2e.test is its only
 // member, supervisor@e2e.test is assigned, and it has one open and one past-due milestone.
-
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
-}
 
 const isSubmit = (r: { request(): { method(): string }; url(): string }) =>
   r.request().method() === "POST" && /\/api\/milestones\/\d+\/submissions$/.test(r.url());

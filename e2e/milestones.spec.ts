@@ -1,14 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support";
 
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
-}
 function futureBangkokInput() {
   const date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 7 * 60 * 60 * 1000);
   return date.toISOString().slice(0, 16);
