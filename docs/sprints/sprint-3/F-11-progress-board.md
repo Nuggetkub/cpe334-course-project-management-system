@@ -12,6 +12,7 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, before any F-11 test or code |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #93 review of `598c92b`: phase 1 and phase 2 tests separated (TEST-11.2u is feedback only; new TEST-11.3u for grades). AC-11.3 stays planned until F-11 is wired to F-10 and the before/after-release check passes; a merged F-10 alone doesn't complete it. §6 records the release path into `v0.6.0` and the DEC-11 deviation (DEC-15) |
+| 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #93 re-review of `4f0138f`: F-10 ships in `v0.5.0` before the phase 1 board, so a phase 1 "Not released" could be false. Phase 1 now **omits `grade` from every row and has no Grade column**; `{released: false}` and "Not released" are used only for the real F-10 state in phase 2. TEST-11.1i, TEST-11.6c and TEST-11.1e assert the omission |
 
 ## 1. Feature design
 
@@ -19,13 +20,13 @@ A Student opens **Progress** and sees one row per milestone of their team. The r
 - the window and the team status, computed by the existing F-08/F-09 status functions;
 - the **latest version** (number, time, and whether it's Late);
 - the **feedback status** of that latest version;
-- the **released grade**, or "Not released".
+- from phase 2 only: the **released grade**, or "Not released".
 
 The board only reads data, and it never shows anything another page couldn't show the same user.
 
 **Grade column and F-10.** The released grade comes from F-10 (#83).
-- **Phase 1 (D2 target):** this contract can be implemented and tested on everything except the grade (AC-11.1, 11.2, 11.4–11.6). The grade column reports "Not released" for every row, because nothing can be released before F-10 exists.
-- **Phase 2:** after F-10 is merged, F-11 is wired to F-10's release state, so the same endpoint returns the released grade. TEST-11.3u and TEST-11.3i are added then, test-first.
+- **Phase 1 (D2 target):** this contract can be implemented and tested on everything except the grade (AC-11.1, 11.2, 11.4–11.6). Rows have **no `grade` key** and the UI has **no Grade column**. F-10 is released in `v0.5.0` before this board ships (§6), so a placeholder "Not released" could be false for a grade that is already released. Phase 1 therefore shows nothing about grades at all.
+- **Phase 2:** after F-10 is merged, F-11 is wired to F-10's release state. Only then is `grade` added to each row and the Grade column shown, with `{released: false}` / "Not released" meaning F-10's real unreleased state. TEST-11.3u and TEST-11.3i are added then, test-first.
 
 AC-11.3 stays **planned** until that wiring is done and the before/after-release behaviour is verified, including that the response has no `score` key before release. A merged F-10 on its own doesn't complete AC-11.3. D2 reports it as planned unless all of this is done before the D2 candidate.
 
@@ -50,7 +51,7 @@ The UI finds the Student's team through the existing `GET /api/teams/mine`. A St
 | `window`, `teamStatus` | Exactly the values F-04/F-08/F-09 return for the same milestone at the same instant (DEC-13); the same functions are reused |
 | `latest` | The highest version: `{version, late, submittedAt}`, or `null` when there's no submission |
 | `feedbackStatus` | `NONE` when `latest` is null. `RECEIVED` when the latest version has at least one feedback entry. `AWAITING` when the latest version has none, even if an older version had feedback (BR-10: feedback belongs to its version) |
-| `grade` | `{released: true, score}` only when F-10 says the milestone's grades are released for this team (BR-15, DEC-06). Otherwise `{released: false}`, with **no score field at all**, so an unreleased value can't leak through the API |
+| `grade` (phase 2 only; absent in phase 1) | `{released: true, score}` only when F-10 says the milestone's grades are released for this team (BR-15, DEC-06). Otherwise `{released: false}`, with **no score field at all**, so an unreleased value can't leak through the API |
 
 Rows are ordered by `dueAt` ASC, then `id` ASC, with 50 per page, like F-04.
 
@@ -67,7 +68,7 @@ Rows are ordered by `dueAt` ASC, then `id` ASC, with 50 per page, like F-04.
 | --- | --- |
 | GET /api/teams/:teamId/progress?page=N | 200 `{team: {id, name}, rows, page, pageSize: 50, total}` |
 
-Each row is `{milestoneId, title, dueAt, window, teamStatus, latest, feedbackStatus, grade}`. An empty team is 200 with `rows: []`.
+Each row is `{milestoneId, title, dueAt, window, teamStatus, latest, feedbackStatus}` in phase 1; phase 2 adds `grade`. An empty team is 200 with `rows: []`.
 
 - **Errors:** 401, 404 (fixed body), 400 `VALIDATION_ERROR` on `fields.page` (only after the ownership check).
 - **Query shape:** one query for the page of milestones, with the latest submission (`take: 1` by version desc) and a feedback count for that version, plus one count. No per-row queries. NFR-09's method covers it in Sprint 3.
@@ -79,10 +80,10 @@ No migration. Reads only.
 ### UI
 
 A new route `/progress` and a **Progress** navigation link for Students.
-- **Table:** Milestone (links to `/milestones/:id`) | Due (ICT) | Window | Team status | Latest version | Feedback | Grade.
+- **Table:** Milestone (links to `/milestones/:id`) | Due (ICT) | Window | Team status | Latest version | Feedback, plus Grade from phase 2.
   - "Latest version" shows "Version N" plus a **Late** badge, or "Not submitted".
   - Feedback shows "Feedback received", "Awaiting feedback" or "—".
-  - Grade shows the score or "Not released".
+  - Grade (phase 2 only) shows the score or "Not released". Phase 1 has no Grade column and no grade text.
 - **States:** loading "Loading progress…"; empty "No milestones yet"; error "Could not load progress." with **Retry**; no-team empty state; Previous/Next pages.
 - On narrow screens, the table turns into stacked rows with the same labels.
 
@@ -104,13 +105,13 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 | Test ID | AC | Level | Preconditions / inputs | Steps | Expected |
 | --- | --- | --- | --- | --- | --- |
 | TEST-11.2u | 11.2 | U | Latest null; latest with 0 or 1+ feedback; feedback only on an older version | Call `progressRow(...)` | `feedbackStatus` exactly as in §1 (`NONE`, `AWAITING`, `RECEIVED`; older-version feedback gives `AWAITING`) |
-| TEST-11.1i | 11.1 | I | Team A with the five milestone states from AC-11.1, team B with one milestone, fixed clock | GET A's progress as sA; GET the F-04 list as sA | Only A's rows, in order. `window` and `teamStatus` equal the F-04 list values row by row. Phase 1 placeholder: every `grade` is `{released: false}` (not evidence for AC-11.3) |
+| TEST-11.1i | 11.1 | I | Team A with the five milestone states from AC-11.1, team B with one milestone, fixed clock | GET A's progress as sA; GET the F-04 list as sA | Only A's rows, in order. `window` and `teamStatus` equal the F-04 list values row by row. Phase 1: no row has a `grade` key |
 | TEST-11.2i | 11.2 | I | Versions 1 and 2, feedback on version 1 | GET; then add feedback to version 2 and GET again | Latest is version 2; `AWAITING`, then `RECEIVED` |
 | TEST-11.4i | 11.4 | I | Anonymous, sB, s0, pB, malformed or missing ID | GET A's progress | 401, then the fixed 404 ×4. Response bodies contain no team A titles |
 | TEST-11.5i | 11.5 | I | 51 milestones in A with tied due dates | GET page 1, page 2, page 0, page `abc` | 50 + 1 rows, stable order, total 51; 400 for an invalid page |
-| TEST-11.6c | 11.6 | C | Mocked deferred, empty, failing-then-recovering responses; a no-team Student | Render `/progress` | Loading, empty, error with Retry and recovery; no-team state; Late badge and labels in rows |
-| TEST-11.1e | 11.1, 11.2 | E | A seeded team with a submitted milestone and an unsubmitted one | The Student opens Progress and follows a row link | The rows show the version, feedback status and "Not released"; the link opens the milestone page |
-| TEST-11.3u (phase 2) | 11.3 | U | F-10 grade unreleased; released with a score | Call `progressRow(...)` | `{released: false}` with no `score` key; then `{released: true, score}` |
+| TEST-11.6c | 11.6 | C | Mocked deferred, empty, failing-then-recovering responses; a no-team Student | Render `/progress` | Loading, empty, error with Retry and recovery; no-team state; Late badge and labels in rows; phase 1: no Grade column header and no "Not released" text |
+| TEST-11.1e | 11.1, 11.2 | E | A seeded team with a submitted milestone and an unsubmitted one | The Student opens Progress and follows a row link | The rows show the version and feedback status, with no Grade column; the link opens the milestone page |
+| TEST-11.3u (phase 2) | 11.3 | U | F-10 grade unreleased; released with a score | Call `progressRow(...)` | `{released: false}` with no `score` key; then `{released: true, score}`. The Grade column appears with this change |
 | TEST-11.3i (phase 2) | 11.3 | I | After F-10 and the F-11 wiring: a grade recorded, then released | GET before and after the release | Before: no `score` key anywhere in the JSON. After: `{released: true, score}` |
 
 **Commit order:**
