@@ -2,6 +2,7 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { disconnectPrisma, prisma } from "../src/prisma.js";
+import { readProgress } from "../src/progress/service.js";
 import { expectHidden, UNAUTHENTICATED } from "./support/authz.js";
 import { cleanDatabase, createTeamsFixture, signIn } from "./support/teams.js";
 
@@ -130,6 +131,27 @@ describe("F-11 progress board", () => {
       expect(res.status).toBe(200);
       expect(res.body.rows.map((r: { title: string }) => r.title)).toEqual(["Secret team A title"]);
     }
+  });
+
+  it("TEST-11.4bi re-checks access inside the snapshot: a caller who lost access gets the fixed 404, not team A's name", async () => {
+    // readProgress runs after the route guard. Calling it directly models access lost between the guard and
+    // the snapshot (for example an F-07 removal), with no production hook.
+    await milestone("Secret team A title", hours(24));
+    const asUser = (who: Who) => ({ id: f.users[who].id, role: f.users[who].role, sessionId: 0 });
+    const denied = (who: Who) => readProgress(asUser(who), f.teamA.id, 1, NOW).then(
+      (body) => ({ resolved: JSON.stringify(body) }),
+      (error: { status?: number; code?: string }) => ({ status: error.status, code: error.code }),
+    );
+
+    // Never had access: another team's Student and another team's Supervisor.
+    expect(await denied("sB")).toEqual({ status: 404, code: "NOT_FOUND" });
+    expect(await denied("pB")).toEqual({ status: 404, code: "NOT_FOUND" });
+
+    // Had access, then lost it: sA removed from team A before the snapshot.
+    expect(await readProgress(asUser("sA"), f.teamA.id, 1, NOW)).toMatchObject({ team: { name: "Team A" }, total: 1 });
+    await prisma().teamMember.delete({ where: { studentId: f.users.sA.id } });
+    expect(await denied("sA")).toEqual({ status: 404, code: "NOT_FOUND" });
+    expectHidden(await progress("sA", f.teamA.id));
   });
 
   it("TEST-11.5i pages 51 milestones with tied due dates in dueAt/id order and rejects an invalid page after the ownership check", async () => {
