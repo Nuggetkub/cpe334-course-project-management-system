@@ -30,7 +30,7 @@ describe("F-04 real API and database", () => {
       const detail = await request(app).get(`/api/milestones/${row.id}`).set("Authorization", await as("sA"));
       expect(detail.status).toBe(200);
       expect(detail.body).toEqual(res.body);
-      expect(Object.keys(res.body.milestone).sort()).toEqual(["id", "teamId", "title", "description", "dueAt", "createdBy", "createdAt", "window", "teamStatus"].sort());
+      expect(Object.keys(res.body.milestone).sort()).toEqual(["id", "teamId", "title", "description", "dueAt", "createdBy", "createdAt", "lateUntil", "closedAt", "closedBy", "window", "teamStatus"].sort());
     }
   });
 

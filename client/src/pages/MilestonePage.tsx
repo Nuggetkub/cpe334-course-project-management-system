@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError, apiFetch } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import { formatBangkok } from "../time";
+import { ManageMilestone } from "./ManageMilestone";
 import { MilestoneFields, type Milestone } from "./MilestonesPage";
 
 // F-04's read-only milestone page, extended by F-05 with the team's submission and the submit form.
@@ -181,6 +182,7 @@ export function MilestonePage() {
   const { state: auth } = useAuth();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [saved, setSaved] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     setState({ kind: "loading" });
@@ -202,14 +204,20 @@ export function MilestonePage() {
       const { milestone, submission } = state.data;
       return <>
         <h2>{milestone.title}</h2>
+        {saved && <p role="status">{saved}</p>}
         <MilestoneFields milestone={milestone} />
+        {supervisor && <ManageMilestone milestone={milestone} onSaved={(m, message) => {
+          setSaved(message);
+          setState({ kind: "ready", data: { milestone: m, submission } });
+        }} />}
         <h3>Submission</h3>
         {submission ? <>
           <SubmissionView submission={submission} />
           <FeedbackSection submissionId={submission.id} canWrite={supervisor} />
         </> : <>
           <p>Not submitted yet</p>
-          {milestone.window === "CLOSED" && <p>The deadline has passed.</p>}
+          {milestone.closedAt ? !supervisor && <p>This milestone is closed.</p>
+            : milestone.window === "CLOSED" && <p>The deadline has passed.</p>}
           {student && milestone.window === "OPEN" && <SubmitForm milestoneId={milestone.id} onSubmitted={(created) =>
             setState({ kind: "ready", data: { milestone: { ...milestone, teamStatus: "SUBMITTED" }, submission: created } })} />}
         </>}

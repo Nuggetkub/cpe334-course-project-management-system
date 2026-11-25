@@ -15,7 +15,7 @@ const app = createApp({ clientDistDir: null, now: () => clock });
 
 const valid = { title: "Week 1 prototype", description: "Login and team view", link: "https://github.com/org/repo" };
 const SUBMISSION_KEYS = ["id", "milestoneId", "version", "title", "description", "link", "submittedAt", "submittedBy"].sort();
-const MILESTONE_KEYS = ["id", "teamId", "title", "description", "dueAt", "createdBy", "createdAt", "window", "teamStatus"].sort();
+const MILESTONE_KEYS = ["id", "teamId", "title", "description", "dueAt", "createdBy", "createdAt", "lateUntil", "closedAt", "closedBy", "window", "teamStatus"].sort();
 
 type Fixture = Awaited<ReturnType<typeof createTeamsFixture>>;
 let f: Fixture;
