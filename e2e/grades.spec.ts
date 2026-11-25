@@ -51,3 +51,45 @@ test("TEST-10.1e a saved draft stays hidden from the Student until the Superviso
   await student.reload();
   await expect(student.getByRole("region", { name: "Grade" }).getByText("85 / 100", { exact: true })).toBeVisible();
 });
+
+// F-10 v0.5 (PR #101 review): two sessions of the same Supervisor. Session A confirms the draft it saw (70)
+// after session B saved 82; the release must be refused, and A must confirm 82 explicitly.
+test("TEST-10.1e a stale release confirmation publishes nothing and asks again with the current draft", async ({ browser }) => {
+  const a = await signIn(browser, "supervisor@e2e.test");
+  await a.getByLabel("Team", { exact: true }).selectOption({ label: "E2E Team Grades" });
+  await a.getByRole("link", { name: "F10 stale release milestone" }).click();
+  const url = a.url();
+  const gradeA = a.getByRole("region", { name: "Grade" });
+  await gradeA.getByLabel("Score (0–100)").fill("70");
+  await gradeA.getByRole("button", { name: "Save draft" }).click();
+  await expect(gradeA.getByText("Saved draft: 70 / 100", { exact: true })).toBeVisible();
+
+  const b = await signIn(browser, "supervisor@e2e.test");
+  await b.goto(url);
+  const gradeB = b.getByRole("region", { name: "Grade" });
+  await gradeB.getByLabel("Score (0–100)").fill("82");
+  await gradeB.getByRole("button", { name: "Save draft" }).click();
+  await expect(gradeB.getByText("Saved draft: 82 / 100", { exact: true })).toBeVisible();
+
+  const dialogs: string[] = [];
+  a.on("dialog", (dialog) => { dialogs.push(dialog.message()); void dialog.accept(); });
+  const stale = a.waitForResponse((r) => r.request().method() === "POST" && /\/grade\/release$/.test(r.url()));
+  await gradeA.getByRole("button", { name: "Release grade" }).click();
+  expect((await stale).status()).toBe(409);
+  await expect(gradeA.getByRole("alert")).toHaveText("The draft changed to 82 / 100 before it was released. Check it and release again.");
+  await expect(gradeA.getByText("Not released yet", { exact: true })).toBeVisible();
+
+  const student = await signIn(browser, "student5@e2e.test");
+  await student.goto(url);
+  await expect(student.getByRole("region", { name: "Grade" }).getByText("Not released", { exact: true })).toBeVisible();
+
+  const confirmed = a.waitForResponse((r) => r.request().method() === "POST" && /\/grade\/release$/.test(r.url()));
+  await gradeA.getByRole("button", { name: "Release grade" }).click();
+  expect((await confirmed).status()).toBe(200);
+  expect(dialogs).toEqual([
+    "Release 70 / 100 to the team? Students will see this score.",
+    "Release 82 / 100 to the team? Students will see this score.",
+  ]);
+  await student.reload();
+  await expect(student.getByRole("region", { name: "Grade" }).getByText("82 / 100", { exact: true })).toBeVisible();
+});

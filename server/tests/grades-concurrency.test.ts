@@ -86,16 +86,18 @@ async function withHeldMilestone<T>(id: number, hold: (tx: Prisma.TransactionCli
 }
 
 describe("F-10 grade lock", () => {
-  it("TEST-10.3bi (a) a release waits on the milestone before reading the newly saved draft", async () => {
+  it("TEST-10.3bi (a) a release waits on the milestone, then refuses a confirmation the held save made stale", async () => {
     const id = await seedDraft();
     const draftAuthor = fixture.users.pA.id;
     const releaser = fixture.users.pA2.id;
-    await withHeldMilestone(id, (tx) => tx.grade.update({
+    // The releaser confirmed draft 70. Read after the lock, the draft is 82, so nothing may be published
+    // (F-10 v0.5). Without the lock the release would read 70 and publish it.
+    await expect(withHeldMilestone(id, (tx) => tx.grade.update({
       where: { milestoneId: id }, data: { draftScore: 82, updatedBy: draftAuthor, updatedAt: heldTime },
-    }), () => releaseGrade(id, releaser, undefined, competitorTime));
+    }), () => releaseGrade(id, releaser, 70, competitorTime))).rejects.toMatchObject({ status: 409, code: "GRADE_DRAFT_CHANGED" });
     expect(await prisma().grade.findMany()).toEqual([{
       milestoneId: id, draftScore: 82, updatedBy: draftAuthor, updatedAt: heldTime,
-      releasedScore: 82, releasedBy: releaser, releasedAt: competitorTime,
+      releasedScore: null, releasedBy: null, releasedAt: null,
     }]);
   }, 20_000);
 

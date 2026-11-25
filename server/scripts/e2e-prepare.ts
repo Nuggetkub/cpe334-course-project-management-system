@@ -79,6 +79,8 @@ try {
   await prisma.teamMember.create({ data: { studentId: student5.id, teamId: gradeTeam.id } });
   await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: gradeTeam.id } });
   await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 graded milestone", dueAt: new Date(Date.now() + 3 * day) } });
+  // F-10 v0.5: a second milestone for the stale-confirmation journey, so it never touches the one above.
+  await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 stale release milestone", dueAt: new Date(Date.now() + 4 * day) } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();
