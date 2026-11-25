@@ -143,11 +143,15 @@ textarea[aria-invalid="true"] { border-color: var(--danger); }
 /* F-11 progress board: a table on wide screens, stacked labelled rows on narrow ones. */
 .progress-table { width: 100%; border-collapse: collapse; background: var(--surface); margin: 12px 0; }
 .progress-table th, .progress-table td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+/* anywhere (unlike break-word) also lowers the cell's min-content width, so a long title wraps in the table. */
+.progress-table td { overflow-wrap: anywhere; }
 .badge-late { padding: 2px 6px; border: 1px solid var(--border); border-radius: 6px; font-weight: 600; }
 nav[aria-label="Progress pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 @media (max-width: 640px) {
   .progress-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .progress-table, .progress-table tbody { display: block; }
   .progress-table tr { display: block; border: 1px solid var(--border); border-radius: 8px; margin: 12px 0; padding: 8px 0; }
-  .progress-table td { display: grid; grid-template-columns: 9rem 1fr; gap: 8px; border: 0; padding: 4px 12px; }
+  /* minmax(0, 1fr) lets the value track shrink below a long word's width, so the text wraps instead. */
+  .progress-table td { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 8px; border: 0; padding: 4px 12px; }
   .progress-table td::before { content: attr(data-label); font-weight: 600; }
 }
