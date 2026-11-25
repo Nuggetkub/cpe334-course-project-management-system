@@ -33,7 +33,7 @@ flowchart LR
 | Milestone (planned) | Team 1:N Milestone for the Sprint 1 create/view flow; store title, description and UTC due time. Sprint 2 adds lifecycle fields and guards against removing records with submissions. |
 | Submission (planned) | Milestone 1:N versions over time; each version belongs to its team scope and author. Enforce unique versions within the team/milestone scope; Sprint 1 accepts only one submission per team/milestone. Allocate the next version atomically in Sprint 2. Prior versions remain immutable. |
 | Feedback (planned) | Each feedback record points to exactly one Submission version and its supervisor author. Later submissions do not move prior feedback. Validate feedback length (1–2000 characters). |
-| Grade (Sprint 2 design) | One grade per team/milestone scope; integer 0–100. Student reads exclude unreleased grades. |
+| Grade (F-10) | One grade per team milestone; integer 0–100. Student reads expose only the last explicitly released score. |
 
 For nested records, resolve the owning team and apply the same ownership check as team routes. Do not trust client-supplied owner, author, role, timestamps or version counters. Server time controls writes: Sprint 1 accepts work through the deadline inclusive. Window status and team submission status are separate; manual close changes the window, not the team status (DEC-13). Sprint 2 late-window writes are marked Late, including a first submission (DEC-14).
 
@@ -52,7 +52,7 @@ The first six rows mirror [the Prisma schema](../server/prisma/schema.prisma) us
 | Milestone | `id` PK, `team_id` FK, `title` (1–120), `description`, `due_at` (Prisma `DateTime`, PostgreSQL `timestamp(3)` storing UTC values; at least 24 h after server time on create/extend, CR-01), `created_by` Supervisor FK, `created_at` |
 | Submission | `id` PK, `milestone_id` FK (team scope derived from `Milestone.team_id`), `version` (1 in Sprint 1), `title` (1–120), `description` (≤2000), `link` (absolute HTTP/HTTPS), `submitted_by` Student FK, `submitted_at` (server time); unique (`milestone_id`, `version`) |
 | Feedback | `id` PK, `submission_id` FK to a specific version, `supervisor_id` User FK, `text` (1–2000), `created_at` |
-| Grade | Proposed `id`, `team_id`, `milestone_id`, `score` and release timestamp; one grade per team/milestone, with the milestone release operation defined in F-10. |
+| Grade | `milestone_id` is the PK and FK; derive the team from the milestone. `draft_score`, `updated_by`, `updated_at` track the latest draft. `released_score`, `released_by`, `released_at` form an optional published snapshot. Database checks enforce score bounds and complete release metadata. Save and release lock the same milestone in a transaction. |
 
 ```mermaid
 erDiagram
