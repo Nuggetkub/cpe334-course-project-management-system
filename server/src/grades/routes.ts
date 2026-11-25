@@ -6,7 +6,7 @@ import { jsonBody } from "../json-body.js";
 import { prisma } from "../prisma.js";
 import { supervisorGrade } from "./projection.js";
 import { readGrade, releaseGrade, saveGrade } from "./service.js";
-import { parseGrade } from "./validate.js";
+import { parseGrade, parseRelease } from "./validate.js";
 
 export const gradesRouter = Router({ mergeParams: true });
 const supervisors = [requireAuth, requireRole("SUPERVISOR")];
@@ -39,7 +39,8 @@ gradesRouter.put("/", ...supervisors, requireGradeWriteScope, jsonBody, asyncHan
   res.json({ grade: supervisorGrade(row) });
 }));
 
-gradesRouter.post("/release", ...supervisors, requireGradeWriteScope, asyncHandler(async (req, res) => {
-  const row = await releaseGrade(res.locals.gradeMilestoneId, req.user!.id, undefined, req.app.locals.now());
+gradesRouter.post("/release", ...supervisors, requireGradeWriteScope, jsonBody, asyncHandler(async (req, res) => {
+  const { expectedScore } = parseRelease(req.body);
+  const row = await releaseGrade(res.locals.gradeMilestoneId, req.user!.id, expectedScore, req.app.locals.now());
   res.json({ grade: supervisorGrade(row) });
 }));
