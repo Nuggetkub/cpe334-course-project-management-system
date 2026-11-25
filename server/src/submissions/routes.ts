@@ -15,8 +15,8 @@ export const submissionsRouter = Router({ mergeParams: true });
 
 
 function presentSubmission(row: SubmissionRow) {
-  const { id, milestoneId, version, title, description, link, submittedAt, submitter } = row;
-  return { id, milestoneId, version, title, description, link, submittedAt, submittedBy: submitter };
+  const { id, milestoneId, version, title, description, link, submittedAt, submitter, late } = row;
+  return { id, milestoneId, version, title, description, link, submittedAt, submittedBy: submitter, late };
 }
 
 
@@ -31,7 +31,7 @@ const requireMilestoneAccess = asyncHandler(async (req, res, next) => {
   next();
 });
 
-// Sprint 1 has one submission per milestone (version 1); Sprint 2 (F-09) adds versions.
+// F-09: versions 1, 2, 3 …; the latest one is what the milestone page shows first.
 function latestSubmission(milestoneId: number) {
   return prisma().submission.findFirst({ where: { milestoneId }, orderBy: { version: "desc" }, include: withSubmitter });
 }
@@ -45,11 +45,18 @@ submissionsRouter.post("/submissions", requireAuth, requireRole("STUDENT"), requ
   res.status(201).json({ submission: presentSubmission(row) });
 }));
 
+// FR-16: the full history, newest first, for team members and assigned Supervisors (404 otherwise).
+submissionsRouter.get("/submissions", requireAuth, requireMilestoneAccess, asyncHandler(async (req, res) => {
+  const milestone: Milestone = res.locals.milestone;
+  const rows = await prisma().submission.findMany({ where: { milestoneId: milestone.id }, orderBy: { version: "desc" }, include: withSubmitter });
+  res.json({ milestone: presentMilestone(milestone, req.app.locals.now(), rows[0] ?? null), submissions: rows.map(presentSubmission) });
+}));
+
 submissionsRouter.get("/submission", requireAuth, requireMilestoneAccess, asyncHandler(async (req, res) => {
   const milestone: Milestone = res.locals.milestone;
   const row = await latestSubmission(milestone.id);
   res.json({
-    milestone: presentMilestone(milestone, req.app.locals.now(), row !== null),
+    milestone: presentMilestone(milestone, req.app.locals.now(), row),
     submission: row ? presentSubmission(row) : null,
   });
 }));

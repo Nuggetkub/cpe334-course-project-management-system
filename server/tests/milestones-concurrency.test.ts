@@ -47,7 +47,8 @@ beforeEach(async () => {
 afterAll(async () => { try { await cleanDatabase(); } finally { await disconnectPrisma(); } });
 
 describe("F-08 concurrency and precedence", () => {
-  it("TEST-08.9i returns MILESTONE_CLOSED before ALREADY_SUBMITTED, and keeps ALREADY_SUBMITTED when not closed", async () => {
+  // F-09 (BR-08 replaces BR-07): close still wins; on an open milestone a second submission is version 2.
+  it("TEST-08.9i returns MILESTONE_CLOSED for a closed milestone even when the team has submitted, and accepts version 2 when open", async () => {
     const closed = await milestone({ closedAt: now });
     const open = await milestone();
     for (const m of [closed, open]) {
@@ -58,9 +59,9 @@ describe("F-08 concurrency and precedence", () => {
     expect(toClosed.status).toBe(409);
     expect(toClosed.body.error.code).toBe("MILESTONE_CLOSED");
     const toOpen = await request(app).post(`/api/milestones/${open.id}/submissions`).set("Authorization", auth).send(work);
-    expect(toOpen.status).toBe(409);
-    expect(toOpen.body.error.code).toBe("ALREADY_SUBMITTED");
-    expect(await prisma().submission.count()).toBe(2);
+    expect(toOpen.status).toBe(201);
+    expect(toOpen.body.submission.version).toBe(2);
+    expect(await prisma().submission.count({ where: { milestoneId: closed.id } })).toBe(1);
   });
 
   it("TEST-08.10i (a) validates a late window against a due date extended by a concurrent transaction (BR-12)", async () => {

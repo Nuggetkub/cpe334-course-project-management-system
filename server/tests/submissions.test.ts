@@ -14,7 +14,7 @@ let clock = at(-HOUR);
 const app = createApp({ clientDistDir: null, now: () => clock });
 
 const valid = { title: "Week 1 prototype", description: "Login and team view", link: "https://github.com/org/repo" };
-const SUBMISSION_KEYS = ["id", "milestoneId", "version", "title", "description", "link", "submittedAt", "submittedBy"].sort();
+const SUBMISSION_KEYS = ["id", "milestoneId", "version", "title", "description", "link", "submittedAt", "submittedBy", "late"].sort();
 const MILESTONE_KEYS = ["id", "teamId", "title", "description", "dueAt", "createdBy", "createdAt", "lateUntil", "closedAt", "closedBy", "window", "teamStatus"].sort();
 
 type Fixture = Awaited<ReturnType<typeof createTeamsFixture>>;
@@ -66,7 +66,7 @@ describe("F-05 submit milestone work (API + DB)", () => {
     expect(res.status).toBe(201);
     expect(Object.keys(res.body.submission).sort()).toEqual(SUBMISSION_KEYS);
     expect(res.body.submission).toMatchObject({
-      milestoneId: mA.id, version: 1, ...valid, submittedAt: clock.toISOString(),
+      milestoneId: mA.id, version: 1, late: false, ...valid, submittedAt: clock.toISOString(),
       submittedBy: { id: f.users.sA.id, name: f.users.sA.name },
     });
     expect(Object.keys(res.body.submission.submittedBy).sort()).toEqual(["id", "name"]);
@@ -123,25 +123,8 @@ describe("F-05 submit milestone work (API + DB)", () => {
     expect(await rows(m3.id)).toBe(0);
   });
 
-  it("TEST-05.4a rejects a second submission from any member, before and after the deadline", async () => {
-    expect((await submit("sA")).status).toBe(201);
-    const ALREADY = { error: { code: "ALREADY_SUBMITTED", message: "Your team has already submitted work for this milestone." } };
-    for (const name of ["sA2", "sA"] as const) {
-      const res = await submit(name);
-      expect(res.status).toBe(409);
-      expect(res.body).toEqual(ALREADY);
-    }
-    clock = at(1000);
-    expect((await submit("sA2")).body).toEqual(ALREADY);
-    expect(await rows()).toBe(1);
-  });
-
-  it("TEST-05.4b lets exactly one of two simultaneous submissions succeed", async () => {
-    const results = await Promise.all([submit("sA"), submit("sA2")]);
-    expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
-    expect(results.find((r) => r.status === 409)!.body.error.code).toBe("ALREADY_SUBMITTED");
-    expect(await rows()).toBe(1);
-  });
+  // TEST-05.4a and TEST-05.4b asserted BR-07 (one submission per team), retired by BR-08 in Sprint 2
+  // (DEC-04, F-09 contract §1). Replaced by TEST-09.1i and TEST-09.6i in resubmission.test.ts.
 
   it("TEST-05.5a shows the same submission to every member and assigned supervisor", async () => {
     const viewers = ["sA", "sA2", "pA", "pA2"] as const;

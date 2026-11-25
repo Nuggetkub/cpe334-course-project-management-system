@@ -64,6 +64,9 @@ try {
     teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F08 late milestone",
     dueAt: new Date(Date.now() - day), lateUntil: new Date(Date.now() + day),
   } });
+  // F-09: Student 3 has already submitted version 1, so the journey can add version 2.
+  const resubmit = await prisma.milestone.create({ data: { teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F09 resubmission milestone", dueAt: new Date(Date.now() + 7 * day) } });
+  await prisma.submission.create({ data: { milestoneId: resubmit.id, version: 1, title: "F09 first version", link: "https://example.com/f09-v1", submittedBy: student3.id, submittedAt: new Date() } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();

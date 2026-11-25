@@ -136,6 +136,8 @@ model Submission {
   submittedBy Int        @map("submitted_by")
   submitter   User       @relation(fields: [submittedBy], references: [id], onDelete: Restrict)
   submittedAt DateTime   @map("submitted_at") @db.Timestamp(3)
+  // F-09: made inside the late window (FR-17, DEC-14). Existing rows are on-time version 1.
+  late        Boolean    @default(false)
   feedback    Feedback[]
 
   @@unique([milestoneId, version])
