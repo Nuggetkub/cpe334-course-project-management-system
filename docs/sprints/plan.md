@@ -43,7 +43,7 @@ Status date: 25 Nov 2026, staging `4f56155`. Exams run 1–11 Dec, so the produc
 | F-11 phase 1 (#84, PR #94) | AC-11.1, 11.2, 11.4, 11.5, 11.6 implemented and tested at `3b72786` (R-94) | Re-review; after the `v0.5.0` sync, update the branch, rerun CI, merge | @Nuggetkub; review @Earth2509; 28 Nov |
 | `v0.6.0` D2 candidate | Not started | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
 | D2 PDF | Documents drafted (this PR) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
-| D-11 flaky sign-in wait (TEST-05.1e) | Open | Wait for the post-login navigation in every spec's `signIn` helper; 3 clean full runs | @Nuggetkub; 28 Nov |
+| D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102, `dad3ad0`) | Shared `signIn` waits for the login response; 3 clean full runs. F-10 and F-11 specs switch when #101 / #94 are updated | @Nuggetkub; done |
 | D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
 | F-11 phase 2, AC-11.3 | Planned (needs F-10) | TEST-11.3u/11.3i first, then wire `studentGrade(row)` and the Grade column | @Nuggetkub; 30 Nov |
 | F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |
