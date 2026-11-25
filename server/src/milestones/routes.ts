@@ -33,11 +33,17 @@ teamMilestonesRouter.post("/", requireAuth, requireRole("SUPERVISOR"), requireTe
   res.status(201).json({ milestone: presentMilestone(row, now, false) });
 }));
 
-teamMilestonesRouter.get("/", requireAuth, requireTeamAccess, asyncHandler(async (req, res) => {
-  const raw = req.query.page;
+/** F-04 paging, shared with F-11: a positive page number, default 1; 400 `fields.page` otherwise. */
+export const PAGE_SIZE = 50;
+export function parsePage(raw: unknown): number {
   const page = raw === undefined ? 1 : parseId(raw);
   if (page === null || page > 42949673) throw new HttpError(400, "VALIDATION_ERROR", "Check the highlighted fields", { page: "Enter a positive page number within range." });
-  const pageSize = 50;
+  return page;
+}
+
+teamMilestonesRouter.get("/", requireAuth, requireTeamAccess, asyncHandler(async (req, res) => {
+  const page = parsePage(req.query.page);
+  const pageSize = PAGE_SIZE;
   const now: Date = req.app.locals.now();
   const where = { teamId: req.team!.id, team: teamScope(req.user!) };
   // One database transaction for a consistent page and count; no other team's rows loaded.

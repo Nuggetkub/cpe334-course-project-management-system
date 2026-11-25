@@ -1,4 +1,4 @@
-import type { Window, TeamStatus } from "../milestones/status.js";
+import { submissionWindow, teamStatus, type TeamStatus, type Window } from "../milestones/status.js";
 
 // F-11 contract §1 "Row rules": one progress-board row per milestone, computed at one server instant.
 export interface ProgressMilestone { id: number; title: string; dueAt: Date; lateUntil: Date | null; closedAt: Date | null }
@@ -13,6 +13,15 @@ export interface ProgressRow {
   feedbackStatus: FeedbackStatus;
 }
 
-export function progressRow(_milestone: ProgressMilestone, _latest: ProgressLatest | null, _now: Date): ProgressRow {
-  throw new Error("F-11 progressRow is not implemented yet");
+// The window and team status come from the same F-08/F-09 functions as the milestone page (DEC-13).
+export function progressRow(milestone: ProgressMilestone, latest: ProgressLatest | null, now: Date): ProgressRow {
+  return {
+    milestoneId: milestone.id,
+    title: milestone.title,
+    dueAt: milestone.dueAt,
+    window: submissionWindow(milestone, now),
+    teamStatus: teamStatus(milestone.dueAt, latest, now),
+    latest: latest && { version: latest.version, late: latest.late, submittedAt: latest.submittedAt },
+    feedbackStatus: !latest ? "NONE" : latest.feedbackCount > 0 ? "RECEIVED" : "AWAITING",
+  };
 }
