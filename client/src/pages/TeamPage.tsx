@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, apiFetch } from "../api";
 import { useAuth, type Role } from "../auth/AuthContext";
+import { CreateTeamForm } from "./TeamManagementPage";
 
 type Summary = { id: number; name: string };
 type Team = Summary & { members: Summary[]; supervisors: Summary[] };
@@ -54,9 +55,19 @@ function TeamContent({ role }: { role: Role }) {
       </>
     );
   }
-  if (state.kind === "supervisor") return state.teams.length
-    ? <ul>{state.teams.map((team) => <li key={team.id}><Link to={`/teams/${team.id}/milestones`}>{team.name}</Link></li>)}</ul>
-    : <p>No teams assigned yet</p>;
+  if (state.kind === "supervisor") return (
+    <>
+      {state.teams.length
+        ? <ul>{state.teams.map((team) => (
+          <li key={team.id}>
+            <Link to={`/teams/${team.id}/milestones`}>{team.name}</Link>{" · "}
+            <Link to={`/teams/${team.id}/manage`}>Manage {team.name}</Link>
+          </li>
+        ))}</ul>
+        : <p>No teams assigned yet</p>}
+      <CreateTeamForm />
+    </>
+  );
   if (!state.team) return <p>You are not assigned to a team yet</p>;
 
   return (
@@ -74,7 +85,7 @@ function TeamContent({ role }: { role: Role }) {
 export function TeamPage({ role }: { role: Role }) {
   const { state } = useAuth();
   return (
-    <section>
+    <section className="team-page">
       <h2>{role === "STUDENT" ? "My team" : "My teams"}</h2>
       {state.status === "authenticated" && state.user.role === role
         ? <TeamContent key={state.user.id + ":" + role} role={role} />

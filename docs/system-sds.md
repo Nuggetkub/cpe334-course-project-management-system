@@ -83,11 +83,13 @@ API routes live under `/api` and return JSON except intentional no-content respo
 | Operation | Student | Supervisor |
 | --- | --- | --- |
 | Session identity/logout | Own session | Own session |
-| Team view | Own roster via planned `GET /api/teams/mine`; no team → 404 | Assigned list via planned `GET /api/teams`; no assignments → empty list |
+| Team view | Own roster via `GET /api/teams/mine`; no team → 404 | Assigned list via `GET /api/teams`; no assignments → empty list |
 | Milestones | Read own team's | Read/create for assigned teams; lifecycle edits in Sprint 2 |
 | Submissions | Read/submit for own team in allowed window | Read assigned teams' versions; no student submission writes |
 | Feedback and grades | Read own team's feedback and released grades | Record feedback for assigned teams; record/release grades in Sprint 2 |
 | Team administration and reporting | No team-management writes; own progress in Sprint 3 | Manage assigned teams in Sprint 2; assigned-team overview/export in Sprint 3 |
+
+F-07 adds `POST /api/teams`, `GET /api/teams/:teamId` and the subordinate candidate and membership routes. Team creation uses the configured course and the authenticated creator; team-scoped routes check Supervisor role and assignment before validation. Removal locks only the membership and checks all authored versions in that team. A submission locks its milestone first and then rechecks the same membership inside each insert attempt, so removed students cannot write from a stale authorization check. See the [F-07 API and error contract](sprints/sprint-2/F-07-team-management.md#api-and-errors).
 
 `POST /api/auth/login` verifies bcrypt (configured work factor at least 10; default 12), then returns an opaque token and public user data. Passwords longer than 72 bytes are rejected, never truncated. Unknown email and wrong password return the same 401 to avoid account enumeration. The browser keeps the token in sessionStorage and sends it as Bearer; PostgreSQL stores only its SHA-256 hash. `GET /api/auth/me` verifies the session on reload; expiry is fixed at eight hours. `POST /api/auth/logout` revokes the presented session; the browser clears its token. Never log tokens or passwords. See [authentication](sprints/sprint-1/F-01-auth.md) and [authorization](sprints/sprint-1/F-02-authz.md).
 
@@ -97,6 +99,7 @@ API routes live under `/api` and return JSON except intentional no-content respo
 | --- | --- |
 | Login and protected shell | Anonymous access redirects to login. Show field validation, safe sign-in errors and loading while checking the session. |
 | My team / My teams | Student opens own roster; supervisor opens assigned list. Announce loading; show role-specific no-team text; show safe error and Retry on fetch failure. The API enforces 403 for wrong roles and 404 for hidden or missing team records; the UI displays a safe message. |
+| Team management (F-07) | Supervisors create a team from My teams, open a roster, search/page through eligible students and confirm removals. Recoverable errors preserve inputs; protected authors remain in the roster. Students retain the read-only My team view. |
 | Milestones and submission | Open via role navigation and team scope. Show loading/empty/error, deadline and team statuses, and field-level errors. Do not display another team's record on 404. |
 | Feedback, grades and progress | Show feedback beside its version; distinguish no feedback from an error. Hide unpublished grades from students; Sprint 3 filtered views distinguish no matches from no data. |
 
