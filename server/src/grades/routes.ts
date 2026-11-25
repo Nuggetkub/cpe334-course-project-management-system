@@ -40,6 +40,6 @@ gradesRouter.put("/", ...supervisors, requireGradeWriteScope, jsonBody, asyncHan
 }));
 
 gradesRouter.post("/release", ...supervisors, requireGradeWriteScope, asyncHandler(async (req, res) => {
-  const row = await releaseGrade(res.locals.gradeMilestoneId, req.user!.id, req.app.locals.now());
+  const row = await releaseGrade(res.locals.gradeMilestoneId, req.user!.id, undefined, req.app.locals.now());
   res.json({ grade: supervisorGrade(row) });
 }));

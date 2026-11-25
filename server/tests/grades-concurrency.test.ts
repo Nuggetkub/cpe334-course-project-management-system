@@ -92,7 +92,7 @@ describe("F-10 grade lock", () => {
     const releaser = fixture.users.pA2.id;
     await withHeldMilestone(id, (tx) => tx.grade.update({
       where: { milestoneId: id }, data: { draftScore: 82, updatedBy: draftAuthor, updatedAt: heldTime },
-    }), () => releaseGrade(id, releaser, competitorTime));
+    }), () => releaseGrade(id, releaser, undefined, competitorTime));
     expect(await prisma().grade.findMany()).toEqual([{
       milestoneId: id, draftScore: 82, updatedBy: draftAuthor, updatedAt: heldTime,
       releasedScore: 82, releasedBy: releaser, releasedAt: competitorTime,

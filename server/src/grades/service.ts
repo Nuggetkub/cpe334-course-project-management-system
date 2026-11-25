@@ -47,7 +47,9 @@ export async function saveGrade(milestoneId: number, supervisorId: number, score
   }));
 }
 
-export async function releaseGrade(milestoneId: number, supervisorId: number, now: Date): Promise<Grade> {
+// F-10 v0.5: `expectedScore` is the draft the Supervisor confirmed. Interface only in this commit; the
+// comparison under the milestone lock follows with its tests.
+export async function releaseGrade(milestoneId: number, supervisorId: number, _expectedScore: number | undefined, now: Date): Promise<Grade> {
   return withGradeLock(milestoneId, supervisorId, async (tx) => {
     const grade = await tx.grade.findUnique({ where: { milestoneId } });
     if (!grade) throw new HttpError(409, "GRADE_NOT_RECORDED", "Save a draft grade before releasing it.");
