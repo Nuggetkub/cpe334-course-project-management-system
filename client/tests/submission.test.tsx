@@ -23,6 +23,8 @@ function open(role: "STUDENT" | "SUPERVISOR", get: Handler, post: Handler = () =
     if (url.endsWith("/api/auth/me")) return Promise.resolve(Response.json({ user: { id: 1, name: "Somchai Student", role } }));
     // F-06 loads feedback once a submission is shown; F-05's tests only need the empty list.
     if (url.endsWith("/feedback")) return Promise.resolve(Response.json({ feedback: [] }));
+    // F-10 adds a Grade section to this page; answer its read so it never competes with these assertions.
+    if (url.endsWith("/grade")) return Promise.resolve(Response.json({ grade: role === "SUPERVISOR" ? { draftScore: null, released: false } : { released: false } }));
     return Promise.resolve(init?.method === "POST" ? post(url, init) : get(url, init));
   });
   vi.stubGlobal("fetch", fetchMock);

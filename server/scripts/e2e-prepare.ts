@@ -72,6 +72,13 @@ try {
     { email: "manager-f07@e2e.test", name: "E2E F07 Supervisor", role: "SUPERVISOR", passwordHash },
     { email: "student-f07@e2e.test", name: "E2E F07 Student", role: "STUDENT", passwordHash },
   ] });
+  // F-10: its own team and Student, so no other journey changes this grade. Named so the Supervisor's
+  // default team (alphabetically first) stays "E2E Journey Team" for the F-04 journeys.
+  const student5 = await prisma.user.create({ data: { email: "student5@e2e.test", name: "E2E Student 5", role: "STUDENT", passwordHash } });
+  const gradeTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Team Grades" } });
+  await prisma.teamMember.create({ data: { studentId: student5.id, teamId: gradeTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: gradeTeam.id } });
+  await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 graded milestone", dueAt: new Date(Date.now() + 3 * day) } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();

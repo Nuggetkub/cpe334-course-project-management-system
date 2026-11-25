@@ -23,6 +23,8 @@ function open(role: "STUDENT" | "SUPERVISOR", feedback: Handler, post: Handler =
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (url.endsWith("/api/auth/me")) return Promise.resolve(Response.json({ user: { id: 2, name: "Dr. Supervisor", role } }));
     if (url.endsWith("/api/milestones/7/submission")) return Promise.resolve(Response.json({ milestone, submission }));
+    // F-10 adds a Grade section to this page; answer its read so it never competes with these assertions.
+    if (url.endsWith("/grade")) return Promise.resolve(Response.json({ grade: role === "SUPERVISOR" ? { draftScore: null, released: false } : { released: false } }));
     if (url.endsWith("/api/submissions/3/feedback")) return Promise.resolve(init?.method === "POST" ? post(init) : feedback(init));
     return Promise.resolve(Response.json({ error: { code: "NOT_FOUND" } }, { status: 404 }));
   });
