@@ -3,6 +3,7 @@ import { HttpError } from "../errors.js";
 import { lockMilestone, milestoneClosed } from "../milestones/service.js";
 import { submissionWindow } from "../milestones/status.js";
 import { prisma } from "../prisma.js";
+import { lockTeamMembership } from "../teams/membership.js";
 import { insertNextVersion } from "./versions.js";
 
 // Submission insert, called after the route's F-02 guards and body validation.
@@ -16,6 +17,7 @@ export type SubmissionInput = { title: string; description: string; link: string
 export async function createSubmission(milestoneId: number, input: SubmissionInput, userId: number, now: Date): Promise<SubmissionRow> {
   return insertNextVersion(() => prisma().$transaction(async (tx) => {
     const milestone = await lockMilestone(tx, milestoneId);
+    await lockTeamMembership(tx, milestone.teamId, userId);
     if (milestone.closedAt) throw milestoneClosed();
     const window = submissionWindow(milestone, now);
     if (window === "CLOSED") throw new HttpError(409, "DEADLINE_PASSED", "The deadline for this milestone has passed.");
@@ -24,5 +26,5 @@ export async function createSubmission(milestoneId: number, input: SubmissionInp
       data: { ...input, milestoneId, version: (_max.version ?? 0) + 1, late: window === "LATE", submittedBy: userId, submittedAt: now },
       include: withSubmitter,
     });
-  }));
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted }));
 }

@@ -95,7 +95,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-04 | F-01 | 1 | AC-01.7 / TEST-01.7 (E2E) |
 | FR-05 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
 | FR-06 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
-| FR-07 | F-07 Team management | 2 | Sprint 2 contract |
+| FR-07 | [F-07 Team management](sprints/sprint-2/F-07-team-management.md) | 2 | AC-07.1–07.3, 07.5–07.6 / TEST-07.1i–07.3i, 07.5i, 07.6c, 07.1e |
 | FR-08 | [F-04 Milestones: create and view](sprints/sprint-1/F-04-milestone.md) | 1 | AC-04.1, AC-04.2, AC-04.7 / TEST-04.1i/e, TEST-04.2u/i/c/e, TEST-04.7i |
 | FR-09 | F-04 (window, Not submitted / Overdue), F-05 (Submitted) | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4, AC-04.6, AC-04.8, AC-05.8 / TEST-04.3i/c, TEST-04.4u, TEST-04.6i/c, TEST-04.8i/c, TEST-05.8 |
 | FR-10 | F-08 Milestone lifecycle | 2 | Sprint 2 contract |
@@ -134,7 +134,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | BR-13 | F-08 | 2 | Sprint 2 contract |
 | BR-14 | F-08 | 2 | Sprint 2 contract |
 | BR-15 | F-10 | 2 | Sprint 2 contract |
-| BR-16 | F-07 | 2 | Sprint 2 contract |
+| BR-16 | F-07 | 2 | AC-07.3–07.4 / TEST-07.3i, 07.4i, 07.4bi (real PostgreSQL; both committed orders and concurrent removal/submission) |
 
 ### Non-functional requirements
 
