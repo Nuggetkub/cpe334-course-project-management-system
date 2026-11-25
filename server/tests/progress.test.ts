@@ -152,6 +152,15 @@ describe("F-11 progress board", () => {
     await prisma().teamMember.delete({ where: { studentId: f.users.sA.id } });
     expect(await denied("sA")).toEqual({ status: 404, code: "NOT_FOUND" });
     expectHidden(await progress("sA", f.teamA.id));
+
+    // 401 → 404 → 400 holds in the snapshot too: no access plus an invalid page is the fixed 404, not 400.
+    for (const who of ["sA", "sB", "pB"] as const) {
+      for (const rawPage of ["abc", "0"]) {
+        const res = await readProgress(asUser(who), f.teamA.id, rawPage, NOW).then(
+          () => ({ resolved: true }), (error: { status?: number; code?: string }) => ({ status: error.status, code: error.code }));
+        expect(res).toEqual({ status: 404, code: "NOT_FOUND" });
+      }
+    }
   });
 
   it("TEST-11.5i pages 51 milestones with tied due dates in dueAt/id order and rejects an invalid page after the ownership check", async () => {
