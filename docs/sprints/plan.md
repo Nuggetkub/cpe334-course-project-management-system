@@ -36,13 +36,14 @@ Status date: 25 Nov 2026, staging `4f56155`. Exams run 1–11 Dec, so the produc
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
-| F-10 grades (#83) | Server implemented and tested, integrated (#98): AC-10.1 to 10.4 PASS | Grade section on the milestone page with TEST-10.5c (tests first), browser TEST-10.1e, review, integrate | Owner to confirm (@Earth2509, or @Nuggetkub as offered on #96/#98); 26 Nov |
+| F-10 grades (#83) | Server integrated (#98). Grade UI and v0.5 release rule implemented and tested on PR #101 | Re-review and merge #101 | @Nuggetkub (UI, as offered on #96/#98); review @Earth2509; 26 Nov |
 | R-01 single-course preflight | **Done** 25 Nov: live count is 1 | None | @Nuggetkub; done |
-| D-10 TEST-02.1 registry | Open | Add the F-08 and F-09 routes in a test PR to staging, and the F-11 route in #94 | @Nuggetkub; 26 Nov |
+| D-10 TEST-02.1 registry | F-08/F-09 done (#100) | Add the F-11 route in #94 when it's updated after `v0.5.0` | @Nuggetkub; 28 Nov |
 | `v0.5.0` Sprint 2 release (#87) | F-07, F-08, F-09 and the F-10 server integrated (`4f56155`); F-10 UI missing | Release PR `staging/sprint-2` → `main`, regression on its commit, tag, deploy, deployed checks (critical journey, persistence NFR-07, a rule rejection, a 403/404) | @Nuggetkub (PR), @Earth2509 (review); 27 Nov |
 | F-11 phase 1 (#84, PR #94) | AC-11.1, 11.2, 11.4, 11.5, 11.6 implemented and tested at `3b72786` (R-94) | Re-review; after the `v0.5.0` sync, update the branch, rerun CI, merge | @Nuggetkub; review @Earth2509; 28 Nov |
 | `v0.6.0` D2 candidate | Not started | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
 | D2 PDF | Documents drafted (this PR) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
+| D-11 flaky sign-in wait (TEST-05.1e) | Open | Wait for the post-login navigation in every spec's `signIn` helper; 3 clean full runs | @Nuggetkub; 28 Nov |
 | D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
 | F-11 phase 2, AC-11.3 | Planned (needs F-10) | TEST-11.3u/11.3i first, then wire `studentGrade(row)` and the Grade column | @Nuggetkub; 30 Nov |
 | F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |

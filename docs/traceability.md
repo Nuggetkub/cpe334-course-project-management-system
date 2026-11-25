@@ -17,6 +17,7 @@
 | 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
 | 0.12 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-06 contract v0.1 (taken over from @Earth2509): AC-06.1–AC-06.4 made precise (server-set author/time, trimming, oldest-first list, readers' 404, check order) |
 | 0.13 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 CR-01 (#73): AC-04.2 and BR-05 row use the 24 h minimum due date |
+| 0.15 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 review: coverage splits fully from partly verified; AC-05.3 qualified for the late window; D-10 resolved for F-08/F-09 (#100); F-10 Grade UI on PR #101 (result set R-101) |
 | 0.14 | 2026-11-25 | @Nuggetkub | @Earth2509 | D2 Part D: every AC has an implementation and verification status; Sprint 2 (F-07 to F-10) and Sprint 3 (F-11 to F-13) AC tables; the matrix records requirement → feature → sprint → AC → planned test → actual file → result and version; coverage gaps listed (D-09, D-10) |
 
 ## ID conventions
@@ -39,9 +40,10 @@ A contract author may split or renumber AC, and updates this file **in the same 
 |---|---|---|---|
 | **R-S1** | `v0.4.0` (`aa191ba`), deployed `cpms-00008-l48` | CI on PR #77; local server and client suites; Lab 7 deployed checks L7-D00 to D04 | Server 218/218, client 53/53, deployed checks PASS |
 | **R-S2** | `staging/sprint-2` at `4f56155` (F-01 to F-09, F-10 server) | CI run [45603170454](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45603170454) on #98's head `28d16e7`, whose tree is identical to `4f56155`; local run on `28d16e7` | Server 315/315, client 67/67 (CI and local), both builds pass, E2E 10/10 (local) |
+| **R-101** | PR #101 head `6ef3c4f` (F-10 Grade UI and the v0.5 release rule, based on staging `19a9b1d`) | CI run [45633427363](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45633427363); local Playwright on `c4c86c2` | Server 331/331, client 83/83 (CI and local), both builds pass. E2E: first run 11/12 (TEST-05.1e sign-in timeout, D-11), alone 2/2, full rerun **12/12** |
 | **R-94** | PR #94 head `3b72786` (F-11 phase 1, based on staging `2d5364e`) | CI run [45586183430](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45586183430); local Playwright | Server 260/260, client 69/69, E2E 12/12 |
 
-No test in these sets was skipped or failed.
+No test in these sets was skipped. The one failure is disclosed in R-101 (flaky TEST-05.1e sign-in wait, D-11, passed on rerun).
 
 ## Sprint 1 acceptance criteria
 
@@ -81,7 +83,7 @@ All Sprint 1 AC are implemented and released (`v0.3.0`, accepted by StudyTrack U
 | AC-04.8 | Team milestone list paginates 50 rows by dueAt ASC/id ASC; team changes cannot show stale prior-team results | FR-09, NFR-10 | Yes | PASS R-S1, R-S2 |
 | AC-05.1 | A Student of the milestone's team submits title, description, link while the window is Open → 201, persisted as version 1 with submitter and server time | FR-13 | Yes | PASS R-S1, R-S2 |
 | AC-05.2 | Invalid title/description/link → 400 with field errors shown in the form | BR-09, NFR-10 | Yes | PASS R-S1, R-S2 |
-| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` → 409 `DEADLINE_PASSED` (server clock; client times ignored) | BR-06, NFR-06 | Yes | PASS R-S1, R-S2 |
+| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` **when no late window is open** → 409 `DEADLINE_PASSED` (server clock; client times ignored). From Sprint 2, a submission inside an open late window is accepted and marked Late (AC-09.2) | BR-06, NFR-06 | Yes | PASS R-S1, R-S2. Late-window acceptance: TEST-09.2i; rejection outside it: TEST-09.3i (both R-S2) |
 | AC-05.4 | A second submission for the same team and milestone, including two members at the same moment → 409 `ALREADY_SUBMITTED`; one row | BR-07 | Retired | BR-07 retired by BR-08 (F-09). TEST-05.4a/b replaced by TEST-09.1i and TEST-09.6i |
 | AC-05.5 | Team members and assigned Supervisors see the persisted submission with submitter and time; other teams, no team, unassigned Supervisors → 404 | FR-14, BR-02, BR-03 | Yes | PASS R-S1, R-S2 |
 | AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 | Yes | PASS R-S1; R-S2 with F-09's revised TEST-05.6 (form returns as "Submit a new version") |
@@ -115,7 +117,7 @@ Full wording, inputs and expected results are in each contract. **Integrated** m
 | AC-08.4 | Close: `closedAt`/`closedBy` set; second close 409; dates locked | FR-11 | TEST-08.4i → `milestones-lifecycle.test.ts` | Yes | PASS R-S2 |
 | AC-08.5 | Window rows at due − 1 s, due, due + 1 ms, late_until, + 1 ms, closed | DEC-13, §4.3.1 | TEST-08.5u → `milestones-lifecycle-units.test.ts` | Yes | PASS R-S2 |
 | AC-08.6 | Submitting to a closed milestone → 409 `MILESTONE_CLOSED`, no row | BR-11 | TEST-08.6i, 08.9i, 08.10i → `milestones-lifecycle.test.ts`, `milestones-concurrency.test.ts` | Yes | PASS R-S2. Race tests fail on unlocked code (D-01) |
-| AC-08.7 | Guard order; `DELETE` → 404 and the row stays | BR-01–BR-03, BR-14, NFR-02, NFR-03, NFR-05 | TEST-08.7i → `milestones-lifecycle.test.ts` | Yes | PASS R-S2. Not yet in the TEST-02.1 registry (D-10) |
+| AC-08.7 | Guard order; `DELETE` → 404 and the row stays | BR-01–BR-03, BR-14, NFR-02, NFR-03, NFR-05 | TEST-08.7i → `milestones-lifecycle.test.ts`; both routes in the TEST-02.1 registry (#100) | Yes | PASS R-S2 |
 | AC-08.8 | Supervisor detail page: busy, field errors, retry, close confirmation | NFR-10 | TEST-08.8c, 08.1e → `client/tests/milestone-manage.test.tsx`, `e2e/lifecycle.spec.ts` | Yes | PASS R-S2 |
 | AC-09.1 | New version N+1 while Open; earlier versions unchanged | FR-15, BR-08 | TEST-09.1i, 09.1e → `server/tests/resubmission.test.ts`, `e2e/resubmission.spec.ts` | Yes | PASS R-S2 |
 | AC-09.2 | Late window: first submission and new versions marked Late; boundary at `lateUntil` | FR-17, BR-12, DEC-14 | TEST-09.2u, 09.2i → `resubmission-units.test.ts`, `resubmission.test.ts` | Yes | PASS R-S2 |
@@ -123,13 +125,13 @@ Full wording, inputs and expected results are in each contract. **Integrated** m
 | AC-09.4 | History newest first for team and assigned Supervisors; fixed 404 for others | FR-16, BR-02, BR-03 | TEST-09.4i, 09.8c, 09.1e → `resubmission.test.ts`, `client/tests/resubmission.test.tsx`, `e2e/resubmission.spec.ts` | Yes | PASS R-S2 |
 | AC-09.5 | Feedback stays on its version; team status follows the latest version | BR-10, DEC-13 | TEST-09.5i, 09.2u → `resubmission.test.ts`, `resubmission-units.test.ts` | Yes | PASS R-S2 |
 | AC-09.6 | Simultaneous submits get consecutive versions; 409 only after 3 collisions | BR-08 | TEST-09.6u, 09.6i → `resubmission-units.test.ts`, `resubmission.test.ts` | Yes | PASS R-S2. Only the version index is retried (D-03) |
-| AC-09.7 | 401 → 403 → 404 → 400; no write | NFR-02, NFR-03, NFR-05 | TEST-09.7i → `resubmission.test.ts` | Yes | PASS R-S2. History route not yet in the TEST-02.1 registry (D-10) |
+| AC-09.7 | 401 → 403 → 404 → 400; no write | NFR-02, NFR-03, NFR-05 | TEST-09.7i → `resubmission.test.ts`; history route in the TEST-02.1 registry (#100) | Yes | PASS R-S2 |
 | AC-09.8 | New-version form, Late notice, no form when Closed, history with badges | NFR-10 | TEST-09.8c → `client/tests/resubmission.test.tsx` | Yes | PASS R-S2 |
-| AC-10.1 | Save a 0–100 draft; one row; allowed with no submission and in any window | FR-20, FR-21, BR-15 | TEST-10.1u, 10.1i, 10.1bi, 10.1ci (DB checks) → `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts`; TEST-10.1e not written | Yes (server) | PASS R-S2 (API and DB). Browser TEST-10.1e **planned** |
-| AC-10.2 | Students get the same minimal response until release; then the score | FR-21, BR-03, BR-15, DEC-06 | TEST-10.1u, 10.2i → `grades-units.test.ts`, `grades.test.ts`; TEST-10.1e not written | Yes (server) | PASS R-S2 (byte-identical pre-release body). Browser check **planned** |
-| AC-10.3 | New draft after release stays private; repeat release keeps the record; save/release race is coherent | FR-20, FR-21, BR-15 | TEST-10.3i, 10.3bi (held lock) → `grades.test.ts`, `grades-concurrency.test.ts` | Yes | PASS R-S2. Held-lock cases fail with the lock removed (author's and reviewer's mutation checks) |
+| AC-10.1 | Save a 0–100 draft; one row; allowed with no submission and in any window | FR-20, FR-21, BR-15 | TEST-10.1u, 10.1i, 10.1bi, 10.1ci (DB checks) → `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts`; TEST-10.1e on PR #101 | Yes (server); UI in PR | API and DB PASS R-S2. Browser TEST-10.1e PASS R-101 |
+| AC-10.2 | Students get the same minimal response until release; then the score | FR-21, BR-03, BR-15, DEC-06 | TEST-10.1u, 10.2i → `grades-units.test.ts`, `grades.test.ts`; TEST-10.1e on PR #101 | Yes (server); UI in PR | API PASS R-S2 (byte-identical pre-release body). Browser PASS R-101 |
+| AC-10.3 | New draft after release stays private; repeat release keeps the record; save/release race is coherent; a release confirmed for an older draft is refused | FR-20, FR-21, BR-15 | TEST-10.3i, 10.3bi (held lock) → `grades.test.ts`, `grades-concurrency.test.ts`; TEST-10.3di (two Supervisors) on PR #101 | Yes | PASS R-S2 for the v0.2 rule. The v0.5 rule (TEST-10.3di, changed 10.3bi (a)) PASS R-101, **not yet integrated** |
 | AC-10.4 | 401 / 403 / masked 404 before validation; no change | BR-01–BR-03, NFR-03, NFR-05, DEC-10 | TEST-10.4i → `grades.test.ts`; routes in the TEST-02.1 registry | Yes | PASS R-S2 |
-| AC-10.5 | Grade section states; only Supervisors see actions | FR-20, FR-21, NFR-10 | TEST-10.5c, 10.1e → not written | No | **Planned**: the Grade UI isn't built yet (#83 open). Blocks `v0.5.0` |
+| AC-10.5 | Grade section states; only Supervisors see actions; release only the confirmed draft; malformed responses never rendered | FR-20, FR-21, NFR-10 | TEST-10.5c, 10.1e (two journeys) → `client/tests/grade.test.tsx`, `e2e/grades.spec.ts` (PR #101) | In PR | PASS R-101, **not yet integrated**. Blocks `v0.5.0` until #101 merges |
 
 ## Sprint 3 acceptance criteria
 
@@ -138,7 +140,7 @@ Full wording, inputs and expected results are in each contract. **Integrated** m
 | AC-11.1 | One row per own-team milestone, in due order, same window and team status as F-04 | FR-22, DEC-13 | TEST-11.1i, 11.1e → `server/tests/progress.test.ts`, `e2e/progress.spec.ts` (PR #94) | In PR | PASS R-94 |
 | AC-11.2 | Latest version and its own feedback status: AWAITING, then RECEIVED | FR-22, BR-10 | TEST-11.2u, 11.2i → `progress-units.test.ts`, `progress.test.ts` | In PR | PASS R-94 |
 | AC-11.3 | Released grade only after release; no `score` key before (phase 2) | FR-22, BR-15, DEC-06 | TEST-11.3u, 11.3i → not written (needs F-10) | No | Planned |
-| AC-11.4 | 401 then the fixed 404 for hidden or missing scope, also inside the snapshot | BR-03, BR-04, NFR-03 | TEST-11.4i, 11.4bi → `progress.test.ts` | In PR | PASS R-94. Route not yet in the TEST-02.1 registry (D-10) |
+| AC-11.4 | 401 then the fixed 404 for hidden or missing scope, also inside the snapshot | BR-03, BR-04, NFR-03 | TEST-11.4i, 11.4bi → `progress.test.ts` | In PR | PASS R-94. Registry entry for TEST-02.1 still to add in #94 (D-10) |
 | AC-11.5 | 50 + 1 rows in dueAt/id order; invalid page → 400 after ownership | NFR-09, NFR-10 | TEST-11.5i → `progress.test.ts` | In PR | PASS R-94 |
 | AC-11.6 | Loading, empty, error with Retry, no-team; no horizontal overflow | NFR-10 | TEST-11.6c, 11.6e → `client/tests/progress.test.tsx`, `e2e/progress.spec.ts` | In PR | PASS R-94 |
 | AC-12.1 | Scoped overview rows with submission and feedback states | FR-23, BR-02, DEC-13 | TEST-12.1u, 12.1i, 12.1e | No | Planned (Final) |
@@ -179,8 +181,8 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | FR-17 | F-09 | 2 | AC-09.2 | TEST-09.2u/i | `resubmission(-units).test.ts` | PASS R-S2 |
 | FR-18 | F-06 | 1 | AC-06.1, 06.2 | TEST-06.1, 06.2a–d, 06.1e | `feedback.test.ts`, `feedback-validate.test.ts`; `feedback.test.tsx`; `feedback.spec.ts` | PASS R-S1, R-S2 |
 | FR-19 | F-06 | 1 | AC-06.3, 06.5 | TEST-06.3, 06.5a–c, 06.1e | `feedback.test.ts`; `feedback.test.tsx`; `feedback.spec.ts` | PASS R-S1, R-S2 |
-| FR-20 | F-10 | 2 | AC-10.1, 10.3, 10.5 | TEST-10.1u/i/bi/ci, 10.3i/bi; 10.5c, 10.1e | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | Server PASS R-S2 (integrated, #98). UI AC-10.5 and browser TEST-10.1e **planned** |
-| FR-21 | F-10 | 2 | AC-10.2, 10.3 | TEST-10.1u, 10.2i, 10.3i/bi; 10.1e | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | Server PASS R-S2. Browser TEST-10.1e **planned** |
+| FR-20 | F-10 | 2 | AC-10.1, 10.3, 10.5 | TEST-10.1u/i/bi/ci, 10.3i/bi/di; 10.5c, 10.1e | `grades(-units/-concurrency).test.ts`; `grade.test.tsx`; `grades.spec.ts` | **Partly verified**: server PASS R-S2 (integrated); UI and v0.5 rule PASS R-101 on PR #101, not yet integrated |
+| FR-21 | F-10 | 2 | AC-10.2, 10.3 | TEST-10.1u, 10.2i, 10.3i/bi/di; 10.1e | `grades(-units/-concurrency).test.ts`; `grades.spec.ts` | **Partly verified**: server PASS R-S2; browser and v0.5 rule PASS R-101, not yet integrated |
 | FR-22 | F-11 | 3 | AC-11.1, 11.2, 11.5, 11.6 (phase 1); AC-11.3 (phase 2) | TEST-11.1i/e, 11.2u/i, 11.5i, 11.6c/e; 11.3u/i | `progress(-units).test.ts`; `progress.test.tsx`; `progress.spec.ts` (PR #94) | Phase 1 PASS R-94, **not yet integrated**; AC-11.3 **planned** |
 | FR-23 | F-12 | 3 | AC-12.1 | TEST-12.1u/i/e | Not written | **Planned** (Final) |
 | FR-24 | F-12 | 3 | AC-12.2, 12.5 | TEST-12.2i, 12.5c, 12.1e | Not written | **Planned** (Final) |
@@ -212,7 +214,7 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | Req | Feature / responsibility | Sprint | AC or verification | Planned test | Actual file / test or measurement | Result and version |
 |---|---|---|---|---|---|---|
 | NFR-01 | F-01, F-03.1 | 1 | AC-01.6, 03.2 | TEST-01.6a–c, 03.2 | `auth.test.ts`, `auth-units.test.ts`, `demo-seed.test.ts` | PASS R-S1, R-S2 |
-| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1; each feature's 401 case | TEST-02.1 over `support/protected-endpoints.ts`; TEST-07.5i, 08.7i, 09.7i, 11.4i | `authz.test.ts`; feature files | PASS R-S2, R-94. **Gap D-10**: four F-08/F-09/F-11 routes are missing from the registry (each is still 401-tested by its feature) |
+| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1; each feature's 401 case | TEST-02.1 over `support/protected-endpoints.ts`; TEST-07.5i, 08.7i, 09.7i, 10.4i, 11.4i | `authz.test.ts`; feature files | PASS R-S2: every integrated route is in the registry (F-08/F-09 added by #100, D-10). The F-11 route is added with #94 |
 | NFR-03 | F-02; each feature | 1 → 2, 3 | AC-02.2–02.5, 07.5, 08.7, 09.7, 10.4, 11.4 | TEST-02.2–02.5, 07.5i, 08.7i, 09.7i, 10.4i, 11.4i/bi | `authz.test.ts`, feature files | PASS R-S2, R-94; F-12 **planned** |
 | NFR-04 | F-01 | 1 | AC-01.4, 01.5, 01.10 | TEST-01.4, 01.5a–c, 01.10a–c | `auth.test.ts`, `auth-units.test.ts`, `auth.test.tsx` | PASS R-S1, R-S2 |
 | NFR-05 | SR-01 | 1 → 2, 3 | AC-SR1.1; error bodies in every feature | TEST-SR1.1 and each feature's 400/404/409 assertions | `auth.test.ts`, feature files | PASS R-S2, R-94 |
@@ -220,22 +222,24 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | NFR-07 | SR-03 | 2 (Lab 5) | Create → redeploy → read back | Post-deployment check | Lab 5 #22; L7-D02 (created on `v0.4.0`, read back) | PASS on `v0.4.0`. **Planned** again on `v0.5.0` and `v0.6.0` |
 | NFR-08 | SR-02 | 1 → 2 | AC-SR2.2 | Timed walkthrough | D1 Part F (`v0.1.0`); Docker in #17 | PASS at `v0.1.0`. **Planned** re-run before Final |
 | NFR-09 | F-12, SR-03 | 3 | AC-12.4 | TEST-12.4p (scaled seed, Cloud Run) | Not run | **Planned** (Final); uncovered at D2 |
-| NFR-10 | Each feature; SR-01 audit | 1 → 2 → 3 | Field: AC-01.8, 04.2, 05.2, 06.2, 07.6, 08.8, 09.8. Server error: AC-01.9, 01.10, 04.5, 05.6, 06.5, 07.6, 08.8, 09.8. Loading/empty: AC-03.7, 04.6, 05.7, 06.5, 07.6, 09.8, 11.6 | Matching TEST IDs (C and E) | Client and E2E files listed above | PASS R-S2, R-94. F-10 UI (AC-10.5) and F-12/F-13 **planned**; SR-01 audit **planned** (Final) |
+| NFR-10 | Each feature; SR-01 audit | 1 → 2 → 3 | Field: AC-01.8, 04.2, 05.2, 06.2, 07.6, 08.8, 09.8, 10.5. Server error: AC-01.9, 01.10, 04.5, 05.6, 06.5, 07.6, 08.8, 09.8, 10.5. Loading/empty: AC-03.7, 04.6, 05.7, 06.5, 07.6, 09.8, 10.5, 11.6 | Matching TEST IDs (C and E) | Client and E2E files listed above | **Partly verified**: Sprint 1 and F-07 to F-09 PASS R-S2; F-10 UI PASS R-101 and F-11 PASS R-94 (both in PR); F-12/F-13 and the SR-01 audit **planned** (Final) |
 | NFR-11 | SR-03 | 2 (Lab 5) | Required check on `main` and `staging/**` | `test-and-docker` on every PR | `.github/workflows/ci.yml`; ruleset `protect-main` | PASS: every merged Sprint 2 PR ran it (for example 45592941608) |
-| NFR-12 | SR-02 | 1 → 2 | AC-03.1, AC-SR2.1; CI secret scan | TEST-03.1a–d, TEST-SR2.1; CI scan | `demo-seed.test.ts`, `seed-policy.test.ts`; manual SR2.1 at `v0.1.0` | PASS (tests and manual). **Gap D-09**: the CI secret scan doesn't exist yet |
+| NFR-12 | SR-02 | 1 → 2 | AC-03.1, AC-SR2.1; CI secret scan | TEST-03.1a–d, TEST-SR2.1; CI scan | `demo-seed.test.ts`, `seed-policy.test.ts`; manual SR2.1 at `v0.1.0` | **Partly verified**: tests and the manual check PASS; the CI secret scan doesn't exist yet (D-09) |
 
 ## Coverage
 
-| Set | Total | Implemented and verified (R-S1/R-S2) | Implemented in PR, verified (R-94) | Planned | Retired |
+**Fully verified** means every AC of the requirement has run and passed on integrated code (R-S1/R-S2). **Partly verified** means some of its verification passed and some is still in a PR, missing or planned; the row says which part.
+
+| Set | Total | Fully verified | Partly verified | Planned | Retired |
 |---|---|---|---|---|---|
-| FR | 25 | 21 (FR-01 to 21; FR-20/21 server only, UI planned) | 1 (FR-22 phase 1; AC-11.3 planned) | 3 (FR-23, 24, 25 in Sprint 3) | 0 |
-| BR | 16 | 15 (BR-01 to 06, 08 to 16; BR-15 for F-10, its F-11/F-13 parts planned) | 0 | 0 | 1 (BR-07) |
-| NFR | 12 | 11 (NFR-02 with gap D-10, NFR-12 with gap D-09, NFR-08 from its D1 walkthrough) | 0 | 1 (NFR-09) | 0 |
+| FR | 25 | 19: FR-01 to FR-19 | 3: FR-20, FR-21 (server integrated; Grade UI and v0.5 rule on PR #101); FR-22 (phase 1 on PR #94; AC-11.3 planned) | 3: FR-23, FR-24, FR-25 | 0 |
+| BR | 16 | 14: BR-01 to BR-06, BR-08 to BR-14, BR-16 | 1: BR-15 (F-10 server verified; F-11 phase 2 and F-13 planned) | 0 | 1: BR-07 |
+| NFR | 12 | 9: NFR-01 to NFR-07, NFR-08 (D1 walkthrough; re-run planned), NFR-11 | 2: NFR-10 (Sprint 3 lists and the SR-01 audit planned; F-10/F-11 in PR), NFR-12 (CI secret scan missing, D-09) | 1: NFR-09 | 0 |
 
 **Uncovered or partly covered at the D2 checkpoint:**
-- **Sprint 2:** the F-10 Grade UI (AC-10.5, TEST-10.5c) and the browser journey TEST-10.1e. The F-10 server is integrated and verified (#98). This blocks the Sprint 2 release `v0.5.0`.
-- **Sprint 3:** FR-22's AC-11.3 (needs F-10), FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final.
-- **Gaps found in this audit:** D-09 (CI secret scan, NFR-12) and D-10 (registry for TEST-02.1, NFR-02).
+- **Sprint 2:** the F-10 Grade UI and the v0.5 release rule are verified on PR #101 but not integrated yet. This blocks the Sprint 2 release `v0.5.0`.
+- **Sprint 3:** FR-22's AC-11.3 (needs F-10), FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final. F-11 phase 1 waits on `v0.5.0` (DEC-15).
+- **Open gaps from the change register:** D-09 (CI secret scan, NFR-12), D-10's F-11 registry entry (with #94) and D-11 (flaky TEST-05.1e sign-in wait).
 - **Re-runs planned before Final:** NFR-07 persistence on each new release, NFR-08 walkthrough, the NFR-10 SR-01 audit.
 
 Every baseline FR, BR and NFR still maps to a feature or system responsibility and a sprint. Not traced because they are explicitly out of scope: EX-01 to EX-07 (SRS §3.2).
@@ -266,5 +270,6 @@ Every baseline FR, BR and NFR still maps to a feature or system responsibility a
 | 2026-11-25 | Grade draft and released snapshot; shared `studentGrade(row)` | F-10 contract v0.2 (#96) | AC-10.1 to 10.3, 11.3, 13.2 |
 | 2026-11-25 | F-11 phase 1 omits the grade; DEC-15 release path | F-11 contract v0.3 (#93) | AC-11.3 planned; R-94 is a PR result until `v0.6.0` |
 | 2026-11-25 | F-12 fixed 404 for an unsupervised team filter; F-13 published-only export | #93, #97 | AC-12.3, AC-13.2, AC-13.3 |
+| 2026-11-25 | A grade release names the confirmed draft (`expectedScore`; 409 `GRADE_DRAFT_CHANGED`) | F-10 contract v0.5, PR #101 review | AC-10.3, AC-10.5; TEST-10.3di added, TEST-10.3bi (a) changed |
 
 Later changes are added here with the PR that approved them.

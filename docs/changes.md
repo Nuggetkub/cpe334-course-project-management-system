@@ -5,6 +5,7 @@
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | First register for D2 Part A: releases, UAT and Lab 7 findings, defects found in Sprint 2/3 reviews, and approved baseline revisions |
+| 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 review: D-10 resolved for F-08/F-09 by #100; new D-11 (flaky sign-in wait), D-12 and D-13 (PR #101 review); grade release revision |
 
 This register records every finding that changed the product, its tests or its baseline since the accepted Sprint 1 release. Earlier records keep their own detail ([Lab 6 findings](labs/lab06/findings.md), the Lab 7 report, PR reviews); this page is the one index with current status.
 
@@ -20,7 +21,7 @@ This register records every finding that changed the product, its tests or its b
 |---|---|---|---|---|
 | `v0.3.0` (**accepted Sprint 1**) | `b6cffa1` | `cpms-00007-7r8` | F-01 to F-06 | StudyTrack UAT: **Accepted for the tested scope**, 22 Nov 2026 ([#70 comment](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/70#issuecomment-7079679438)) |
 | `v0.4.0` (Lab 7) | `aa191ba` | `cpms-00008-l48` | `v0.3.0` + CR-01 + Lab 6 docs/tests | Deployed checks L7-D00 to D04 PASS (24 Nov) |
-| `v0.5.0` (Sprint 2, **planned**) | — | — | F-07 to F-10 | Not released yet. F-07 to F-09 and the F-10 server are integrated (`4f56155`); waits on the F-10 Grade UI (AC-10.5). Single-course preflight passed (R-01) |
+| `v0.5.0` (Sprint 2, **planned**) | — | — | F-07 to F-10 | Not released yet. F-07 to F-09 and the F-10 server are integrated (`4f56155`); waits on the F-10 Grade UI (AC-10.5), which is on PR #101. Single-course preflight passed (R-01) |
 | `v0.6.0` (D2 candidate, **planned**) | — | — | `v0.5.0` + F-11 phase 1 (#94) | Not released yet (F-11 §6, DEC-15) |
 
 ## 2. Findings and defects
@@ -39,7 +40,10 @@ This register records every finding that changed the product, its tests or its b
 | D-07 | PR #94 review (F-11) | 25 Nov | AC-11.6, NFR-10 | Defect: a 120-character unbroken title widened the page (1,440 px at 390 px; 1,722 px at 768 px, found while fixing) | Resolved in PR #94 | `e69c9e6` (TEST-11.6e) | Local E2E RED 2 failed, GREEN 12/12; re-checked by Earth2509 at 320/390/768 px |
 | D-08 | PR #94 re-review (F-11) | 25 Nov | AC-11.4, NFR-03 | Defect: an invalid page after lost access returned 400 instead of the fixed 404 | Resolved in PR #94 | `3b72786` | RED `0410f25` (1 failed), GREEN CI `45586183430` |
 | D-09 | D2 document audit | 25 Nov | NFR-12 | Gap: SRS v0.3 planned a **CI secret scan** for Sprint 2. No workflow has one; only `.env` ignoring and review apply | **Open** | Add a secret-scanning step to `ci.yml` | Planned: a seeded fake secret must fail the check |
-| D-10 | D2 document audit | 25 Nov | NFR-02, AC-02.1 (F-02 registry rule) | Process defect: F-08 (`PATCH /api/milestones/:id`, `POST …/close`), F-09 (`GET …/submissions`) and F-11 (`GET /api/teams/:teamId/progress`) didn't add their routes to `server/tests/support/protected-endpoints.ts`, so TEST-02.1 doesn't sweep them. Each route's 401 **is** tested by its own feature test (TEST-08.7i, 09.7i, 11.4i) | **Open** | Add the four routes to the registry (F-08/F-09 in a test PR to staging, F-11 in #94) | Planned: TEST-02.1 must list and pass all four |
+| D-10 | D2 document audit | 25 Nov | NFR-02, AC-02.1 (F-02 registry rule) | Process defect: F-08 (`PATCH /api/milestones/:id`, `POST …/close`), F-09 (`GET …/submissions`) and F-11 (`GET /api/teams/:teamId/progress`) didn't add their routes to `server/tests/support/protected-endpoints.ts`, so TEST-02.1 didn't sweep them. Each route's 401 was still tested by its own feature test | **Resolved, integrated** for F-08/F-09 ([#100](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/100), `19a9b1d`). **Open** for F-11: its entry goes into #94 | `2d9d900`: 14 new TEST-02.1 cases | CI 45613251584 (server 329); mutation: without `requireAuth` on the history route its 4 cases fail |
+| D-11 | F-10 UI regression run | 25 Nov | NFR-11 (test reliability), F-05 | Test defect: TEST-05.1e's sign-in step waits only 5 s for "Log out". In one full local run it timed out; alone it passed 2/2 and the full rerun passed 12/12. The cause of the slow sign-in is not yet known | **Open** | Wait for the post-login navigation (or the `/api/auth/me` response) with the default test timeout, in every spec's `signIn` helper | Planned: 3 consecutive clean full runs |
+| D-12 | PR #101 review (F-10) | 25 Nov | AC-10.3, AC-10.5, BR-15 | Defect: a release confirmed for draft 70 published another Supervisor's newer draft 82 (the release had no body) | Resolved in PR #101 | F-10 v0.5: `{expectedScore}` compared under the milestone lock, 409 `GRADE_DRAFT_CHANGED` (`c4c86c2`) | RED `582ff7a` (CI 45632905007), GREEN CI 45633427363; E2E two-session journey |
+| D-13 | PR #101 review (F-10) | 25 Nov | AC-10.5, NFR-10 | Defect: a malformed `200` grade body (no `releasedAt`) crashed the milestone page | Resolved in PR #101 | Strict role-specific response checks on read, save and release (`c4c86c2`) | 7 new TEST-10.5c cases; RED 9 failed, GREEN 83/83 |
 | R-01 | F-07 design (#95) | 25 Nov | FR-07, AS-01 | Risk: team creation needs exactly one course row | **Resolved** (gate passed) | Read-only `SELECT COUNT(*) FROM courses;` on the live `cpms` database (Cloud SQL `cpms-pg`, via Cloud SQL Auth Proxy in Cloud Shell), run by @Nuggetkub on 25 Nov | **1 course**: F-07 team creation will work after `v0.5.0`. No data changed |
 
 ## 3. Approved baseline revisions
@@ -51,6 +55,7 @@ This register records every finding that changed the product, its tests or its b
 | 2026-11-24 | **Milestone deletion has no endpoint** (BR-14 holds because nothing can delete) | Simplest way to keep submissions | F-08 contract (#88) | `DELETE` returns 404; AC-08.7 |
 | 2026-11-25 | **Single-course team creation** (409 `COURSE_UNAVAILABLE` unless exactly one course) | One offering per deployment (AS-01, EX-06) | F-07 contract (#91) | R-01 release gate |
 | 2026-11-25 | **Grades: draft and released snapshot**. A new draft stays private after a release until it is released again; grading is allowed with no submission and in any window | Students must never see an unreleased value (BR-15) | F-10 contract v0.2 (#96) | SRS BR-15 wording; F-11 phase 2 and F-13 use `studentGrade(row)` |
+| 2026-11-25 | **A grade release names the confirmed draft** (`expectedScore`); a changed draft gives 409 `GRADE_DRAFT_CHANGED` | A stale confirmation must never publish another Supervisor's draft (D-12) | F-10 contract v0.5, PR #101 | AC-10.3, AC-10.5; TEST-10.3di |
 | 2026-11-25 | **F-11 in two phases**: phase 1 omits the grade completely; AC-11.3 waits for F-10 | F-10 ships before the board, so a placeholder "Not released" could be false | F-11 contract v0.3 (#93) | AC-11.3 planned |
 | 2026-11-25 | **DEC-15**: F-11 phase 1 goes through `staging/sprint-2` into `v0.6.0`; `staging/sprint-3` starts after `v0.6.0` | No second staging path in the last days before D2 | #93 | Deviation from DEC-11, recorded |
 | 2026-11-25 | **F-12**: filtering by an unsupervised team returns the fixed 404 | Don't confirm other teams exist (DEC-10) | F-12 contract (#93) | AC-12.3 |

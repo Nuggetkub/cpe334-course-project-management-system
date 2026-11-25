@@ -86,10 +86,15 @@ Use reviewed Prisma migrations in order. Deployment runs `prisma migrate deploy`
 | Milestone edit or close | Locks the milestone row (`SELECT … FOR UPDATE`) inside a transaction, then re-reads it | F-08 |
 | Submission | Locks the milestone, then the submitter's membership row; decides closed → deadline → version `max + 1` (Late in the late window). A collision on (`milestone_id`, `version`) is retried in a fresh transaction up to 3 times, then 409 `SUBMISSION_CONFLICT`; any other error is passed on | F-08, F-09, F-07 |
 | Member removal | Locks the membership row only, checks for authored work, then deletes. **Lock order is milestone → membership** everywhere, so these writes can't deadlock | F-07 |
-| Grade save and release | Lock the milestone row, re-check the Supervisor's assignment, then upsert the draft or copy it to the released snapshot. A repeat release of an unchanged score keeps the original record | F-10 |
+| Grade save and release | Lock the milestone row, re-check the Supervisor's assignment, then upsert the draft, or publish it only if it still equals the confirmed `expectedScore` (otherwise 409 `GRADE_DRAFT_CHANGED`). A repeat release of an unchanged score keeps the original record | F-10 |
 | Paged lists | One RepeatableRead snapshot for a page and its count. The F-11 board also reads its team (scoped) and validates the page inside the snapshot | F-04, F-11 |
 
-Race tests hold one side's transaction open and check, through `pg_blocking_pids`, that the other side really waits. They must fail when the lock is removed (changes.md D-01, D-04).
+Race tests force the overlap in two different ways:
+- **F-08** (`milestones-concurrency.test.ts`): after warming several pool connections, a helper holds the milestone lock for a fixed **1,500 ms** while the competing edit or submission starts. The test then checks that the competitor's result reflects the holder's committed change. It's time-based and doesn't ask PostgreSQL who is blocked (changes.md D-01).
+- **F-07 and F-10** (`team-management.test.ts`, `grades-concurrency.test.ts`): the holder keeps its transaction open until PostgreSQL's `pg_blocking_pids` shows the competitor **waiting on the holder**; F-10 also checks that the waiting statement is the milestone `FOR UPDATE`. Only then is the holder released (changes.md D-04).
+- **F-09** (`resubmission.test.ts`, TEST-09.6i) sends two submissions at once and checks the versions; the deterministic collision and retry budget are unit-tested with a fake store (TEST-09.6u).
+
+The F-07, F-08 and F-10 race tests were each checked to fail when the production lock is removed.
 
 ## API, identity and permissions
 
@@ -112,7 +117,7 @@ API routes live under `/api` and return JSON, except intentional no-content resp
 | `GET /api/milestones/:milestoneId/submission` (latest), `GET …/submissions` (history) | Team | F-05, F-09 | Latest released; history integrated |
 | `GET` / `POST /api/submissions/:submissionId/feedback` | Team (read), Supervisor (write) | F-06 | Released |
 | `GET /api/teams/:teamId/progress` | Team | F-11 | PR #94 |
-| `GET`, `PUT /api/milestones/:milestoneId/grade`, `POST …/grade/release` | Team (read), Supervisor (write) | F-10 | Integrated (server); UI planned |
+| `GET`, `PUT /api/milestones/:milestoneId/grade`, `POST …/grade/release` (`{expectedScore}` from F-10 v0.5) | Team (read), Supervisor (write) | F-10 | Integrated (server); UI and v0.5 release rule on PR #101 |
 | `GET /api/overview`, `GET /api/overview/export` | Supervisor | F-12, F-13 | Planned |
 
 | Operation | Student | Supervisor |
@@ -136,7 +141,7 @@ API routes live under `/api` and return JSON, except intentional no-content resp
 | Milestones (F-04) | List with window and team status, pagination, and the Supervisor create form with field errors. |
 | Milestone page (F-05, F-06, F-08, F-09) | Latest version, Earlier versions with their own feedback, "Submit a new version" while the window accepts work (with a Late notice), Supervisor edit/extend/late window/close with confirmation. |
 | Progress (F-11, Student) | Table per milestone: due (ICT), window, team status, latest version with a Late badge, feedback status. Stacked rows on narrow screens; no horizontal scrolling. No grade column in phase 1. |
-| Grades, overview, export (**planned**) | Grade section on the milestone page (F-10 AC-10.5; the API is built); Supervisor Overview with filters kept in the URL (F-12) and Download CSV (F-13). |
+| Grades (F-10, PR #101); overview and export (**planned**) | Grade section on the milestone page: Students see Not released or the score; Supervisors save a draft and release the confirmed one. Supervisor Overview with filters kept in the URL (F-12) and Download CSV (F-13) are planned. |
 
 ## Configuration and delivery
 
