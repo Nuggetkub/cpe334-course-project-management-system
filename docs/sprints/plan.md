@@ -37,7 +37,7 @@ Status date: 25 Nov 2026, staging `4f56155`. Exams run 1–11 Dec, so the produc
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
 | F-10 grades (#83) | Server implemented and tested, integrated (#98): AC-10.1 to 10.4 PASS | Grade section on the milestone page with TEST-10.5c (tests first), browser TEST-10.1e, review, integrate | Owner to confirm (@Earth2509, or @Nuggetkub as offered on #96/#98); 26 Nov |
-| R-01 single-course preflight | Not run | Read-only `SELECT COUNT(*) FROM courses;` on Cloud SQL; must be 1 before `v0.5.0` | @Nuggetkub; 26 Nov |
+| R-01 single-course preflight | **Done** 25 Nov: live count is 1 | None | @Nuggetkub; done |
 | D-10 TEST-02.1 registry | Open | Add the F-08 and F-09 routes in a test PR to staging, and the F-11 route in #94 | @Nuggetkub; 26 Nov |
 | `v0.5.0` Sprint 2 release (#87) | F-07, F-08, F-09 and the F-10 server integrated (`4f56155`); F-10 UI missing | Release PR `staging/sprint-2` → `main`, regression on its commit, tag, deploy, deployed checks (critical journey, persistence NFR-07, a rule rejection, a 403/404) | @Nuggetkub (PR), @Earth2509 (review); 27 Nov |
 | F-11 phase 1 (#84, PR #94) | AC-11.1, 11.2, 11.4, 11.5, 11.6 implemented and tested at `3b72786` (R-94) | Re-review; after the `v0.5.0` sync, update the branch, rerun CI, merge | @Nuggetkub; review @Earth2509; 28 Nov |

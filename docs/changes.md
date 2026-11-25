@@ -20,7 +20,7 @@ This register records every finding that changed the product, its tests or its b
 |---|---|---|---|---|
 | `v0.3.0` (**accepted Sprint 1**) | `b6cffa1` | `cpms-00007-7r8` | F-01 to F-06 | StudyTrack UAT: **Accepted for the tested scope**, 22 Nov 2026 ([#70 comment](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/70#issuecomment-7079679438)) |
 | `v0.4.0` (Lab 7) | `aa191ba` | `cpms-00008-l48` | `v0.3.0` + CR-01 + Lab 6 docs/tests | Deployed checks L7-D00 to D04 PASS (24 Nov) |
-| `v0.5.0` (Sprint 2, **planned**) | — | — | F-07 to F-10 | Not released yet. F-07 to F-09 and the F-10 server are integrated (`4f56155`); waits on the F-10 Grade UI (AC-10.5) and the single-course preflight |
+| `v0.5.0` (Sprint 2, **planned**) | — | — | F-07 to F-10 | Not released yet. F-07 to F-09 and the F-10 server are integrated (`4f56155`); waits on the F-10 Grade UI (AC-10.5). Single-course preflight passed (R-01) |
 | `v0.6.0` (D2 candidate, **planned**) | — | — | `v0.5.0` + F-11 phase 1 (#94) | Not released yet (F-11 §6, DEC-15) |
 
 ## 2. Findings and defects
@@ -40,7 +40,7 @@ This register records every finding that changed the product, its tests or its b
 | D-08 | PR #94 re-review (F-11) | 25 Nov | AC-11.4, NFR-03 | Defect: an invalid page after lost access returned 400 instead of the fixed 404 | Resolved in PR #94 | `3b72786` | RED `0410f25` (1 failed), GREEN CI `45586183430` |
 | D-09 | D2 document audit | 25 Nov | NFR-12 | Gap: SRS v0.3 planned a **CI secret scan** for Sprint 2. No workflow has one; only `.env` ignoring and review apply | **Open** | Add a secret-scanning step to `ci.yml` | Planned: a seeded fake secret must fail the check |
 | D-10 | D2 document audit | 25 Nov | NFR-02, AC-02.1 (F-02 registry rule) | Process defect: F-08 (`PATCH /api/milestones/:id`, `POST …/close`), F-09 (`GET …/submissions`) and F-11 (`GET /api/teams/:teamId/progress`) didn't add their routes to `server/tests/support/protected-endpoints.ts`, so TEST-02.1 doesn't sweep them. Each route's 401 **is** tested by its own feature test (TEST-08.7i, 09.7i, 11.4i) | **Open** | Add the four routes to the registry (F-08/F-09 in a test PR to staging, F-11 in #94) | Planned: TEST-02.1 must list and pass all four |
-| R-01 | F-07 design (#95) | 25 Nov | FR-07, AS-01 | Risk: team creation needs exactly one course row. The live database count isn't checked yet | **Open** (release gate for `v0.5.0`) | Read-only `SELECT COUNT(*) FROM courses;` on Cloud SQL before the release PR | — |
+| R-01 | F-07 design (#95) | 25 Nov | FR-07, AS-01 | Risk: team creation needs exactly one course row | **Resolved** (gate passed) | Read-only `SELECT COUNT(*) FROM courses;` on the live `cpms` database (Cloud SQL `cpms-pg`, via Cloud SQL Auth Proxy in Cloud Shell), run by @Nuggetkub on 25 Nov | **1 course**: F-07 team creation will work after `v0.5.0`. No data changed |
 
 ## 3. Approved baseline revisions
 
