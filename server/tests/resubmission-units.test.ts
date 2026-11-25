@@ -17,11 +17,14 @@ describe("F-09 unit contract", () => {
   });
 
   // A fake version store: an attempt reads max(version) and inserts max + 1, as the real one does in
-  // its own transaction. A duplicate version is a (milestone_id, version) uniqueness collision.
+  // its own transaction. A duplicate version is a (milestone_id, version) uniqueness collision, with
+  // the meta Prisma 5.22 reports for that index on PostgreSQL.
   function store(initial: number[]) {
     const versions = [...initial];
     let attempts = 0;
-    const collision = () => Object.assign(new Error("Unique constraint failed"), { code: "P2002" });
+    const collision = () => Object.assign(new Error("Unique constraint failed"), {
+      code: "P2002", meta: { modelName: "Submission", target: ["milestone_id", "version"] },
+    });
     return {
       versions,
       get attempts() { return attempts; },
@@ -63,5 +66,18 @@ describe("F-09 unit contract", () => {
     const boom = new Error("connection lost");
     await expect(insertNextVersion(async () => { calls += 1; throw boom; })).rejects.toBe(boom);
     expect(calls).toBe(1);
+  });
+
+  it("TEST-09.6u rethrows a P2002 on any other unique constraint without retrying", async () => {
+    const unrelated = [
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta: { modelName: "Course", target: ["code"] } }),
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta: { modelName: "Submission", target: ["milestone_id"] } }),
+      Object.assign(new Error("Unique constraint failed"), { code: "P2002" }), // no target: can't be shown to be ours
+    ];
+    for (const error of unrelated) {
+      let calls = 0;
+      await expect(insertNextVersion(async () => { calls += 1; throw error; })).rejects.toBe(error);
+      expect(calls).toBe(1);
+    }
   });
 });
