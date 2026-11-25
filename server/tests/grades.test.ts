@@ -22,7 +22,9 @@ async function auth(who: Who) {
 }
 const read = async (id: number, who: Who) => api.get(path(id)).set("Authorization", await auth(who));
 const save = async (id: number, who: Who, body: object) => api.put(path(id)).set("Authorization", await auth(who)).send(body);
-const release = async (id: number, who: Who) => api.post(`${path(id)}/release`).set("Authorization", await auth(who));
+// F-10 v0.5: a release names the draft score the Supervisor confirmed.
+const release = async (id: number, who: Who, expectedScore?: number) =>
+  api.post(`${path(id)}/release`).set("Authorization", await auth(who)).send(expectedScore === undefined ? {} : { expectedScore });
 
 async function milestone(extra: Partial<Pick<Milestone, "dueAt" | "lateUntil" | "closedAt" | "closedBy">> = {}) {
   return prisma().milestone.create({ data: {
@@ -75,7 +77,7 @@ describe("F-10 grade API", () => {
     const unpublished = await read(m.id, "sA");
     expect(unpublished.status).toBe(200);
     expect(unpublished.body).toEqual({ grade: { released: false } });
-    expect((await release(m.id, "pA")).status).toBe(200);
+    expect((await release(m.id, "pA", 0)).status).toBe(200);
     expect((await read(m.id, "sA")).body).toEqual({ grade: { released: true, score: 0 } });
     expect(await prisma().milestone.findUnique({ where: { id: m.id } })).toEqual(m);
     expect(await prisma().submission.count({ where: { milestoneId: m.id } })).toBe(0);
@@ -86,7 +88,7 @@ describe("F-10 grade API", () => {
     const absent = await read(m.id, "sA");
     expect(absent.status).toBe(200);
     expect(absent.body).toEqual({ grade: { released: false } });
-    const early = await release(m.id, "pA");
+    const early = await release(m.id, "pA", 0);
     expect(early.status).toBe(409);
     expect(early.body.error.code).toBe("GRADE_NOT_RECORDED");
     expect(await prisma().grade.count()).toBe(0);
@@ -99,7 +101,7 @@ describe("F-10 grade API", () => {
     expect(detail.status).toBe(200);
     expect(detail.body.milestone).not.toHaveProperty("grade");
 
-    expect((await release(m.id, "pA")).status).toBe(200);
+    expect((await release(m.id, "pA", 0)).status).toBe(200);
     expect((await read(m.id, "sA")).body).toEqual({ grade: { released: true, score: 0 } });
     expect(await prisma().grade.findUnique({ where: { milestoneId: m.id } })).toMatchObject({
       releasedScore: 0, releasedBy: fixture.users.pA.id, releasedAt: now,
@@ -109,13 +111,13 @@ describe("F-10 grade API", () => {
   it("TEST-10.3i keeps a new draft private and preserves the record on repeat release", async () => {
     const m = await milestone();
     expect((await save(m.id, "pA", { score: 70 })).status).toBe(200);
-    expect((await release(m.id, "pA")).body).toEqual({ grade: { draftScore: 70, released: true, score: 70, releasedAt: initialNow.toISOString() } });
+    expect((await release(m.id, "pA", 70)).body).toEqual({ grade: { draftScore: 70, released: true, score: 70, releasedAt: initialNow.toISOString() } });
 
     now = relativeDay(2);
     const edited = await save(m.id, "pA2", { score: 82 });
     expect(edited.body).toEqual({ grade: { draftScore: 82, released: true, score: 70, releasedAt: initialNow.toISOString() } });
     expect((await read(m.id, "sA")).body).toEqual({ grade: { released: true, score: 70 } });
-    const republished = await release(m.id, "pA2");
+    const republished = await release(m.id, "pA2", 82);
     expect(republished.status).toBe(200);
     expect(republished.body).toEqual({ grade: { draftScore: 82, released: true, score: 82, releasedAt: now.toISOString() } });
     expect((await read(m.id, "sA")).body).toEqual({ grade: { released: true, score: 82 } });
@@ -123,10 +125,43 @@ describe("F-10 grade API", () => {
     expect(before).toMatchObject({ releasedBy: fixture.users.pA2.id, releasedAt: now });
 
     now = relativeDay(3);
-    const repeated = await release(m.id, "pA");
+    const repeated = await release(m.id, "pA", 82);
     expect(repeated.status).toBe(200);
     expect(repeated.body).toEqual(republished.body);
     expect(await prisma().grade.findUnique({ where: { milestoneId: m.id } })).toEqual(before);
+  });
+
+  it("TEST-10.3di refuses a release confirmed for an older draft and changes nothing", async () => {
+    const m = await milestone();
+    expect((await save(m.id, "pA", { score: 70 })).status).toBe(200); // pA's screen now shows draft 70
+    expect((await save(m.id, "pA2", { score: 82 })).status).toBe(200); // the co-supervisor changes it
+    const stale = await release(m.id, "pA", 70);
+    expect(stale.status).toBe(409);
+    expect(stale.body.error.code).toBe("GRADE_DRAFT_CHANGED");
+    expect(await prisma().grade.findUnique({ where: { milestoneId: m.id } })).toMatchObject({
+      draftScore: 82, releasedScore: null, releasedBy: null, releasedAt: null,
+    });
+    expect((await read(m.id, "sA")).body).toEqual({ grade: { released: false } });
+
+    const confirmed = await release(m.id, "pA", 82);
+    expect(confirmed.status).toBe(200);
+    expect((await read(m.id, "sA")).body).toEqual({ grade: { released: true, score: 82 } });
+  });
+
+  it("TEST-10.3di validates expectedScore and the JSON body after scope, without changing the grade", async () => {
+    const m = await milestone();
+    expect((await save(m.id, "pA", { score: 70 })).status).toBe(200);
+    const bodies: object[] = [{}, { expectedScore: 70.5 }, { expectedScore: "70" }, { expectedScore: -1 }, { expectedScore: 101 }, { expectedScore: null }];
+    for (const body of bodies) {
+      const res = await api.post(`${path(m.id)}/release`).set("Authorization", await auth("pA")).send(body);
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatchObject({ code: "VALIDATION_ERROR", fields: { expectedScore: expect.any(String) } });
+    }
+    const malformed = await api.post(`${path(m.id)}/release`).set("Authorization", await auth("pA")).type("json").send("{");
+    expect(malformed.status).toBe(400);
+    expect(malformed.body.error.code).toBe("BAD_REQUEST");
+    expectHidden(await api.post(`${path(m.id)}/release`).set("Authorization", await auth("pB")).type("json").send("{"));
+    expect(await prisma().grade.findUnique({ where: { milestoneId: m.id } })).toMatchObject({ releasedScore: null });
   });
 
   it("TEST-10.4i enforces 401 → 403 → masked 404 → 400 without changing the grade", async () => {
@@ -136,7 +171,7 @@ describe("F-10 grade API", () => {
     expect(anonymous.status).toBe(401);
     expect(anonymous.body).toEqual(UNAUTHENTICATED);
     expectForbidden(await malformed(m.id).set("Authorization", await auth("sA")));
-    expectForbidden(await release(m.id, "sA"));
+    expectForbidden(await release(m.id, "sA", 70));
 
     const absentId = 2_147_483_647;
     for (const method of ["get", "put", "post"] as const) {

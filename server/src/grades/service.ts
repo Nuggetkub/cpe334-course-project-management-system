@@ -47,10 +47,15 @@ export async function saveGrade(milestoneId: number, supervisorId: number, score
   }));
 }
 
-export async function releaseGrade(milestoneId: number, supervisorId: number, now: Date): Promise<Grade> {
+// F-10 v0.5: `expectedScore` is the draft the Supervisor confirmed. It is compared after the milestone lock,
+// so a draft saved in between (for example by a co-supervisor) is never published by a stale confirmation.
+export async function releaseGrade(milestoneId: number, supervisorId: number, expectedScore: number, now: Date): Promise<Grade> {
   return withGradeLock(milestoneId, supervisorId, async (tx) => {
     const grade = await tx.grade.findUnique({ where: { milestoneId } });
     if (!grade) throw new HttpError(409, "GRADE_NOT_RECORDED", "Save a draft grade before releasing it.");
+    if (grade.draftScore !== expectedScore) {
+      throw new HttpError(409, "GRADE_DRAFT_CHANGED", "The draft changed before it was released. Check it and release again.");
+    }
     if (grade.releasedScore === grade.draftScore) return grade;
     return tx.grade.update({
       where: { milestoneId }, data: { releasedScore: grade.draftScore, releasedBy: supervisorId, releasedAt: now },
