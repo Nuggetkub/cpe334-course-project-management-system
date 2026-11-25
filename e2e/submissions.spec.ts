@@ -31,7 +31,8 @@ test("TEST-05.1e Student submits work and the assigned Supervisor sees the same 
   await page.reload();
   await expect(page.getByText("F05 browser submission", { exact: true })).toBeVisible();
   await expect(page.getByText(/^Submitted by E2E Student 2 on .+ \(ICT\)$/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Submit" })).toHaveCount(0);
+  // F-09 (BR-08): the window is still open, so the Student is offered a new version, not a dead end.
+  await expect(page.getByRole("heading", { name: "Submit a new version" })).toBeVisible();
   await page.getByRole("button", { name: "Log out" }).click();
 
   await signIn(page, "supervisor@e2e.test");

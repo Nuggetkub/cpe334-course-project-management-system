@@ -10,6 +10,8 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, recorded before the migration, tests and implementation |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #89 review of `503b0c3`: retry success and retry exhaustion tested separately with a deterministic collision (TEST-09.6u); each attempt in a fresh transaction; the changed Sprint 1 assertions TEST-05.1 (`late` key) and TEST-05.7 (form after a stored submission) named |
+| 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | Found during implementation, recorded before the implementation commit: TEST-05.6 (client) and TEST-05.1e (E2E, Student step) and, after the rebase onto F-08 v0.4, TEST-08.9i also asserted BR-07 (no form after a first submission) and now expect the "Submit a new version" form. Pending @Earth2509's review in the F-09 PR |
+| 0.4 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #92 review of `77a2cf7` [P2]: only a `P2002` whose `meta.target` is exactly `(milestone_id, version)` is retried; a `P2002` on any other unique constraint, or with no target, is rethrown unchanged after one attempt. TEST-09.6u adds case (d), and its collision fake carries the real Prisma meta |
 
 ## 1. Feature design
 
@@ -40,7 +42,7 @@ window LATE  ─► insert version = max(version) + 1, late = true  ─► 201
 unique (milestone_id, version) race ─► retry the insert (up to 3 attempts) ─► 201, else 409 SUBMISSION_CONFLICT
 ```
 
-**Retry design.** One attempt reads `max(version)` for the milestone and inserts `max + 1` inside **its own transaction**. A failed attempt is rolled back, and the next attempt starts a fresh transaction, so it re-reads the latest version instead of reusing the stale number. Only a uniqueness violation on `(milestone_id, version)` (Prisma `P2002`) is retried. Any other error is passed on unchanged. The loop lives in one small helper, `insertNextVersion(attempt, maxAttempts = 3)`, so tests can drive it with a fake attempt function that collides on demand.
+**Retry design.** One attempt reads `max(version)` for the milestone and inserts `max + 1` inside **its own transaction**. A failed attempt is rolled back, and the next attempt starts a fresh transaction, so it re-reads the latest version instead of reusing the stale number. Only a uniqueness violation on `(milestone_id, version)` is retried: Prisma `P2002` with `meta.target` exactly `["milestone_id", "version"]` (the `submissions_milestone_id_version_key` index). Any other error, including a `P2002` on a different unique constraint or with no target, is passed on unchanged. The loop lives in one small helper, `insertNextVersion(attempt, maxAttempts = 3)`, so tests can drive it with a fake attempt function that collides on demand.
 
 `409 ALREADY_SUBMITTED` is removed (BR-07 retired).
 
@@ -129,7 +131,7 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 | TEST-09.3i | 09.3 | I | mC closed with future due; mP deadline passed, no window | POST to each | 409 `MILESTONE_CLOSED`; 409 `DEADLINE_PASSED`; counts unchanged |
 | TEST-09.4i | 09.4 | I | mA with v1–v3 | GET the history as sA, sA2, pA, pA2, sB, s0, pB | 200 newest-first ×4, fixed 404 ×3 |
 | TEST-09.5i | 09.5 | I | Feedback on v1 | Submit v2 and v3; GET feedback for v1, v2, v3 | v1 has its feedback; v2 and v3 are empty |
-| TEST-09.6u | 09.6 | U | A fake version store holding v1, and an attempt function that reads `max(version)` from it and inserts `max + 1`. (a) Before the first insert, the test adds v2 to the store, so attempt 1 collides with `P2002`. (b) The store always collides. (c) The attempt throws a non-`P2002` error | Call `insertNextVersion` | (a) Two attempts; the second re-reads max = 2 and returns v3; the store holds v1, v2, v3 once each. (b) Exactly 3 attempts, then 409 `SUBMISSION_CONFLICT`, no row added. (c) One attempt; the original error is rethrown |
+| TEST-09.6u | 09.6 | U | A fake version store holding v1, and an attempt function that reads `max(version)` from it and inserts `max + 1`. (a) Before the first insert, the test adds v2 to the store, so attempt 1 collides with `P2002`. (b) The store always collides. (c) The attempt throws a non-`P2002` error. (d) The attempt throws a `P2002` whose target is another constraint (`courses.code`, `milestone_id` alone) or has no target | Call `insertNextVersion` | (a) Two attempts; the second re-reads max = 2 and returns v3; the store holds v1, v2, v3 once each. (b) Exactly 3 attempts, then 409 `SUBMISSION_CONFLICT`, no row added. (c) and (d) One attempt each; the original error is rethrown unchanged |
 | TEST-09.6i | 09.6 | I | mA with v1 (replaces TEST-05.4b) | Two members POST with `Promise.all`; read all rows | Both 201 with versions {2, 3}: no duplicate, no gap, 3 rows. (The deterministic collision and the exhausted budget are TEST-09.6u, because a real race can't be forced to collide on every run.) |
 | TEST-09.7i | 09.7 | I | pA, sB, anonymous, malformed ID, malformed JSON | POST and GET | 403 / 404 / 401 / 404 / 400 in F-02 order; no write |
 | TEST-09.8c | 09.8 | C | Mocked Open, Late and Closed milestones; history with 3 versions and feedback | Render; submit (valid, 400, 500); load the history | Form states; Late notice; no form when Closed; history list and badges; loading, empty and error states |
@@ -141,6 +143,10 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 - **TEST-05.1** (server) asserts the exact `SUBMISSION_KEYS`. It adds `late` and checks `late: false` for an on-time submission.
 - **TEST-05.7** (client) "shows a persisted submission read-only" currently expects no submit button once a submission is stored. For a Student in an accepting window (Open or Late), the page now shows the stored submission **and** the "Submit a new version" form. The checks that a Closed milestone, a passed deadline and a Supervisor show no submission form stay as they are.
 - F-05 E2E and component tests that expect "already submitted" UI text are updated to the new-version form.
+- **Added in v0.3:**
+  - **TEST-05.6** (client) ended by asserting that the form disappears after a first successful submission (BR-07). Its 409, 5xx and network value-retention checks are unchanged. Its last step now expects the empty "Submit a new version" form.
+  - **TEST-05.1e** (E2E) asserted that the Student sees no Submit button after reload (BR-07). It now expects "Submit a new version". The Supervisor's no-form check in the same test is unchanged.
+  - **TEST-08.9i** (F-08 v0.4, added after this contract) checked `ALREADY_SUBMITTED` on an open milestone (BR-07). It now expects 201 with version 2. Its close-wins half (`MILESTONE_CLOSED` even when the team has submitted) is unchanged.
 - Every change is listed in the PR, with its reason.
 
 **Commit order:**

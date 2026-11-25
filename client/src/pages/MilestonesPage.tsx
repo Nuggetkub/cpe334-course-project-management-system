@@ -8,7 +8,7 @@ export interface Milestone {
   id: number; teamId: number; title: string; description: string; dueAt: string;
   // F-08: late window and manual close (null when not set).
   lateUntil: string | null; closedAt: string | null; closedBy: number | null;
-  window: "OPEN" | "LATE" | "CLOSED"; teamStatus: "NOT_SUBMITTED" | "OVERDUE" | "SUBMITTED";
+  window: "OPEN" | "LATE" | "CLOSED"; teamStatus: "NOT_SUBMITTED" | "OVERDUE" | "SUBMITTED" | "LATE";
 }
 type Team = { id: number; name: string };
 type Page = { milestones: Milestone[]; page: number; pageSize: number; total: number };
@@ -23,7 +23,7 @@ export function MilestoneFields({ milestone }: { milestone: Milestone }) {
     <p>Due <time dateTime={milestone.dueAt}>{formatBangkok(milestone.dueAt)}</time></p>
     {milestone.lateUntil && <p>{`Late until ${formatBangkok(milestone.lateUntil)}`}</p>}
     <p className="badges"><span>Window: {milestone.window === "OPEN" ? "Open" : milestone.window === "LATE" ? "Late window" : "Closed"}</span>
-      <span>Team status: {milestone.teamStatus === "SUBMITTED" ? "Submitted" : milestone.teamStatus === "OVERDUE" ? "Overdue" : "Not submitted"}</span></p>
+      <span>Team status: {milestone.teamStatus === "LATE" ? "Late" : milestone.teamStatus === "SUBMITTED" ? "Submitted" : milestone.teamStatus === "OVERDUE" ? "Overdue" : "Not submitted"}</span></p>
   </>;
 }
 
