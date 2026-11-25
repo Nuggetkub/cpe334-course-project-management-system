@@ -138,7 +138,7 @@ describe("F-11 progress board", () => {
     // the snapshot (for example an F-07 removal), with no production hook.
     await milestone("Secret team A title", hours(24));
     const asUser = (who: Who) => ({ id: f.users[who].id, role: f.users[who].role, sessionId: 0 });
-    const denied = (who: Who) => readProgress(asUser(who), f.teamA.id, 1, NOW).then(
+    const denied = (who: Who) => readProgress(asUser(who), f.teamA.id, undefined, NOW).then(
       (body) => ({ resolved: JSON.stringify(body) }),
       (error: { status?: number; code?: string }) => ({ status: error.status, code: error.code }),
     );
@@ -148,7 +148,7 @@ describe("F-11 progress board", () => {
     expect(await denied("pB")).toEqual({ status: 404, code: "NOT_FOUND" });
 
     // Had access, then lost it: sA removed from team A before the snapshot.
-    expect(await readProgress(asUser("sA"), f.teamA.id, 1, NOW)).toMatchObject({ team: { name: "Team A" }, total: 1 });
+    expect(await readProgress(asUser("sA"), f.teamA.id, undefined, NOW)).toMatchObject({ team: { name: "Team A" }, total: 1 });
     await prisma().teamMember.delete({ where: { studentId: f.users.sA.id } });
     expect(await denied("sA")).toEqual({ status: 404, code: "NOT_FOUND" });
     expectHidden(await progress("sA", f.teamA.id));

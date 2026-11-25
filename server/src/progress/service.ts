@@ -1,6 +1,6 @@
 import type { AuthUser } from "../auth/middleware.js";
 import { teamScope } from "../auth/authorize.js";
-import { PAGE_SIZE } from "../milestones/routes.js";
+import { PAGE_SIZE, parsePage } from "../milestones/routes.js";
 import { notFoundError } from "../errors.js";
 import { prisma } from "../prisma.js";
 import { progressRow } from "./rows.js";
@@ -16,9 +16,11 @@ const withLatest = {
 /**
  * F-11 board data for one page, read in one consistent snapshot. Called after the route's guards; the team,
  * the page and the count are all scoped to the caller again inside the snapshot, so access lost after the
- * guard (for example an F-07 removal) gives the same fixed 404 and never the team's name.
+ * guard (for example an F-07 removal) gives the same fixed 404 and never the team's name. `rawPage` is the
+ * unparsed `?page=` value (400 `fields.page` when invalid).
  */
-export async function readProgress(user: AuthUser, teamId: number, page: number, now: Date) {
+export async function readProgress(user: AuthUser, teamId: number, rawPage: unknown, now: Date) {
+  const page = parsePage(rawPage);
   const scope = teamScope(user);
   const where = { teamId, team: scope };
   const [team, milestones, total] = await prisma().$transaction([
