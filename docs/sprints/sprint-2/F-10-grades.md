@@ -9,6 +9,7 @@
 | 0.1 | 2026-11-25 | @Earth2509 | @Nuggetkub (requested with contract PR) | Proposed API, grade visibility, acceptance criteria and planned tests before implementation. |
 | 0.2 | 2026-11-25 | @Earth2509 | [PR #96 review](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/96#pullrequestreview-6053874548) | Specify deterministic lock tests, grading regardless of submission/window, and one Student grade projection shared with F-11 and F-13. |
 | 0.3 | 2026-11-25 | @Earth2509 | Server implementation ready for review | Record API and PostgreSQL evidence; keep the Grade section, browser tests and deployment verification separate. |
+| 0.4 | 2026-11-25 | @Nuggetkub | @Earth2509 (Grade UI PR) | Grade section (AC-10.5): TEST-10.5c and TEST-10.1e evidence. UI implemented by @Nuggetkub as offered on #96/#98; no contract rule changed |
 
 ## 1. Feature design
 
@@ -70,7 +71,7 @@ Use real PostgreSQL for I (Supertest), Vitest for U, React Testing Library for C
 - [x] Apply the additive Grade migration in the test database; record interface stubs separately. Commit tests before behavior; capture RED about missing grade behavior rather than import/migration errors.
 - [x] Include the range and all-or-none release metadata CHECK constraints; verify migration/schema consistency and test the custom constraints in PostgreSQL.
 - [x] Verify the server implementation and prior server regression; update the system design, API inventory and traceability.
-- [ ] Finish the Grade section in milestone detail. Run `TEST-10.5c` and `TEST-10.1e`; report `test-and-docker` and browser E2E separately.
+- [x] Finish the Grade section in milestone detail. Run `TEST-10.5c` and `TEST-10.1e`; report `test-and-docker` and browser E2E separately (see below; CI is reported on the PR).
 - [ ] Teammate reviews implementation into `staging/sprint-2`. Verify the deployed release on `v0.5.0` using synthetic team accounts and record before/after-release evidence. Do not mark F-11 AC-11.3 done: its own phase 2 wiring and checks are still required.
 
 ### Local server evidence (2026-11-25 ICT)
@@ -83,3 +84,11 @@ Base: `staging/sprint-2` at `06cf000`. Tests used a dedicated PostgreSQL databas
 - GREEN: `c24c7d4` contains the restored lock and API. The three focused files passed **13 tests** with the implementation in place. The full `npm --prefix server test` run passed **315 tests in 25 files** (exit 0), including the unchanged suites and expanded F-02 route registry. Both `npm --prefix server run typecheck` and `npm --prefix server run build` exited 0.
 
 The server changes do not include the milestone Grade section, browser tests, hosted CI results or deployment. Drafted with OpenAI Codex assistance.
+
+### Local UI evidence (2026-11-25 ICT)
+
+Base: `staging/sprint-2` at `19a9b1d` (after #98 and #100). Commands from the repository root; Docker PostgreSQL 16, Chromium.
+
+- Tests first: `7ab9611`. TEST-10.5c in `client/tests/grade.test.tsx` (8 cases) and TEST-10.1e in `e2e/grades.spec.ts`, with a new fixture team "E2E Team Grades" (`student5@e2e.test`). The fetch mocks of `client/tests/submission.test.tsx` and `client/tests/feedback.test.tsx` also answer the page's new `/grade` read; no assertion changed.
+- RED on `7ab9611`: `npx vitest run` (client) **8 failed, 67 passed (75)**, all TEST-10.5c, because there is no Grade region yet. `npx playwright test` **1 failed (TEST-10.1e), 10 passed**.
+- GREEN on `906c4b3`: client **75/75**, server **329/329**, both builds pass, `npx playwright test` **11/11**.
