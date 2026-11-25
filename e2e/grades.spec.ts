@@ -1,16 +1,12 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { signIn as signInPage } from "./support";
 
 // F-10 contract v0.2 TEST-10.1e: real Chromium, API and cpms_e2e database ("E2E Team Grades").
 // The Supervisor and the Student use separate browser contexts (separate sessions).
+// Sign-in uses the shared helper (D-11), which waits for the login response first.
 async function signIn(browser: Browser, email: string): Promise<Page> {
   const page = await (await browser.newContext()).newPage();
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
+  await signInPage(page, email);
   return page;
 }
 
