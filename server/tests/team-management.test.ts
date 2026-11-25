@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { disconnectPrisma, prisma } from "../src/prisma.js";
 import { createSubmission } from "../src/submissions/service.js";
+import { removeMember } from "../src/teams/service.js";
 import { expectForbidden, expectHidden } from "./support/authz.js";
 import { cleanDatabase, createTeamsFixture, signIn } from "./support/teams.js";
 import { createUser } from "./support/users.js";
@@ -26,6 +27,62 @@ async function milestone() {
     teamId: fixture.teamA.id, createdBy: fixture.users.pA.id, title: "Open milestone",
     dueAt: new Date("2026-11-27T10:00:00Z"),
   } });
+}
+
+// Give the holder, competing operation and lock observer separate ready connections.
+async function warmConnections() {
+  await Promise.all(Array.from({ length: 4 }, () => prisma().$executeRaw`SELECT pg_sleep(0.05)`));
+}
+
+function holdTransaction(write: (tx: Prisma.TransactionClient) => Promise<unknown>) {
+  let release!: () => void;
+  let signalReady!: (pid: number) => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<number>((resolve) => { signalReady = resolve; });
+  const done = prisma().$transaction(async (tx) => {
+    const [{ pid }] = await tx.$queryRaw<{ pid: number }[]>`SELECT pg_backend_pid() AS pid`;
+    await write(tx);
+    signalReady(pid);
+    await gate;
+  }, { timeout: 15_000 });
+  return {
+    ready: Promise.race([ready, done.then(() => { throw new Error("Lock holder finished before it was ready"); })]),
+    release,
+    done,
+  };
+}
+
+// Waiting for elapsed time alone can confuse slow connection creation with lock contention.
+// Ask PostgreSQL who the competitor is actually waiting on, and only then release that holder.
+async function runWhileHeld(holder: ReturnType<typeof holdTransaction>, run: () => Promise<unknown>) {
+  let settled = false;
+  let outcome: Promise<{ ok: true } | { ok: false; error: unknown }> | undefined;
+  try {
+    const pid = await holder.ready;
+    outcome = run().then(
+      () => { settled = true; return { ok: true } as const; },
+      (error: unknown) => { settled = true; return { ok: false, error } as const; },
+    );
+    const deadline = performance.now() + 4_000;
+    let waitingOnHolder = false;
+    while (performance.now() < deadline) {
+      if (settled) throw new Error("Competitor completed without waiting for the held membership lock");
+      const [{ blocked }] = await prisma().$queryRaw<{ blocked: boolean }[]>`
+        SELECT EXISTS (
+          SELECT 1 FROM pg_stat_activity
+          WHERE datname = current_database() AND ${pid}::int = ANY(pg_blocking_pids(pg_stat_activity.pid))
+        ) AS blocked
+      `;
+      if (blocked) { waitingOnHolder = true; break; }
+      await delay(25);
+    }
+    if (!waitingOnHolder) throw new Error("PostgreSQL did not observe the competitor waiting on the holder");
+  } finally {
+    holder.release();
+    // Drain both operations before the next test resets fixtures, even when the lock assertion fails.
+    await Promise.all([holder.done, outcome]);
+  }
+  return await outcome;
 }
 
 beforeEach(async () => {
@@ -208,6 +265,34 @@ describe("F-07 supervisor team management", () => {
     expect(await prisma().teamMember.count({ where: { teamId: teamA.id, studentId: users.sA.id } })).toBe(submitted ? 1 : 0);
   });
 
+  it("TEST-07.4bi held lock: removal blocks until the held submission commits, then preserves its author", async () => {
+    const { teamA, users } = fixture;
+    const m = await milestone();
+    await warmConnections();
+    const holder = holdTransaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM milestones WHERE id = ${m.id} FOR UPDATE`;
+      await tx.$queryRaw`SELECT student_id FROM team_members WHERE student_id = ${users.sA.id} AND team_id = ${teamA.id} FOR UPDATE`;
+      await tx.submission.create({ data: { ...input, milestoneId: m.id, submittedBy: users.sA.id, submittedAt: now } });
+    });
+    const result = await runWhileHeld(holder, () => removeMember(teamA.id, users.sA.id));
+    expect(result).toMatchObject({ ok: false, error: { status: 409, code: "MEMBER_HAS_SUBMISSIONS" } });
+    expect(await prisma().teamMember.count({ where: { teamId: teamA.id, studentId: users.sA.id } })).toBe(1);
+    expect(await prisma().submission.count({ where: { milestoneId: m.id } })).toBe(1);
+  }, 20_000);
+
+  it("TEST-07.4bi held lock: submission blocks until the held removal commits, then rejects the missing member", async () => {
+    const { teamA, users } = fixture;
+    const m = await milestone();
+    await warmConnections();
+    const holder = holdTransaction(async (tx) => {
+      await tx.teamMember.delete({ where: { studentId: users.sA.id } });
+    });
+    const result = await runWhileHeld(holder, () => createSubmission(m.id, input, users.sA.id, now));
+    expect(result).toMatchObject({ ok: false, error: { status: 404, code: "NOT_FOUND" } });
+    expect(await prisma().teamMember.count({ where: { teamId: teamA.id, studentId: users.sA.id } })).toBe(0);
+    expect(await prisma().submission.count({ where: { milestoneId: m.id } })).toBe(0);
+  }, 20_000);
+
   it("TEST-07.5i checks role and scope before input validation and preserves state", async () => {
     const { teamA, users } = fixture;
     const [student, outside, within] = await Promise.all([auth(users.sA.id), auth(users.pB.id), auth(users.pA.id)]);
@@ -229,3 +314,5 @@ describe("F-07 supervisor team management", () => {
     expect(await prisma().team.count()).toBe(2);
   });
 });
+import { setTimeout as delay } from "node:timers/promises";
+import type { Prisma } from "@prisma/client";
