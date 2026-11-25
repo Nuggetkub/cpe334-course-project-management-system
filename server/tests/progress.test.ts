@@ -41,7 +41,11 @@ beforeEach(async () => {
   tokens.clear();
   f = await createTeamsFixture();
 });
-afterAll(async () => { await disconnectPrisma(); });
+// Leave the schema empty for the next file, like the other database suites (auth.test.ts only clears users).
+afterAll(async () => {
+  await cleanDatabase();
+  await disconnectPrisma();
+});
 
 describe("F-11 progress board", () => {
   it("TEST-11.1i returns one row per team A milestone, in due order, with the F-04 window and team status", async () => {
