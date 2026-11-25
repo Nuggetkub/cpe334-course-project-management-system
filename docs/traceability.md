@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Baseline:** [SRS v0.2](srs.md) · **Features:** [features.md](features.md) · **Issue:** #2
+**Baseline:** [SRS v0.4](srs.md) · **Features:** [features.md](features.md) · **Changes:** [changes.md](changes.md) · **Issues:** #2, #87 · **Status date:** 2026-11-25 (staging `4f56155`)
 
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
@@ -17,6 +17,7 @@
 | 0.11 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-05 contract v0.2: AC-05.8 also covers F-04's milestone list and detail (TEST-05.8c) |
 | 0.12 | 2026-11-05 | @Nuggetkub | @Earth2509 | F-06 contract v0.1 (taken over from @Earth2509): AC-06.1–AC-06.4 made precise (server-set author/time, trimming, oldest-first list, readers' 404, check order) |
 | 0.13 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 CR-01 (#73): AC-04.2 and BR-05 row use the 24 h minimum due date |
+| 0.14 | 2026-11-25 | @Nuggetkub | @Earth2509 | D2 Part D: every AC has an implementation and verification status; Sprint 2 (F-07 to F-10) and Sprint 3 (F-11 to F-13) AC tables; the matrix records requirement → feature → sprint → AC → planned test → actual file → result and version; coverage gaps listed (D-09, D-10) |
 
 ## ID conventions
 
@@ -27,153 +28,217 @@
   test output can be matched to this table.
 - **AC-SR*n*.m / TEST-SR*n*.m** — the same for a system responsibility SR-*n*.
 
-Sprint 1 rows list planned AC IDs. A contract author may split or renumber them, and updates this
-table **in the same PR** as the contract. Sprint 2 and 3 rows have a feature and sprint allocation
-now; their AC and tests are written with the sprint contract (D1 Part B allows this).
+A contract author may split or renumber AC, and updates this file **in the same PR** as the contract.
 
-## Sprint 1 acceptance criteria (planned)
+### Status columns
 
-| AC | Criterion | Requirements |
-|---|---|---|
-| AC-01.1 | Valid email + password → 200 `{ token, user: { id, name, email, role } }` and a DB session row | FR-01 |
-| AC-01.2 | Wrong password or unknown email → 401 with the same message (no account enumeration); a password over 72 UTF-8 bytes → 400 on `password` | FR-01, NFR-05 |
-| AC-01.3 | `GET /api/auth/me` with a valid token → the caller's id, name, email, role | FR-03 |
-| AC-01.4 | After `POST /api/auth/logout`, the same token → 401 | FR-02, NFR-04 |
-| AC-01.5 | A session is rejected after 8 h (expiry computed at login); the 8 h is fixed in code, not configurable | NFR-04 |
-| AC-01.6 | Stored password is a bcrypt hash (cost ≥ 10); passwords over 72 UTF-8 bytes are refused, never truncated; no response contains a `password`/`passwordHash` field | NFR-01 |
-| AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 |
-| AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 |
-| AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 |
-| AC-01.10 | When a signed-in user's session expires or is revoked during use, the next API request's 401 returns them to the login page with "Your session has expired. Please sign in again." and the token is cleared; no page shows its own error for it. A late 401 for a token that is no longer the current one (signed in again, or logged out) changes nothing | FR-03, NFR-04, NFR-10 |
-| AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 |
-| AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 |
-| AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 |
-| AC-02.4 | A Student reading another team's records, or a Student with no team → 404, identical to a nonexistent record, no data | BR-03, BR-04, NFR-03 |
-| AC-02.5 | Malformed or out-of-range IDs → 404 (never 500); checks run in the order 401 → 403 → 404 → 400, including malformed JSON bodies | NFR-03, NFR-05 |
-| AC-03.1 | **[F-03.1]** `npm run prisma:seed` creates demo supervisors, students and teams; a second run creates no duplicates; passwords come from env | AS-01, NFR-12 |
-| AC-03.2 | **[F-03.1]** Seeded users' `password_hash` values are bcrypt hashes | NFR-01 |
-| AC-03.3 | **[F-03.2]** A Student sees their team name, members and assigned supervisors | FR-05 |
-| AC-03.4 | **[F-03.2]** An unassigned Student sees "You are not assigned to a team yet"; team-scoped requests → 404 | FR-05, BR-04 |
-| AC-03.5 | **[F-03.1]** The DB rejects a second team membership for the same student | BR-04 |
-| AC-03.6 | **[F-03.2]** A Supervisor's team list contains only their assigned teams | FR-06, BR-02 |
-| AC-03.7 | **[F-03.2]** Team view and team list show a loading state while fetching; a Supervisor with no teams sees "No teams assigned yet" | FR-06, NFR-10 |
-| AC-04.1 | A Supervisor creates a milestone for an assigned team → 201, persisted | FR-08 |
-| AC-04.2 | Title outside 1–120 chars or due date earlier than server now + 24 h (CR-01) → 400 with field errors shown in the form; exactly now + 24 h is accepted | BR-05, NFR-10 |
-| AC-04.3 | A Student sees their team's milestones with due date in Asia/Bangkok time, window and team status | FR-09, NFR-06 |
-| AC-04.4 | Window and team status follow SRS §4.3.1 Sprint 1 rows at `due_at − 1 s`, `due_at`, `due_at + 1 s` | FR-09, NFR-06 |
-| AC-04.5 | When creating a milestone fails on the server (5xx or network error), the form shows the error message, keeps the entered values and allows a retry | NFR-10 |
-| AC-04.6 | The milestone list shows a loading state while fetching and "No milestones yet" when empty | FR-09, NFR-10 |
-| AC-04.7 | Supervisor-only create, team-scoped list/detail and identical hidden/missing 404; malformed JSON cannot outrank 401/403/404 | BR-01–BR-04, NFR-02, NFR-03, NFR-05 |
-| AC-04.8 | Team milestone list paginates 50 rows by dueAt ASC/id ASC; team changes cannot show stale prior-team results | FR-09, NFR-10 |
-| AC-05.1 | A Student of the milestone's team submits title, description, link while the window is Open → 201, persisted as version 1 with submitter and server time | FR-13 |
-| AC-05.2 | Invalid title/description/link → 400 with field errors shown in the form | BR-09, NFR-10 |
-| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` → 409 `DEADLINE_PASSED` (server clock; client times ignored) | BR-06, NFR-06 |
-| AC-05.4 | A second submission for the same team and milestone, including two members at the same moment → 409 `ALREADY_SUBMITTED`; one row | BR-07 |
-| AC-05.5 | Team members and assigned Supervisors see the persisted submission with submitter and time; other teams, no team, unassigned Supervisors → 404 | FR-14, BR-02, BR-03 |
-| AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 |
-| AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 |
-| AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline), on the milestone page and in F-04's list and detail | FR-09, DEC-13 |
-| AC-05.9 | A Supervisor submitting → 403; a malformed or invalid body to another team's milestone → 404 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 |
-| AC-06.1 | An assigned Supervisor (or co-supervisor) records feedback on a submission version → 201; author, time and submission come from the session, server clock and URL | FR-18, BR-10 |
-| AC-06.2 | Feedback text outside 1–2000 characters after trimming → 400 `fields.text`, no row; the feedback form checks it before sending and shows the field error next to the text box | BR-10, NFR-10 |
-| AC-06.3 | Team members and assigned Supervisors see every feedback entry, oldest first, with author, Bangkok time and the version it refers to | FR-19 |
-| AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404; other teams' Students and Students with no team reading it → 404; order 401 → 403 → 404 → 400 | BR-01, BR-02, BR-03 |
-| AC-06.5 | The feedback list shows a loading state and "No feedback yet" when empty; the feedback form shows server errors and keeps the text | FR-19, NFR-10 |
-| AC-SR1.1 | Validation, auth and not-found errors use `{ "error": { "code", "message" } }` with no stack trace or SQL | NFR-05 |
-| AC-SR2.1 | `.env` is git-ignored; `.env.example` lists every variable; the client bundle contains no secret | NFR-12 |
-| AC-SR2.2 | Teammate follows the README from a fresh clone to passing tests in ≤ 15 min | NFR-08 |
+- **Impl.** is whether the behaviour exists in code: **Yes**, **In PR** (implemented and green on an open PR, not integrated), **No** (planned) or **Retired**.
+- **Verification** names the run in which the AC's tests last executed, using the result sets below. "Planned" means no test has run; an unexecuted test is never counted as passed.
+
+| Result set | Version | What ran | Result |
+|---|---|---|---|
+| **R-S1** | `v0.4.0` (`aa191ba`), deployed `cpms-00008-l48` | CI on PR #77; local server and client suites; Lab 7 deployed checks L7-D00 to D04 | Server 218/218, client 53/53, deployed checks PASS |
+| **R-S2** | `staging/sprint-2` at `4f56155` (F-01 to F-09, F-10 server) | CI run [45603170454](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45603170454) on #98's head `28d16e7`, whose tree is identical to `4f56155`; local run on `28d16e7` | Server 315/315, client 67/67 (CI and local), both builds pass, E2E 10/10 (local) |
+| **R-94** | PR #94 head `3b72786` (F-11 phase 1, based on staging `2d5364e`) | CI run [45586183430](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45586183430); local Playwright | Server 260/260, client 69/69, E2E 12/12 |
+
+No test in these sets was skipped or failed.
+
+## Sprint 1 acceptance criteria
+
+All Sprint 1 AC are implemented and released (`v0.3.0`, accepted by StudyTrack UAT; `v0.4.0`).
+
+| AC | Criterion | Requirements | Impl. | Verification |
+|---|---|---|---|---|
+| AC-01.1 | Valid email + password → 200 `{ token, user: { id, name, email, role } }` and a DB session row | FR-01 | Yes | PASS R-S1, R-S2 |
+| AC-01.2 | Wrong password or unknown email → 401 with the same message (no account enumeration); a password over 72 UTF-8 bytes → 400 on `password` | FR-01, NFR-05 | Yes | PASS R-S1, R-S2 |
+| AC-01.3 | `GET /api/auth/me` with a valid token → the caller's id, name, email, role | FR-03 | Yes | PASS R-S1, R-S2 |
+| AC-01.4 | After `POST /api/auth/logout`, the same token → 401 | FR-02, NFR-04 | Yes | PASS R-S1, R-S2 |
+| AC-01.5 | A session is rejected after 8 h (expiry computed at login); the 8 h is fixed in code, not configurable | NFR-04 | Yes | PASS R-S1, R-S2 |
+| AC-01.6 | Stored password is a bcrypt hash (cost ≥ 10); passwords over 72 UTF-8 bytes are refused, never truncated; no response contains a `password`/`passwordHash` field | NFR-01 | Yes | PASS R-S1, R-S2 |
+| AC-01.7 | After login the UI shows Student or Supervisor navigation; logout returns to the login page | FR-04 | Yes | PASS R-S1, R-S2 |
+| AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-01.10 | When a signed-in user's session expires or is revoked during use, the next API request's 401 returns them to the login page with "Your session has expired. Please sign in again." and the token is cleared; no page shows its own error for it. A late 401 for a token that is no longer the current one (signed in again, or logged out) changes nothing | FR-03, NFR-04, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 | Yes | PASS R-S1, R-S2 |
+| AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 | Yes | PASS R-S1, R-S2 |
+| AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 | Yes | PASS R-S1, R-S2 |
+| AC-02.4 | A Student reading another team's records, or a Student with no team → 404, identical to a nonexistent record, no data | BR-03, BR-04, NFR-03 | Yes | PASS R-S1, R-S2 |
+| AC-02.5 | Malformed or out-of-range IDs → 404 (never 500); checks run in the order 401 → 403 → 404 → 400, including malformed JSON bodies | NFR-03, NFR-05 | Yes | PASS R-S1, R-S2 |
+| AC-03.1 | **[F-03.1]** `npm run prisma:seed` creates demo supervisors, students and teams; a second run creates no duplicates; passwords come from env | AS-01, NFR-12 | Yes | PASS R-S1, R-S2 |
+| AC-03.2 | **[F-03.1]** Seeded users' `password_hash` values are bcrypt hashes | NFR-01 | Yes | PASS R-S1, R-S2 |
+| AC-03.3 | **[F-03.2]** A Student sees their team name, members and assigned supervisors | FR-05 | Yes | PASS R-S1, R-S2 |
+| AC-03.4 | **[F-03.2]** An unassigned Student sees "You are not assigned to a team yet"; team-scoped requests → 404 | FR-05, BR-04 | Yes | PASS R-S1, R-S2 |
+| AC-03.5 | **[F-03.1]** The DB rejects a second team membership for the same student | BR-04 | Yes | PASS R-S1, R-S2 |
+| AC-03.6 | **[F-03.2]** A Supervisor's team list contains only their assigned teams | FR-06, BR-02 | Yes | PASS R-S1, R-S2 |
+| AC-03.7 | **[F-03.2]** Team view and team list show a loading state while fetching; a Supervisor with no teams sees "No teams assigned yet" | FR-06, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-04.1 | A Supervisor creates a milestone for an assigned team → 201, persisted | FR-08 | Yes | PASS R-S1, R-S2 |
+| AC-04.2 | Title outside 1–120 chars or due date earlier than server now + 24 h (CR-01) → 400 with field errors shown in the form; exactly now + 24 h is accepted | BR-05, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-04.3 | A Student sees their team's milestones with due date in Asia/Bangkok time, window and team status | FR-09, NFR-06 | Yes | PASS R-S1, R-S2 |
+| AC-04.4 | Window and team status follow SRS §4.3.1 Sprint 1 rows at `due_at − 1 s`, `due_at`, `due_at + 1 s` | FR-09, NFR-06 | Yes | PASS R-S1, R-S2 |
+| AC-04.5 | When creating a milestone fails on the server (5xx or network error), the form shows the error message, keeps the entered values and allows a retry | NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-04.6 | The milestone list shows a loading state while fetching and "No milestones yet" when empty | FR-09, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-04.7 | Supervisor-only create, team-scoped list/detail and identical hidden/missing 404; malformed JSON cannot outrank 401/403/404 | BR-01–BR-04, NFR-02, NFR-03, NFR-05 | Yes | PASS R-S1, R-S2 |
+| AC-04.8 | Team milestone list paginates 50 rows by dueAt ASC/id ASC; team changes cannot show stale prior-team results | FR-09, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-05.1 | A Student of the milestone's team submits title, description, link while the window is Open → 201, persisted as version 1 with submitter and server time | FR-13 | Yes | PASS R-S1, R-S2 |
+| AC-05.2 | Invalid title/description/link → 400 with field errors shown in the form | BR-09, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-05.3 | Submission at `due_at − 1 s` and at `due_at` accepted; at `due_at + 1 s` → 409 `DEADLINE_PASSED` (server clock; client times ignored) | BR-06, NFR-06 | Yes | PASS R-S1, R-S2 |
+| AC-05.4 | A second submission for the same team and milestone, including two members at the same moment → 409 `ALREADY_SUBMITTED`; one row | BR-07 | Retired | BR-07 retired by BR-08 (F-09). TEST-05.4a/b replaced by TEST-09.1i and TEST-09.6i |
+| AC-05.5 | Team members and assigned Supervisors see the persisted submission with submitter and time; other teams, no team, unassigned Supervisors → 404 | FR-14, BR-02, BR-03 | Yes | PASS R-S1, R-S2 |
+| AC-05.6 | When the server rejects a submission (deadline passed, duplicate, 5xx or network error), the form shows the server message and keeps the entered values | BR-06, BR-07, NFR-10 | Yes | PASS R-S1; R-S2 with F-09's revised TEST-05.6 (form returns as "Submit a new version") |
+| AC-05.7 | The submission view shows a loading state while fetching and "Not submitted yet" when the team has no submission | FR-14, NFR-10 | Yes | PASS R-S1; R-S2 with F-09's revised TEST-05.7 |
+| AC-05.8 | Team status: Not submitted (none, now ≤ `due_at`), Overdue (none, now > `due_at`), Submitted (has a submission, before and after the deadline), on the milestone page and in F-04's list and detail | FR-09, DEC-13 | Yes | PASS R-S1, R-S2 |
+| AC-05.9 | A Supervisor submitting → 403; a malformed or invalid body to another team's milestone → 404 (401 → 403 → 404 → 400 → 409) | BR-01, NFR-03 | Yes | PASS R-S1, R-S2 |
+| AC-06.1 | An assigned Supervisor (or co-supervisor) records feedback on a submission version → 201; author, time and submission come from the session, server clock and URL | FR-18, BR-10 | Yes | PASS R-S1, R-S2 |
+| AC-06.2 | Feedback text outside 1–2000 characters after trimming → 400 `fields.text`, no row; the feedback form checks it before sending and shows the field error next to the text box | BR-10, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-06.3 | Team members and assigned Supervisors see every feedback entry, oldest first, with author, Bangkok time and the version it refers to | FR-19 | Yes | PASS R-S1, R-S2 |
+| AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404; other teams' Students and Students with no team reading it → 404; order 401 → 403 → 404 → 400 | BR-01, BR-02, BR-03 | Yes | PASS R-S1, R-S2 |
+| AC-06.5 | The feedback list shows a loading state and "No feedback yet" when empty; the feedback form shows server errors and keeps the text | FR-19, NFR-10 | Yes | PASS R-S1, R-S2 |
+| AC-SR1.1 | Validation, auth and not-found errors use `{ "error": { "code", "message" } }` with no stack trace or SQL | NFR-05 | Yes | PASS R-S1, R-S2 |
+| AC-SR2.1 | `.env` is git-ignored; `.env.example` lists every variable; the client bundle contains no secret | NFR-12 | Yes | PASS manual TEST-SR2.1 at `v0.1.0` (D1 Part F, 6 Nov). The CI secret scan planned for Sprint 2 is missing (D-09) |
+| AC-SR2.2 | Teammate follows the README from a fresh clone to passing tests in ≤ 15 min | NFR-08 | Yes | PASS manual TEST-SR2.2 at `v0.1.0` (D1 Part F; time met, one deviation). Re-run planned before Final |
+
+## Sprint 2 acceptance criteria
+
+Full wording, inputs and expected results are in each contract. **Integrated** means merged into `staging/sprint-2`; the Sprint 2 release `v0.5.0` to `main` is still planned (it waits on the F-10 Grade UI, AC-10.5).
+
+| AC | Criterion (short) | Requirements | Planned tests → actual file | Impl. | Verification |
+|---|---|---|---|---|---|
+| AC-07.1 | Create a team: one team and one creator assignment; no orphans on any failure | FR-07, BR-01 | TEST-07.1u, 07.1i, 07.1e → `server/tests/team-management-units.test.ts`, `team-management.test.ts`, `e2e/team-management.spec.ts` | Yes | PASS R-S2 |
+| AC-07.2 | Roster and add an unassigned Student; no transfer or second membership | FR-07, BR-02, BR-04 | TEST-07.2i, 07.2bi → `team-management.test.ts` | Yes | PASS R-S2 |
+| AC-07.3 | Remove a member without authored work; they see the no-team state and 404s | FR-07, BR-03, BR-04, BR-16 | TEST-07.3i → `team-management.test.ts` | Yes | PASS R-S2 |
+| AC-07.4 | Removing an author (any version) → 409; removal and submission can't both succeed | BR-16 | TEST-07.4i, 07.4bi (sequential, concurrent and **held lock**) → `team-management.test.ts` | Yes | PASS R-S2. Held-lock cases fail with the lock removed (D-04) |
+| AC-07.5 | 401 → 403 → 404 before validation; denied writes change nothing | BR-01–BR-03, NFR-03, NFR-05 | TEST-07.5i → `team-management.test.ts`; routes in the TEST-02.1 registry | Yes | PASS R-S2 |
+| AC-07.6 | UI loading, empty, validation and retryable errors; no Student controls | FR-07, NFR-10 | TEST-07.6c, 07.1e → `client/tests/team-management.test.tsx`, `e2e/team-management.spec.ts` | Yes | PASS R-S2 |
+| AC-08.1 | Edit title and description; dates unchanged | FR-10 | TEST-08.1i, 08.1e → `server/tests/milestones-lifecycle.test.ts`, `e2e/lifecycle.spec.ts` | Yes | PASS R-S2 |
+| AC-08.2 | Extend only (BR-13) and at least now + 24 h (CR-01); no write on 400 | FR-10, BR-13, BR-05 | TEST-08.2u, 08.2i, 08.10i → `milestones-lifecycle-units.test.ts`, `milestones-lifecycle.test.ts`, `milestones-concurrency.test.ts` | Yes | PASS R-S2 |
+| AC-08.3 | Late window after the due date and in the future; `null` removes it | FR-12, BR-12 | TEST-08.2u, 08.3i, 08.10i → same files | Yes | PASS R-S2 |
+| AC-08.4 | Close: `closedAt`/`closedBy` set; second close 409; dates locked | FR-11 | TEST-08.4i → `milestones-lifecycle.test.ts` | Yes | PASS R-S2 |
+| AC-08.5 | Window rows at due − 1 s, due, due + 1 ms, late_until, + 1 ms, closed | DEC-13, §4.3.1 | TEST-08.5u → `milestones-lifecycle-units.test.ts` | Yes | PASS R-S2 |
+| AC-08.6 | Submitting to a closed milestone → 409 `MILESTONE_CLOSED`, no row | BR-11 | TEST-08.6i, 08.9i, 08.10i → `milestones-lifecycle.test.ts`, `milestones-concurrency.test.ts` | Yes | PASS R-S2. Race tests fail on unlocked code (D-01) |
+| AC-08.7 | Guard order; `DELETE` → 404 and the row stays | BR-01–BR-03, BR-14, NFR-02, NFR-03, NFR-05 | TEST-08.7i → `milestones-lifecycle.test.ts` | Yes | PASS R-S2. Not yet in the TEST-02.1 registry (D-10) |
+| AC-08.8 | Supervisor detail page: busy, field errors, retry, close confirmation | NFR-10 | TEST-08.8c, 08.1e → `client/tests/milestone-manage.test.tsx`, `e2e/lifecycle.spec.ts` | Yes | PASS R-S2 |
+| AC-09.1 | New version N+1 while Open; earlier versions unchanged | FR-15, BR-08 | TEST-09.1i, 09.1e → `server/tests/resubmission.test.ts`, `e2e/resubmission.spec.ts` | Yes | PASS R-S2 |
+| AC-09.2 | Late window: first submission and new versions marked Late; boundary at `lateUntil` | FR-17, BR-12, DEC-14 | TEST-09.2u, 09.2i → `resubmission-units.test.ts`, `resubmission.test.ts` | Yes | PASS R-S2 |
+| AC-09.3 | Closed or deadline passed → 409, no row | BR-11, BR-06 | TEST-09.3i → `resubmission.test.ts` | Yes | PASS R-S2 |
+| AC-09.4 | History newest first for team and assigned Supervisors; fixed 404 for others | FR-16, BR-02, BR-03 | TEST-09.4i, 09.8c, 09.1e → `resubmission.test.ts`, `client/tests/resubmission.test.tsx`, `e2e/resubmission.spec.ts` | Yes | PASS R-S2 |
+| AC-09.5 | Feedback stays on its version; team status follows the latest version | BR-10, DEC-13 | TEST-09.5i, 09.2u → `resubmission.test.ts`, `resubmission-units.test.ts` | Yes | PASS R-S2 |
+| AC-09.6 | Simultaneous submits get consecutive versions; 409 only after 3 collisions | BR-08 | TEST-09.6u, 09.6i → `resubmission-units.test.ts`, `resubmission.test.ts` | Yes | PASS R-S2. Only the version index is retried (D-03) |
+| AC-09.7 | 401 → 403 → 404 → 400; no write | NFR-02, NFR-03, NFR-05 | TEST-09.7i → `resubmission.test.ts` | Yes | PASS R-S2. History route not yet in the TEST-02.1 registry (D-10) |
+| AC-09.8 | New-version form, Late notice, no form when Closed, history with badges | NFR-10 | TEST-09.8c → `client/tests/resubmission.test.tsx` | Yes | PASS R-S2 |
+| AC-10.1 | Save a 0–100 draft; one row; allowed with no submission and in any window | FR-20, FR-21, BR-15 | TEST-10.1u, 10.1i, 10.1bi, 10.1ci (DB checks) → `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts`; TEST-10.1e not written | Yes (server) | PASS R-S2 (API and DB). Browser TEST-10.1e **planned** |
+| AC-10.2 | Students get the same minimal response until release; then the score | FR-21, BR-03, BR-15, DEC-06 | TEST-10.1u, 10.2i → `grades-units.test.ts`, `grades.test.ts`; TEST-10.1e not written | Yes (server) | PASS R-S2 (byte-identical pre-release body). Browser check **planned** |
+| AC-10.3 | New draft after release stays private; repeat release keeps the record; save/release race is coherent | FR-20, FR-21, BR-15 | TEST-10.3i, 10.3bi (held lock) → `grades.test.ts`, `grades-concurrency.test.ts` | Yes | PASS R-S2. Held-lock cases fail with the lock removed (author's and reviewer's mutation checks) |
+| AC-10.4 | 401 / 403 / masked 404 before validation; no change | BR-01–BR-03, NFR-03, NFR-05, DEC-10 | TEST-10.4i → `grades.test.ts`; routes in the TEST-02.1 registry | Yes | PASS R-S2 |
+| AC-10.5 | Grade section states; only Supervisors see actions | FR-20, FR-21, NFR-10 | TEST-10.5c, 10.1e → not written | No | **Planned**: the Grade UI isn't built yet (#83 open). Blocks `v0.5.0` |
+
+## Sprint 3 acceptance criteria
+
+| AC | Criterion (short) | Requirements | Planned tests → actual file | Impl. | Verification |
+|---|---|---|---|---|---|
+| AC-11.1 | One row per own-team milestone, in due order, same window and team status as F-04 | FR-22, DEC-13 | TEST-11.1i, 11.1e → `server/tests/progress.test.ts`, `e2e/progress.spec.ts` (PR #94) | In PR | PASS R-94 |
+| AC-11.2 | Latest version and its own feedback status: AWAITING, then RECEIVED | FR-22, BR-10 | TEST-11.2u, 11.2i → `progress-units.test.ts`, `progress.test.ts` | In PR | PASS R-94 |
+| AC-11.3 | Released grade only after release; no `score` key before (phase 2) | FR-22, BR-15, DEC-06 | TEST-11.3u, 11.3i → not written (needs F-10) | No | Planned |
+| AC-11.4 | 401 then the fixed 404 for hidden or missing scope, also inside the snapshot | BR-03, BR-04, NFR-03 | TEST-11.4i, 11.4bi → `progress.test.ts` | In PR | PASS R-94. Route not yet in the TEST-02.1 registry (D-10) |
+| AC-11.5 | 50 + 1 rows in dueAt/id order; invalid page → 400 after ownership | NFR-09, NFR-10 | TEST-11.5i → `progress.test.ts` | In PR | PASS R-94 |
+| AC-11.6 | Loading, empty, error with Retry, no-team; no horizontal overflow | NFR-10 | TEST-11.6c, 11.6e → `client/tests/progress.test.tsx`, `e2e/progress.spec.ts` | In PR | PASS R-94 |
+| AC-12.1 | Scoped overview rows with submission and feedback states | FR-23, BR-02, DEC-13 | TEST-12.1u, 12.1i, 12.1e | No | Planned (Final) |
+| AC-12.2 | Team and state filters, combined | FR-24 | TEST-12.2i, 12.1e | No | Planned (Final) |
+| AC-12.3 | 403 / 401 / fixed 404 / 400 for bad callers and filters | BR-02, NFR-03, NFR-05 | TEST-12.3i | No | Planned (Final) |
+| AC-12.4 | NFR-09 p95 < 500 ms on Cloud Run | NFR-09 | TEST-12.4p | No | Planned (Final) |
+| AC-12.5 | UI states; no stale replacement; filters in the URL | NFR-10 | TEST-12.5c | No | Planned (Final) |
+| AC-13.1 | CSV rows equal all Overview pages for the same filters | FR-25, BR-02, DEC-05 | TEST-13.1i, 13.1e | No | Planned (Final) |
+| AC-13.2 | Only published grades; 0 kept | FR-25, BR-15, DEC-06 | TEST-13.2i | No | Planned (Final) |
+| AC-13.3 | Errors as F-12; header-only empty CSV; oversized → 400 | BR-02, NFR-03, NFR-05, DEC-10 | TEST-13.3i, 13.3u | No | Planned (Final) |
+| AC-13.4 | Thai, quoting and formula-safe text | FR-25 | TEST-13.4u | No | Planned (Final) |
+| AC-13.5 | Download keeps filters on failure; no Student control | FR-25, NFR-10 | TEST-13.5c, 13.1e | No | Planned (Final) |
 
 ## Matrix
 
+Columns follow D2 Part D: requirement → feature or responsibility → sprint → AC or NFR verification → planned test → actual file/test → result and version. Server files are under `server/tests/`, client files under `client/tests/` and journeys under `e2e/`.
+
 ### Functional requirements
 
-| Req | Feature | Sprint | Verification |
-|---|---|---|---|
-| FR-01 | F-01 Authentication and session | 1 | AC-01.1, AC-01.2, AC-01.8, AC-01.9 / TEST-01.1, TEST-01.2, TEST-01.8, TEST-01.9 |
-| FR-02 | F-01 | 1 | AC-01.4 / TEST-01.4 |
-| FR-03 | F-01 | 1 | AC-01.3, AC-01.10 / TEST-01.3, TEST-01.10 |
-| FR-04 | F-01 | 1 | AC-01.7 / TEST-01.7 (E2E) |
-| FR-05 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.3, AC-03.4 / TEST-03.3, TEST-03.4 |
-| FR-06 | [F-03.2 protected team views](sprints/sprint-1/F-03-team-views.md) | 1 | AC-03.6, AC-03.7 / TEST-03.6, TEST-03.7 |
-| FR-07 | [F-07 Team management](sprints/sprint-2/F-07-team-management.md) | 2 | AC-07.1–07.3, 07.5–07.6 / TEST-07.1i–07.3i, 07.5i, 07.6c, 07.1e |
-| FR-08 | [F-04 Milestones: create and view](sprints/sprint-1/F-04-milestone.md) | 1 | AC-04.1, AC-04.2, AC-04.7 / TEST-04.1i/e, TEST-04.2u/i/c/e, TEST-04.7i |
-| FR-09 | F-04 (window, Not submitted / Overdue), F-05 (Submitted) | 1 (S1 rows of §4.3.1), 2 (Late rows, F-08/F-09) | AC-04.3, AC-04.4, AC-04.6, AC-04.8, AC-05.8 / TEST-04.3i/c, TEST-04.4u, TEST-04.6i/c, TEST-04.8i/c, TEST-05.8 |
-| FR-10 | F-08 Milestone lifecycle | 2 | Sprint 2 contract |
-| FR-11 | F-08 | 2 | Sprint 2 contract |
-| FR-12 | F-08 | 2 | Sprint 2 contract |
-| FR-13 | F-05 Submit milestone work | 1 | AC-05.1 / TEST-05.1 |
-| FR-14 | F-05 | 1 | AC-05.5 / TEST-05.5 |
-| FR-15 | F-09 Versioned resubmission | 2 | Sprint 2 contract |
-| FR-16 | F-09 | 2 | Sprint 2 contract |
-| FR-17 | F-09 | 2 | Sprint 2 contract |
-| FR-18 | [F-06 Feedback on a submission](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.1, AC-06.2 / TEST-06.1, TEST-06.2a/b/c, TEST-06.1e |
-| FR-19 | [F-06](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.3, AC-06.5 / TEST-06.3, TEST-06.5a/b/c, TEST-06.1e |
-| FR-20 | F-10 Grades and release | 2 | AC-10.1, AC-10.3 / TEST-10.1u, TEST-10.1i, TEST-10.1bi, TEST-10.1ci, TEST-10.3i, TEST-10.3bi; component and browser checks pending |
-| FR-21 | F-10 | 2 | AC-10.2, AC-10.3 / TEST-10.1u, TEST-10.2i, TEST-10.3i, TEST-10.3bi; component and browser checks pending |
-| FR-22 | F-11 Student progress board | 3 | Sprint 3 contract |
-| FR-23 | F-12 Supervisor overview and filters | 3 | Sprint 3 contract |
-| FR-24 | F-12 | 3 | Sprint 3 contract |
-| FR-25 | F-13 CSV export | 3 | Sprint 3 contract |
+| Req | Feature | Sprint | AC | Planned test | Actual file / test | Result and version |
+|---|---|---|---|---|---|---|
+| FR-01 | F-01 | 1 | AC-01.1, 01.2, 01.8, 01.9 | TEST-01.1, 01.2a–d, 01.8a/b, 01.9 | `auth.test.ts`, `auth-units.test.ts`; `auth.test.tsx`; `auth.spec.ts` | PASS R-S1, R-S2 |
+| FR-02 | F-01 | 1 | AC-01.4 | TEST-01.4, 01.4b | `auth.test.ts` | PASS R-S1, R-S2 |
+| FR-03 | F-01 | 1 | AC-01.3, 01.10 | TEST-01.3, 01.10a–c | `auth.test.ts`; `auth.test.tsx`, `api.test.ts` | PASS R-S1, R-S2 |
+| FR-04 | F-01 | 1 | AC-01.7 | TEST-01.7a/b | `auth.test.tsx`; `auth.spec.ts` | PASS R-S1, R-S2 |
+| FR-05 | F-03.2 | 1 | AC-03.3, 03.4 | TEST-03.3, 03.3c, 03.4, 03.4c | `team-views.test.ts`; `team-views.test.tsx` | PASS R-S1, R-S2 |
+| FR-06 | F-03.2 | 1 | AC-03.6, 03.7 | TEST-03.6, 03.6c, 03.7, 03.7c | `team-views.test.ts`; `team-views.test.tsx` | PASS R-S1, R-S2 |
+| FR-07 | F-07 | 2 | AC-07.1–07.3, 07.6 | TEST-07.1u/i/e, 07.2i/bi, 07.3i, 07.6c | `team-management(-units).test.ts`; `team-management.test.tsx`; `team-management.spec.ts` | PASS R-S2 (integrated; release planned `v0.5.0`) |
+| FR-08 | F-04 | 1 | AC-04.1, 04.2, 04.7 | TEST-04.1i/e, 04.2u/i/c/e, 04.7i | `milestones(-units).test.ts`; `milestones.test.tsx`; `milestones.spec.ts` | PASS R-S1, R-S2 |
+| FR-09 | F-04, F-05; F-08, F-09 (Late rows) | 1 → 2 | AC-04.3, 04.4, 04.6, 04.8, 05.8, 08.5, 09.2, 09.5 | TEST-04.3i/c, 04.4u, 04.6i/c, 04.8i/c, 05.8a–c, 08.5u, 09.2u/i, 09.5i | `milestones-units.test.ts`, `milestones.test.ts`, `submissions.test.ts`, `milestones-lifecycle-units.test.ts`, `resubmission(-units).test.ts`; `milestone-time.test.ts`, `milestones.test.tsx` | PASS R-S2 (S1 rows also R-S1) |
+| FR-10 | F-08 | 2 | AC-08.1, 08.2, 08.8 | TEST-08.1i/e, 08.2u/i, 08.8c | `milestones-lifecycle(-units).test.ts`; `milestone-manage.test.tsx`; `lifecycle.spec.ts` | PASS R-S2 |
+| FR-11 | F-08 | 2 | AC-08.4, 08.6 | TEST-08.4i, 08.6i, 08.9i, 08.10i | `milestones-lifecycle.test.ts`, `milestones-concurrency.test.ts` | PASS R-S2 |
+| FR-12 | F-08 | 2 | AC-08.3 | TEST-08.2u, 08.3i, 08.10i | `milestones-lifecycle(-units).test.ts`, `milestones-concurrency.test.ts` | PASS R-S2 |
+| FR-13 | F-05 | 1 | AC-05.1 | TEST-05.1, 05.1b, 05.1e | `submissions.test.ts`; `submission.test.tsx`; `submissions.spec.ts` | PASS R-S1, R-S2 |
+| FR-14 | F-05 | 1 | AC-05.5 | TEST-05.5a/b | `submissions.test.ts` | PASS R-S1, R-S2 |
+| FR-15 | F-09 | 2 | AC-09.1 | TEST-09.1i/e | `resubmission.test.ts`; `resubmission.spec.ts` | PASS R-S2 |
+| FR-16 | F-09 | 2 | AC-09.4 | TEST-09.4i, 09.8c, 09.1e | `resubmission.test.ts`; `resubmission.test.tsx`; `resubmission.spec.ts` | PASS R-S2 |
+| FR-17 | F-09 | 2 | AC-09.2 | TEST-09.2u/i | `resubmission(-units).test.ts` | PASS R-S2 |
+| FR-18 | F-06 | 1 | AC-06.1, 06.2 | TEST-06.1, 06.2a–d, 06.1e | `feedback.test.ts`, `feedback-validate.test.ts`; `feedback.test.tsx`; `feedback.spec.ts` | PASS R-S1, R-S2 |
+| FR-19 | F-06 | 1 | AC-06.3, 06.5 | TEST-06.3, 06.5a–c, 06.1e | `feedback.test.ts`; `feedback.test.tsx`; `feedback.spec.ts` | PASS R-S1, R-S2 |
+| FR-20 | F-10 | 2 | AC-10.1, 10.3, 10.5 | TEST-10.1u/i/bi/ci, 10.3i/bi; 10.5c, 10.1e | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | Server PASS R-S2 (integrated, #98). UI AC-10.5 and browser TEST-10.1e **planned** |
+| FR-21 | F-10 | 2 | AC-10.2, 10.3 | TEST-10.1u, 10.2i, 10.3i/bi; 10.1e | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | Server PASS R-S2. Browser TEST-10.1e **planned** |
+| FR-22 | F-11 | 3 | AC-11.1, 11.2, 11.5, 11.6 (phase 1); AC-11.3 (phase 2) | TEST-11.1i/e, 11.2u/i, 11.5i, 11.6c/e; 11.3u/i | `progress(-units).test.ts`; `progress.test.tsx`; `progress.spec.ts` (PR #94) | Phase 1 PASS R-94, **not yet integrated**; AC-11.3 **planned** |
+| FR-23 | F-12 | 3 | AC-12.1 | TEST-12.1u/i/e | Not written | **Planned** (Final) |
+| FR-24 | F-12 | 3 | AC-12.2, 12.5 | TEST-12.2i, 12.5c, 12.1e | Not written | **Planned** (Final) |
+| FR-25 | F-13 | 3 | AC-13.1–13.5 | TEST-13.1i/e, 13.2i, 13.3i/u, 13.4u, 13.5c | Not written | **Planned** (Final) |
 
 ### Business rules
 
-| Req | Feature / responsibility | Sprint (established → re-verified) | Verification |
-|---|---|---|---|
-| BR-01 | F-02 (S1 operations); F-07, F-10 extend it | 1 → 2 | AC-02.2, AC-05.9, AC-06.4 / TEST-02.2, TEST-05.9, TEST-06.4; S2 contracts for grades/teams |
-| BR-02 | F-02 | 1 → 2, 3 | AC-02.3, AC-03.6, AC-05.5, AC-06.4 / TEST-02.3, TEST-03.6, TEST-05.5, TEST-06.4 |
-| BR-03 | F-02 | 1 → 2, 3 | AC-02.4, AC-05.5 / TEST-02.4, TEST-05.5 |
-| BR-04 | F-03.1 (DB constraint), F-02 + F-03.2 (API); F-07 (UI) | 1 → 2 | AC-02.4, AC-03.4, AC-03.5 / TEST-02.4b, TEST-03.4, TEST-03.5; Sprint 2 contract |
-| BR-05 | F-04 (create); F-08 (extend) | 1 → 2; changed by CR-01 (Lab 7) | AC-04.2 / TEST-04.2u/i (24 h boundary rows), TEST-04.2c/e; Sprint 2 contract uses the same minimum |
-| BR-06 | F-05 | 1 → 2 (late window) | AC-05.3 / TEST-05.3 |
-| BR-07 | F-05 — **Sprint 1 only**, superseded by BR-08 | 1 | AC-05.4 / TEST-05.4 (replaced in S2) |
-| BR-08 | F-09 | 2 | Sprint 2 contract |
-| BR-09 | F-05 | 1 | AC-05.2 / TEST-05.2 |
-| BR-10 | F-06; F-09 re-verifies feedback stays on its version | 1 → 2 | AC-06.1, AC-06.2 / TEST-06.1, TEST-06.2; Sprint 2 contract |
-| BR-11 | F-08 | 2 | Sprint 2 contract |
-| BR-12 | F-08 (set window); F-09 (Late marking) | 2 | Sprint 2 contract |
-| BR-13 | F-08 | 2 | Sprint 2 contract |
-| BR-14 | F-08 | 2 | Sprint 2 contract |
-| BR-15 | F-10 | 2 | AC-10.1–AC-10.3 / TEST-10.1bi, TEST-10.2i, TEST-10.3i, TEST-10.3bi (real PostgreSQL) |
-| BR-16 | F-07 | 2 | AC-07.3–07.4 / TEST-07.3i, 07.4i, 07.4bi (real PostgreSQL; both committed orders and concurrent removal/submission) |
+| Req | Feature / responsibility | Sprint | AC | Planned test | Actual file / test | Result and version |
+|---|---|---|---|---|---|---|
+| BR-01 | F-02; extended by F-07, F-08, F-09, F-10 | 1 → 2 | AC-02.2, 05.9, 06.4, 07.5, 08.7, 09.7, 10.4 | TEST-02.2a–c, 05.9a/b, 06.4a–c, 07.5i, 08.7i, 09.7i, 10.4i | `authz.test.ts`, `submissions.test.ts`, `feedback.test.ts`, `team-management.test.ts`, `milestones-lifecycle.test.ts`, `resubmission.test.ts`, `grades.test.ts` | PASS R-S2 |
+| BR-02 | F-02; each team-scoped feature | 1 → 2, 3 | AC-02.3, 03.6, 05.5, 06.4, 07.2, 07.5, 08.7, 09.4; 11.4; 12.3 | TEST-02.3a–c, 03.6, 05.5a/b, 06.4a–c, 07.2i, 07.5i, 08.7i, 09.4i; 11.4i; 12.3i | as BR-01, plus `team-views.test.ts`; `progress.test.ts` | PASS R-S2; F-11 PASS R-94; F-12 **planned** |
+| BR-03 | F-02; each team-scoped feature | 1 → 2, 3 | AC-02.4, 05.5, 07.3, 09.4, 11.4 | TEST-02.4a–d, 05.5a/b, 07.3i, 09.4i, 11.4i, 11.4bi | `authz.test.ts`, `submissions.test.ts`, `team-management.test.ts`, `resubmission.test.ts`; `progress.test.ts` | PASS R-S2; F-11 PASS R-94 |
+| BR-04 | F-03.1 (DB), F-02, F-03.2; F-07 (UI) | 1 → 2 | AC-02.4, 03.4, 03.5, 07.2, 07.3 | TEST-02.4b, 03.4, 03.5, 07.2i/bi, 07.3i | `authz.test.ts`, `team-views.test.ts`, `demo-seed.test.ts`, `team-management.test.ts` | PASS R-S2 |
+| BR-05 | F-04 (create), F-08 (extend) | 1 → 2; CR-01 | AC-04.2, 08.2 | TEST-04.2u/i/c/e, 08.2u/i | `milestones-units.test.ts`, `milestones.test.ts`, `milestones.test.tsx`, `milestones.spec.ts`, `milestones-lifecycle(-units).test.ts` | PASS R-S1 (CR-01), R-S2 |
+| BR-06 | F-05; F-09 | 1 → 2 | AC-05.3, 09.3 | TEST-05.3a/b/e, 09.3i | `submissions.test.ts`, `submissions-units.test.ts`, `submissions.spec.ts`, `resubmission.test.ts` | PASS R-S2 |
+| BR-07 | F-05 (Sprint 1 only) | 1 | AC-05.4 | TEST-05.4a/b | Retired in `submissions.test.ts` (comment) | **Retired** by BR-08 (DEC-04); not a gap |
+| BR-08 | F-09 | 2 | AC-09.1, 09.6 | TEST-09.1i, 09.6u/i | `resubmission(-units).test.ts` | PASS R-S2 |
+| BR-09 | F-05 | 1 | AC-05.2 | TEST-05.2a–d | `submissions-validate.test.ts`, `submissions.test.ts`, `submission.test.tsx` | PASS R-S1, R-S2 |
+| BR-10 | F-06; F-09 | 1 → 2 | AC-06.1, 06.2, 09.5 | TEST-06.1, 06.2a–d, 09.5i | `feedback(-validate).test.ts`, `feedback.test.tsx`, `resubmission.test.ts` | PASS R-S2 |
+| BR-11 | F-08; F-09 | 2 | AC-08.6, 09.3 | TEST-08.6i, 08.9i, 08.10i, 09.3i | `milestones-lifecycle.test.ts`, `milestones-concurrency.test.ts`, `resubmission.test.ts` | PASS R-S2 |
+| BR-12 | F-08 (window); F-09 (Late) | 2 | AC-08.3, 09.2 | TEST-08.2u, 08.3i, 09.2u/i | `milestones-lifecycle(-units).test.ts`, `resubmission(-units).test.ts` | PASS R-S2 |
+| BR-13 | F-08 | 2 | AC-08.2 | TEST-08.2u/i | `milestones-lifecycle(-units).test.ts` | PASS R-S2 |
+| BR-14 | F-08 | 2 | AC-08.7 | TEST-08.7i (`DELETE` → 404, row kept) | `milestones-lifecycle.test.ts` | PASS R-S2 |
+| BR-15 | F-10; F-11 phase 2; F-13 | 2 → 3 | AC-10.1–10.3; 11.3; 13.2 | TEST-10.1u/ci, 10.2i, 10.3i/bi; 11.3u/i; 13.2i | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | F-10 PASS R-S2 (server). F-11 phase 2 and F-13 **planned**; F-11 phase 1 returns no grade at all (TEST-11.1i) |
+| BR-16 | F-07 | 2 | AC-07.3, 07.4 | TEST-07.3i, 07.4i, 07.4bi (held lock) | `team-management.test.ts` | PASS R-S2 |
 
 ### Non-functional requirements
 
-| Req | Feature / responsibility | Sprint (established → re-verified) | Verification |
-|---|---|---|---|
-| NFR-01 | F-01, F-03.1 | 1 | AC-01.6, AC-03.2 / TEST-01.6, TEST-03.2 |
-| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1 / TEST-02.1, re-run each sprint |
-| NFR-03 | F-02 | 1 → 2, 3 | AC-02.2–AC-02.5 / TEST-02.2–TEST-02.5, extended each sprint |
-| NFR-04 | F-01 | 1 | AC-01.4, AC-01.5, AC-01.10 / TEST-01.4, TEST-01.5, TEST-01.10 |
-| NFR-05 | SR-01 (all features) | 1 → 2, 3 | AC-SR1.1 / TEST-SR1.1, asserted in each feature's API tests |
-| NFR-06 | F-04 (display), F-05 (comparison) | 1 | AC-04.3, AC-04.4, AC-05.3 / TEST-04.3, TEST-04.4, TEST-05.3 |
-| NFR-07 | SR-03 | 2 (Lab 5) | Persistence check, Issue #22 |
-| NFR-08 | SR-02 | 1 (local) → 2 (Docker) | AC-SR2.2 / TEST-SR2.2 (timed manual walkthrough); Docker in #17 |
-| NFR-09 | F-12, SR-03 | 3 | Sprint 3 performance script against GCP |
-| NFR-10 | Each feature's forms and lists; SR-01 audit | 1 (S1 forms + lists) → 2 (S2 features) → 3 (S3 lists + audit) | **Field errors:** AC-01.8, AC-04.2, AC-05.2, AC-06.2 · **Server errors:** AC-01.8 (401), AC-01.9, AC-01.10, AC-04.5, AC-05.6, AC-06.5 · **Loading/empty:** AC-03.7, AC-04.6, AC-05.7, AC-06.5 / matching TEST IDs (E2E). Sprint 2: an NFR-10 AC in each F-07–F-10 contract. Sprint 3: F-11–F-13 lists + SR-01 audit of every form and list (features.md, "UI feedback states") |
-| NFR-11 | SR-03 | 2 (Lab 5) | CI required check `test-and-docker`, Issues #18, #20 |
-| NFR-12 | SR-02 | 1 (manual) → 2 (CI scan) | AC-03.1, AC-SR2.1 / TEST-03.1, TEST-SR2.1; CI secret scan in Sprint 2 |
+| Req | Feature / responsibility | Sprint | AC or verification | Planned test | Actual file / test or measurement | Result and version |
+|---|---|---|---|---|---|---|
+| NFR-01 | F-01, F-03.1 | 1 | AC-01.6, 03.2 | TEST-01.6a–c, 03.2 | `auth.test.ts`, `auth-units.test.ts`, `demo-seed.test.ts` | PASS R-S1, R-S2 |
+| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1; each feature's 401 case | TEST-02.1 over `support/protected-endpoints.ts`; TEST-07.5i, 08.7i, 09.7i, 11.4i | `authz.test.ts`; feature files | PASS R-S2, R-94. **Gap D-10**: four F-08/F-09/F-11 routes are missing from the registry (each is still 401-tested by its feature) |
+| NFR-03 | F-02; each feature | 1 → 2, 3 | AC-02.2–02.5, 07.5, 08.7, 09.7, 10.4, 11.4 | TEST-02.2–02.5, 07.5i, 08.7i, 09.7i, 10.4i, 11.4i/bi | `authz.test.ts`, feature files | PASS R-S2, R-94; F-12 **planned** |
+| NFR-04 | F-01 | 1 | AC-01.4, 01.5, 01.10 | TEST-01.4, 01.5a–c, 01.10a–c | `auth.test.ts`, `auth-units.test.ts`, `auth.test.tsx` | PASS R-S1, R-S2 |
+| NFR-05 | SR-01 | 1 → 2, 3 | AC-SR1.1; error bodies in every feature | TEST-SR1.1 and each feature's 400/404/409 assertions | `auth.test.ts`, feature files | PASS R-S2, R-94 |
+| NFR-06 | F-04, F-05; F-08, F-09 | 1 → 2 | AC-04.3, 04.4, 05.3, 08.5, 09.2 | TEST-04.4u, 05.3a/b, 08.5u, 09.2i | `milestones-units.test.ts`, `submissions.test.ts`, `milestones-lifecycle-units.test.ts`, `resubmission.test.ts`, `milestone-time.test.ts` | PASS R-S2 |
+| NFR-07 | SR-03 | 2 (Lab 5) | Create → redeploy → read back | Post-deployment check | Lab 5 #22; L7-D02 (created on `v0.4.0`, read back) | PASS on `v0.4.0`. **Planned** again on `v0.5.0` and `v0.6.0` |
+| NFR-08 | SR-02 | 1 → 2 | AC-SR2.2 | Timed walkthrough | D1 Part F (`v0.1.0`); Docker in #17 | PASS at `v0.1.0`. **Planned** re-run before Final |
+| NFR-09 | F-12, SR-03 | 3 | AC-12.4 | TEST-12.4p (scaled seed, Cloud Run) | Not run | **Planned** (Final); uncovered at D2 |
+| NFR-10 | Each feature; SR-01 audit | 1 → 2 → 3 | Field: AC-01.8, 04.2, 05.2, 06.2, 07.6, 08.8, 09.8. Server error: AC-01.9, 01.10, 04.5, 05.6, 06.5, 07.6, 08.8, 09.8. Loading/empty: AC-03.7, 04.6, 05.7, 06.5, 07.6, 09.8, 11.6 | Matching TEST IDs (C and E) | Client and E2E files listed above | PASS R-S2, R-94. F-10 UI (AC-10.5) and F-12/F-13 **planned**; SR-01 audit **planned** (Final) |
+| NFR-11 | SR-03 | 2 (Lab 5) | Required check on `main` and `staging/**` | `test-and-docker` on every PR | `.github/workflows/ci.yml`; ruleset `protect-main` | PASS: every merged Sprint 2 PR ran it (for example 45592941608) |
+| NFR-12 | SR-02 | 1 → 2 | AC-03.1, AC-SR2.1; CI secret scan | TEST-03.1a–d, TEST-SR2.1; CI scan | `demo-seed.test.ts`, `seed-policy.test.ts`; manual SR2.1 at `v0.1.0` | PASS (tests and manual). **Gap D-09**: the CI secret scan doesn't exist yet |
 
 ## Coverage
 
-| Set | Total | Covered by a feature or responsibility | Verified in Sprint 1 | Allocated to Sprint 2 / 3 |
-|---|---|---|---|---|
-| FR | 25 | 25 | 12 | 9 / 4 |
-| BR | 16 | 16 | 9 (BR-01–07, BR-09, BR-10; BR-07 S1 only) | 7 / 0 |
-| NFR | 12 | 12 | 9 | 2 / 1 |
+| Set | Total | Implemented and verified (R-S1/R-S2) | Implemented in PR, verified (R-94) | Planned | Retired |
+|---|---|---|---|---|---|
+| FR | 25 | 21 (FR-01 to 21; FR-20/21 server only, UI planned) | 1 (FR-22 phase 1; AC-11.3 planned) | 3 (FR-23, 24, 25 in Sprint 3) | 0 |
+| BR | 16 | 15 (BR-01 to 06, 08 to 16; BR-15 for F-10, its F-11/F-13 parts planned) | 0 | 0 | 1 (BR-07) |
+| NFR | 12 | 11 (NFR-02 with gap D-10, NFR-12 with gap D-09, NFR-08 from its D1 walkthrough) | 0 | 1 (NFR-09) | 0 |
 
-**Uncovered requirements: none.** Every baseline FR, BR and NFR maps to at least one feature or
-system responsibility and a sprint.
+**Uncovered or partly covered at the D2 checkpoint:**
+- **Sprint 2:** the F-10 Grade UI (AC-10.5, TEST-10.5c) and the browser journey TEST-10.1e. The F-10 server is integrated and verified (#98). This blocks the Sprint 2 release `v0.5.0`.
+- **Sprint 3:** FR-22's AC-11.3 (needs F-10), FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final.
+- **Gaps found in this audit:** D-09 (CI secret scan, NFR-12) and D-10 (registry for TEST-02.1, NFR-02).
+- **Re-runs planned before Final:** NFR-07 persistence on each new release, NFR-08 walkthrough, the NFR-10 SR-01 audit.
 
-Partially verified in Sprint 1 (completed later, shown in the matrix):
-- **FR-09** — Late rows of §4.3.1 need the late window (F-08) and versions (F-09), Sprint 2.
-- **BR-01, BR-02, BR-03, NFR-02, NFR-03** — re-verified as each sprint adds protected endpoints.
-- **BR-04** — DB + API in Sprint 1; membership management UI in Sprint 2 (F-07).
-- **NFR-10** — Sprint 1 forms and lists in Sprint 1; Sprint 2 features' forms/lists in Sprint 2; Sprint 3
-  lists and the all-forms audit in Sprint 3 (features.md, "UI feedback states").
-- **NFR-08, NFR-12** — local / manual review in Sprint 1; Docker, CI
-  scan later.
-
-Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2).
+Every baseline FR, BR and NFR still maps to a feature or system responsibility and a sprint. Not traced because they are explicitly out of scope: EX-01 to EX-07 (SRS §3.2).
 
 ## Approved changes
 
@@ -194,5 +259,12 @@ Not traced because they are explicitly out of scope: EX-01 – EX-07 (SRS §3.2)
 | 2026-11-04 | JSON parsed per route after the guards (no global parser) | PR #29 review | AC-02.5 wording; TEST-02.1 malformed-body case, TEST-02.5e, TEST-02.5f |
 | 2026-11-04 | Submission rules made testable; team status "Submitted" owned by F-05 | F-05 contract v0.1 (PR review pending) | AC-05.1, AC-05.3–AC-05.5 wording; AC-05.8, AC-05.9 added; FR-09 also verified by F-05 |
 | 2026-11-24 | CR-01: a milestone's due date must be at least 24 h after server time on create (was: any future time) | Lab 7 change request #73 | BR-05 and AC-04.2 reworded; TEST-04.2u/i gain now + 24 h − 1 s (reject) and now + 24 h (accept) rows; TEST-04.2e expects the new message and adds a real-server now + 1 h rejection (PR #74 review) |
+
+| 2026-11-24 | BR-07 retired; versioned resubmission (BR-08) | F-09 contract v0.2 (#89), PR #92 | AC-05.4 retired; TEST-05.1, 05.6, 05.7, 05.1e, 08.9i revised (changes.md D-02) |
+| 2026-11-24 | Milestones can't be deleted (no endpoint) | F-08 contract (#88) | BR-14 verified by TEST-08.7i |
+| 2026-11-25 | Single-course team creation | F-07 contract (#91) | AC-07.1; release gate R-01 |
+| 2026-11-25 | Grade draft and released snapshot; shared `studentGrade(row)` | F-10 contract v0.2 (#96) | AC-10.1 to 10.3, 11.3, 13.2 |
+| 2026-11-25 | F-11 phase 1 omits the grade; DEC-15 release path | F-11 contract v0.3 (#93) | AC-11.3 planned; R-94 is a PR result until `v0.6.0` |
+| 2026-11-25 | F-12 fixed 404 for an unsupervised team filter; F-13 published-only export | #93, #97 | AC-12.3, AC-13.2, AC-13.3 |
 
 Later changes are added here with the PR that approved them.
