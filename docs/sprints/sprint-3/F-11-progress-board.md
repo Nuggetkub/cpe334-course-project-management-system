@@ -11,6 +11,7 @@
 | Version | Date | Author | Reviewer | Change |
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, before any F-11 test or code |
+| 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #93 review of `598c92b`: phase 1 and phase 2 tests separated (TEST-11.2u is feedback only; new TEST-11.3u for grades). AC-11.3 stays planned until F-11 is wired to F-10 and the before/after-release check passes; a merged F-10 alone doesn't complete it. §6 records the release path into `v0.6.0` and the DEC-11 deviation (DEC-15) |
 
 ## 1. Feature design
 
@@ -24,9 +25,9 @@ The board only reads data, and it never shows anything another page couldn't sho
 
 **Grade column and F-10.** The released grade comes from F-10 (#83).
 - **Phase 1 (D2 target):** this contract can be implemented and tested on everything except the grade (AC-11.1, 11.2, 11.4–11.6). The grade column reports "Not released" for every row, because nothing can be released before F-10 exists.
-- **Phase 2:** once F-10 is merged, the same endpoint reads F-10's released grade. AC-11.3 is tested then.
+- **Phase 2:** after F-10 is merged, F-11 is wired to F-10's release state, so the same endpoint returns the released grade. TEST-11.3u and TEST-11.3i are added then, test-first.
 
-D2 reports AC-11.3 as **planned**, not done, unless F-10 merges first.
+AC-11.3 stays **planned** until that wiring is done and the before/after-release behaviour is verified, including that the response has no `score` key before release. A merged F-10 on its own doesn't complete AC-11.3. D2 reports it as planned unless all of this is done before the D2 candidate.
 
 ### Workflow and authorization
 
@@ -91,7 +92,7 @@ A new route `/progress` and a **Progress** navigation link for Students.
 | --- | --- | --- | --- | --- |
 | AC-11.1 | A Student of team A. Milestones: no submission and due in the future; no submission and overdue; submitted on time; latest version Late; closed by a Supervisor | They open Progress | One row per milestone of team A only, ordered by due date, with the same window and team status as the milestone page | FR-22, DEC-13 |
 | AC-11.2 | A milestone with versions 1 and 2, and feedback only on version 1 | They read the row | Latest is version 2 with its Late flag, and feedback status is `AWAITING`. After feedback is added to version 2 it becomes `RECEIVED` | FR-22, BR-10 |
-| AC-11.3 (phase 2, after F-10) | A grade recorded but not released, then released | They read the row before and after release | Before: `{released: false}`, with no score in the JSON. After: `{released: true, score}` | FR-22, BR-15, DEC-06 |
+| AC-11.3 (phase 2: after F-11 is wired to F-10) | A grade recorded but not released, then released | They read the row before and after release | Before: `{released: false}`, with no score in the JSON. After: `{released: true, score}` | FR-22, BR-15, DEC-06 |
 | AC-11.4 | An anonymous user, a Student of team B, a Student with no team, an unassigned Supervisor, a malformed or missing team ID | They GET team A's progress | 401, then the fixed 404 for hidden or missing scope. No other team's data appears | BR-03, BR-04, NFR-03 |
 | AC-11.5 | Team A has 51 milestones, some with tied due dates | They request pages 1 and 2, and an invalid page | 50 + 1 rows in dueAt/id order with `total` 51. An invalid page → 400 after the ownership check | NFR-09, NFR-10 |
 | AC-11.6 | The board is loading, empty, failed or the Student has no team | They open Progress | Loading, empty, error with Retry, and no-team states are shown; Retry recovers | NFR-10 |
@@ -102,26 +103,40 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 
 | Test ID | AC | Level | Preconditions / inputs | Steps | Expected |
 | --- | --- | --- | --- | --- | --- |
-| TEST-11.2u | 11.2, 11.3 | U | Latest null; latest with 0 or 1+ feedback; older-version-only feedback; grade unreleased or released | Call `progressRow(...)` | `feedbackStatus` and `grade` exactly as in §1; no `score` key when unreleased |
-| TEST-11.1i | 11.1 | I | Team A with the five milestone states from AC-11.1, team B with one milestone, fixed clock | GET A's progress as sA; GET the F-04 list as sA | Only A's rows, in order. `window` and `teamStatus` equal the F-04 list values row by row |
+| TEST-11.2u | 11.2 | U | Latest null; latest with 0 or 1+ feedback; feedback only on an older version | Call `progressRow(...)` | `feedbackStatus` exactly as in §1 (`NONE`, `AWAITING`, `RECEIVED`; older-version feedback gives `AWAITING`) |
+| TEST-11.1i | 11.1 | I | Team A with the five milestone states from AC-11.1, team B with one milestone, fixed clock | GET A's progress as sA; GET the F-04 list as sA | Only A's rows, in order. `window` and `teamStatus` equal the F-04 list values row by row. Phase 1 placeholder: every `grade` is `{released: false}` (not evidence for AC-11.3) |
 | TEST-11.2i | 11.2 | I | Versions 1 and 2, feedback on version 1 | GET; then add feedback to version 2 and GET again | Latest is version 2; `AWAITING`, then `RECEIVED` |
 | TEST-11.4i | 11.4 | I | Anonymous, sB, s0, pB, malformed or missing ID | GET A's progress | 401, then the fixed 404 ×4. Response bodies contain no team A titles |
 | TEST-11.5i | 11.5 | I | 51 milestones in A with tied due dates | GET page 1, page 2, page 0, page `abc` | 50 + 1 rows, stable order, total 51; 400 for an invalid page |
 | TEST-11.6c | 11.6 | C | Mocked deferred, empty, failing-then-recovering responses; a no-team Student | Render `/progress` | Loading, empty, error with Retry and recovery; no-team state; Late badge and labels in rows |
 | TEST-11.1e | 11.1, 11.2 | E | A seeded team with a submitted milestone and an unsubmitted one | The Student opens Progress and follows a row link | The rows show the version, feedback status and "Not released"; the link opens the milestone page |
-| TEST-11.3i (phase 2) | 11.3 | I | After F-10: a grade recorded, then released | GET before and after the release | As AC-11.3 |
+| TEST-11.3u (phase 2) | 11.3 | U | F-10 grade unreleased; released with a score | Call `progressRow(...)` | `{released: false}` with no `score` key; then `{released: true, score}` |
+| TEST-11.3i (phase 2) | 11.3 | I | After F-10 and the F-11 wiring: a grade recorded, then released | GET before and after the release | Before: no `score` key anywhere in the JSON. After: `{released: true, score}` |
 
 **Commit order:**
 1. contract (this PR, reviewed);
 2. tests, with a RED run (the route doesn't exist yet, so it returns 404);
 3. implementation, with a GREEN run;
 4. full regression;
-5. TEST-11.3i is added once F-10 is merged.
+5. phase 2, after F-10 is merged: TEST-11.3u and TEST-11.3i with a RED run, then the F-10 wiring with a GREEN run. Only then is AC-11.3 reported as done.
 
 ## 5. Definition of Done
 
 - [ ] Contract reviewed and approved by @Earth2509 before tests and code.
-- [ ] RED and GREEN recorded with commands, commits and counts. Phase 1 tests pass; AC-11.3 is reported as planned until F-10 merges.
+- [ ] RED and GREEN recorded with commands, commits and counts. Phase 1 tests pass; AC-11.3 is reported as planned until the phase 2 wiring and TEST-11.3u/11.3i pass.
 - [ ] Server, client and Docker checks pass in CI. Local Playwright passes. Nothing skipped or weakened.
 - [ ] Traceability (FR-22) and the feature inventory updated with the actual status of each AC.
 - [ ] PR approved by @Earth2509 and integrated, then included in the D2 release candidate and checked on the deployed app.
+
+## 6. Release path
+
+| Step | Branch / PR | Result |
+| --- | --- | --- |
+| 1 | Sprint 2 release PR `staging/sprint-2` → `main` (#87), after F-07, F-08, F-09 and F-10 are integrated and accepted | Tag `v0.5.0`, deployed and checked |
+| 2 | Sync PR `main` → `staging/sprint-2` through a temporary branch, as after every release (DEC-11) | Staging equals `v0.5.0` |
+| 3 | F-11 phase 1 PR `feature/84-f11-progress-board` → `staging/sprint-2`, reviewed by @Earth2509 | F-11 integrated on staging |
+| 4 | Second release PR `staging/sprint-2` → `main`, with regression and UAT on staging first | Tag `v0.6.0`, the D2 release candidate, deployed and checked |
+
+**Deviation from DEC-11.** DEC-11 keeps one staging branch per sprint, so F-11 (Sprint 3) would go through `staging/sprint-3`. For D2, F-11 phase 1 goes through `staging/sprint-2` instead (steps 3–4), so the candidate needs no second staging branch, ruleset target or sync path in the last 4 days. This is recorded as **DEC-15** in `docs/decisions.md`. After `v0.6.0`, `staging/sprint-3` is created from `main`; F-11 phase 2, F-12 and F-13 go there for Final Delivery, which restores DEC-11.
+
+F-12 isn't part of `v0.6.0`: it stays contract-only for D2.

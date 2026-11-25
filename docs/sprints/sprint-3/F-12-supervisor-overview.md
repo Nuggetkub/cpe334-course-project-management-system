@@ -91,5 +91,5 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 ## 5. Definition of Done
 
 - [ ] Contract approved by @Earth2509 (D2: contract only, status "planned").
-- [ ] Final Delivery: test-first implementation, RED/GREEN, regression, NFR-09 measurement, review, release and deployed check.
+- [ ] Not part of the D2 candidate `v0.6.0`. Final Delivery: integrated through `staging/sprint-3` (DEC-15), with test-first implementation, RED/GREEN, regression, NFR-09 measurement, review, release and deployed check.
 - [ ] F-13 reuses this scope and these filters, and is verified by CSV/filter parity.

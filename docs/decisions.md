@@ -19,6 +19,7 @@ Status: **Proposed** until both students agree (and the instructor/TA where need
 | DEC-12 | Cloud-ready Sprint 1 | Build Student Guide Ep. 2 requirements into Sprint 1: DB-stored sessions, `PORT` from env, `/api/health` + `/api/ready`, env-sourced idempotent seed, auth endpoints `/api/auth/login`, `/api/auth/me`, `/api/auth/logout` (match the Lab 5 kit smoke test) | Accepted | 2026-11-03 |
 | DEC-13 | Milestone status | Show two values: the **window** (Open until `due_at` inclusive → Late window in S2 → Closed; a manual close wins) and the **team status** (Late if latest version is Late → Submitted → Not submitted while now ≤ `due_at` → Overdue). Team status depends on submissions and the deadline only, so a manual close never changes it; Submitted stays Submitted after the deadline. Tables in SRS §4.3.1 | Accepted (review on PR #14) | 2026-11-03 |
 | DEC-14 | Late-window scope | The late window accepts both a team's first submission and a new version; every version created in it is marked Late | Accepted (review on PR #14) | 2026-11-03 |
+| DEC-15 | D2 path for Sprint 3 work (deviation from DEC-11) | F-11 phase 1 is integrated into `staging/sprint-2` after `v0.5.0` and released from there as `v0.6.0`, the D2 candidate (F-11 contract §6). After `v0.6.0`, `staging/sprint-3` is created from `main` for F-11 phase 2, F-12 and F-13, which restores DEC-11 | Proposed (PR #93) | 2026-11-25 |
 
 ## Open questions for instructor/TA
 
