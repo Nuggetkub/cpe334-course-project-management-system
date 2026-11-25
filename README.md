@@ -107,6 +107,9 @@ npm run dev                   # http://localhost:5173
 | `GET /api/milestones/:milestoneId` | Authorized read-only milestone detail, with separate window/team status |
 | `POST /api/milestones/:milestoneId/submissions` | Students of the milestone's team only; `{title,description?,link}` (absolute http/https link) → `201 {submission}` with the next version; a closed window rejects the write, and membership is rechecked inside the transaction |
 | `GET /api/milestones/:milestoneId/submission` | Team members and assigned Supervisors → `{milestone, submission}`; `submission` is `null` until the team submits |
+| `GET /api/milestones/:milestoneId/grade` | Team Students see only the released score (including 0) or `{grade:{released:false}}`; assigned Supervisors also see the draft and, after release, `releasedAt` |
+| `PUT /api/milestones/:milestoneId/grade` | Assigned Supervisor only; `{score}` (integer 0–100) → `200 {grade}`; saves the draft without changing the published score |
+| `POST /api/milestones/:milestoneId/grade/release` | Assigned Supervisor only; no body → `200 {grade}` with the released snapshot, or `409 GRADE_NOT_RECORDED` if no draft exists |
 | `POST /api/submissions/:submissionId/feedback` | Assigned Supervisors only; `{text}` (1–2000 characters) → 201 `{feedback}` with author, time and the submission version |
 | `GET /api/submissions/:submissionId/feedback` | Team members and assigned Supervisors → `{feedback: [...]}`, oldest first |
 

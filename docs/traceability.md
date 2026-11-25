@@ -108,8 +108,8 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | FR-17 | F-09 | 2 | Sprint 2 contract |
 | FR-18 | [F-06 Feedback on a submission](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.1, AC-06.2 / TEST-06.1, TEST-06.2a/b/c, TEST-06.1e |
 | FR-19 | [F-06](sprints/sprint-1/F-06-feedback.md) | 1 | AC-06.3, AC-06.5 / TEST-06.3, TEST-06.5a/b/c, TEST-06.1e |
-| FR-20 | F-10 Grades and release | 2 | Sprint 2 contract |
-| FR-21 | F-10 | 2 | Sprint 2 contract |
+| FR-20 | F-10 Grades and release | 2 | AC-10.1, AC-10.3 / TEST-10.1u, TEST-10.1i, TEST-10.1bi, TEST-10.1ci, TEST-10.3i, TEST-10.3bi; component and browser checks pending |
+| FR-21 | F-10 | 2 | AC-10.2, AC-10.3 / TEST-10.1u, TEST-10.2i, TEST-10.3i, TEST-10.3bi; component and browser checks pending |
 | FR-22 | F-11 Student progress board | 3 | Sprint 3 contract |
 | FR-23 | F-12 Supervisor overview and filters | 3 | Sprint 3 contract |
 | FR-24 | F-12 | 3 | Sprint 3 contract |
@@ -133,7 +133,7 @@ now; their AC and tests are written with the sprint contract (D1 Part B allows t
 | BR-12 | F-08 (set window); F-09 (Late marking) | 2 | Sprint 2 contract |
 | BR-13 | F-08 | 2 | Sprint 2 contract |
 | BR-14 | F-08 | 2 | Sprint 2 contract |
-| BR-15 | F-10 | 2 | Sprint 2 contract |
+| BR-15 | F-10 | 2 | AC-10.1–AC-10.3 / TEST-10.1bi, TEST-10.2i, TEST-10.3i, TEST-10.3bi (real PostgreSQL) |
 | BR-16 | F-07 | 2 | AC-07.3–07.4 / TEST-07.3i, 07.4i, 07.4bi (real PostgreSQL; both committed orders and concurrent removal/submission) |
 
 ### Non-functional requirements
