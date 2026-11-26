@@ -40,9 +40,9 @@ Status date: 26 Nov 2026, `main` `2fde19e` (`v0.5.0`), staging `107b82a`. Exams 
 | R-01 single-course preflight | **Done** 25 Nov: live count is 1 | None | @Nuggetkub; done |
 | D-10 TEST-02.1 registry | **Done**: F-08/F-09 (#100), F-11 (`c24db4b` in #94) | None | @Nuggetkub; done 26 Nov |
 | `v0.5.0` Sprint 2 release (#87) | **Done** 26 Nov: #103 → `2fde19e`, revision `cpms-00009-2jg`; deployed checks 13/13 PASS ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7192705886)); synced back (#104) | None | @Nuggetkub (PR, checks), @Earth2509 (review, merge); done 26 Nov |
-| F-11 phase 1 (#84, PR #94) | **Integrated** 26 Nov (`107b82a`, R-S4) | Deployed Progress check on `v0.6.0`; #84 stays open for phase 2 | @Nuggetkub; review @Earth2509; 28 Nov |
-| `v0.6.0` D2 candidate | Staging ready (`107b82a`) | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
-| D2 PDF | Documents updated for `v0.5.0`; Sprint 2 demos captured (D5) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
+| F-11 phase 1 (#84, PR #94) | **Done** 26 Nov: released in `v0.6.0`, deployed checks D6 7/7 PASS | None; #84 stays open for phase 2 | @Nuggetkub; review @Earth2509; done |
+| `v0.6.0` D2 candidate | **Done** 26 Nov: #106 → `6464f87`, revision `cpms-00010-6vv`, tag `v0.6.0`; sync back (#107) | Create `staging/sprint-3` from `main` after #107 | @Nuggetkub; review @Earth2509; 27 Nov |
+| D2 PDF | Documents current; demos captured on `v0.5.0` (D5) and `v0.6.0` (D6) | Build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
 | D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102); F-10 and F-11 specs switched (#101, #94) | None | @Nuggetkub; done |
 | D-14 Manage milestone panel layout (Minor) | Open (found in D5-04/D5-05) | Stack labels above fields; client layout check; deployed re-check | @Nuggetkub; review @Earth2509; 3 Dec |
 | D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
