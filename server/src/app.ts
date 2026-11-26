@@ -10,6 +10,7 @@ import { teamsRouter } from "./teams/routes.js";
 import { milestonesRouter, teamMilestonesRouter } from "./milestones/routes.js";
 import { submissionsRouter } from "./submissions/routes.js";
 import { feedbackRouter } from "./feedback/routes.js";
+import { progressRouter } from "./progress/routes.js";
 import { gradesRouter } from "./grades/routes.js";
 
 export interface AppOptions {
@@ -54,6 +55,7 @@ export function createApp(options: AppOptions = {}) {
 
   app.use("/api/auth", authRouter);
   app.use("/api/teams/:teamId/milestones", teamMilestonesRouter);
+  app.use("/api/teams/:teamId/progress", progressRouter);
   app.use("/api/milestones/:milestoneId/grade", gradesRouter);
   app.use("/api/milestones/:milestoneId", submissionsRouter);
   app.use("/api/milestones", milestonesRouter);

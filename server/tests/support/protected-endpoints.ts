@@ -20,6 +20,7 @@ export const PROTECTED_ENDPOINTS: ProtectedEndpoint[] = [
   { method: "delete", path: "/api/teams/:teamId/members/:studentId", feature: "F-07" },
   { method: "get", path: "/api/teams/:teamId/milestones", feature: "F-04" },
   { method: "post", path: "/api/teams/:teamId/milestones", feature: "F-04" },
+  { method: "get", path: "/api/teams/:teamId/progress", feature: "F-11" },
   { method: "get", path: "/api/milestones/:milestoneId", feature: "F-04" },
   { method: "patch", path: "/api/milestones/:milestoneId", feature: "F-08" },
   { method: "post", path: "/api/milestones/:milestoneId/close", feature: "F-08" },

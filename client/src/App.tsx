@@ -6,6 +6,7 @@ import { TeamPage } from "./pages/TeamPage";
 import { TeamManagementPage } from "./pages/TeamManagementPage";
 import { MilestonesPage } from "./pages/MilestonesPage";
 import { MilestonePage } from "./pages/MilestonePage";
+import { ProgressPage } from "./pages/ProgressPage";
 
 // Placeholder for screens outside the team-view increment.
 function Placeholder({ title }: { title: string }) {
@@ -37,6 +38,7 @@ export function App() {
           <Route path="milestones" element={<MilestonesPage />} />
           <Route path="teams/:teamId/milestones" element={<MilestonesPage />} />
           <Route path="milestones/:milestoneId" element={<MilestonePage />} />
+          <Route path="progress" element={<ProgressPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

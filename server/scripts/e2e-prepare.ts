@@ -67,6 +67,16 @@ try {
   // F-09: Student 3 has already submitted version 1, so the journey can add version 2.
   const resubmit = await prisma.milestone.create({ data: { teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F09 resubmission milestone", dueAt: new Date(Date.now() + 7 * day) } });
   await prisma.submission.create({ data: { milestoneId: resubmit.id, version: 1, title: "F09 first version", link: "https://example.com/f09-v1", submittedBy: student3.id, submittedAt: new Date() } });
+  // F-11: its own team and Student, so other journeys never add rows to this board. One milestone has
+  // version 1 with feedback; one is not submitted yet.
+  const student4 = await prisma.user.create({ data: { email: "student4@e2e.test", name: "E2E Student 4", role: "STUDENT", passwordHash } });
+  const progressTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Progress Team" } });
+  await prisma.teamMember.create({ data: { studentId: student4.id, teamId: progressTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: progressTeam.id } });
+  const reviewedOnBoard = await prisma.milestone.create({ data: { teamId: progressTeam.id, createdBy: supervisor.id, title: "F11 submitted milestone", dueAt: new Date(Date.now() + 2 * day) } });
+  const boardVersion = await prisma.submission.create({ data: { milestoneId: reviewedOnBoard.id, version: 1, title: "F11 work", link: "https://example.com/f11-v1", submittedBy: student4.id, submittedAt: new Date() } });
+  await prisma.feedback.create({ data: { submissionId: boardVersion.id, supervisorId: supervisor.id, text: "F11 feedback", createdAt: new Date() } });
+  await prisma.milestone.create({ data: { teamId: progressTeam.id, createdBy: supervisor.id, title: "F11 open milestone", dueAt: new Date(Date.now() + 5 * day) } });
   // F-07 uses an empty Supervisor account and unassigned Student in the existing course.
   await prisma.user.createMany({ data: [
     { email: "manager-f07@e2e.test", name: "E2E F07 Supervisor", role: "SUPERVISOR", passwordHash },

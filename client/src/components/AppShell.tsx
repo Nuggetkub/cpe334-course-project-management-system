@@ -6,6 +6,7 @@ const NAV: Record<User["role"], Array<{ to: string; label: string }>> = {
   STUDENT: [
     { to: "/team", label: "My team" },
     { to: "/milestones", label: "Milestones" },
+    { to: "/progress", label: "Progress" },
   ],
   SUPERVISOR: [
     { to: "/teams", label: "My teams" },
