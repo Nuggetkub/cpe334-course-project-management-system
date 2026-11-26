@@ -1,6 +1,6 @@
 // Prepares the database for the Playwright run (`npm run e2e:server`): drops and
-// recreates the E2E schema, applies the committed migrations and creates one
-// Student and one Supervisor. Never touches the "public" schema.
+// recreates the E2E schema, applies the committed migrations and creates
+// synthetic journey accounts. Never touches the "public" schema.
 //
 // The E2E password comes from E2E_PASSWORD (set by playwright.config.ts). It
 // only ever exists in a throw-away schema on a developer or CI database.
@@ -55,6 +55,32 @@ try {
   // F-06: a milestone that Student 2 has already submitted, ready for feedback.
   const reviewed = await prisma.milestone.create({ data: { teamId: submissionTeam.id, createdBy: supervisor.id, title: "F06 submitted milestone", dueAt: new Date(Date.now() + 7 * day) } });
   await prisma.submission.create({ data: { milestoneId: reviewed.id, title: "F06 work", link: "https://example.com/f06-work", submittedBy: student2.id, submittedAt: new Date() } });
+  // F-08: its own team and Student, so the lifecycle journey never adds rows to F-04's empty teams.
+  const student3 = await prisma.user.create({ data: { email: "student3@e2e.test", name: "E2E Student 3", role: "STUDENT", passwordHash } });
+  const lifecycleTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Lifecycle Team" } });
+  await prisma.teamMember.create({ data: { studentId: student3.id, teamId: lifecycleTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: lifecycleTeam.id } });
+  await prisma.milestone.create({ data: {
+    teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F08 late milestone",
+    dueAt: new Date(Date.now() - day), lateUntil: new Date(Date.now() + day),
+  } });
+  // F-09: Student 3 has already submitted version 1, so the journey can add version 2.
+  const resubmit = await prisma.milestone.create({ data: { teamId: lifecycleTeam.id, createdBy: supervisor.id, title: "F09 resubmission milestone", dueAt: new Date(Date.now() + 7 * day) } });
+  await prisma.submission.create({ data: { milestoneId: resubmit.id, version: 1, title: "F09 first version", link: "https://example.com/f09-v1", submittedBy: student3.id, submittedAt: new Date() } });
+  // F-07 uses an empty Supervisor account and unassigned Student in the existing course.
+  await prisma.user.createMany({ data: [
+    { email: "manager-f07@e2e.test", name: "E2E F07 Supervisor", role: "SUPERVISOR", passwordHash },
+    { email: "student-f07@e2e.test", name: "E2E F07 Student", role: "STUDENT", passwordHash },
+  ] });
+  // F-10: its own team and Student, so no other journey changes this grade. Named so the Supervisor's
+  // default team (alphabetically first) stays "E2E Journey Team" for the F-04 journeys.
+  const student5 = await prisma.user.create({ data: { email: "student5@e2e.test", name: "E2E Student 5", role: "STUDENT", passwordHash } });
+  const gradeTeam = await prisma.team.create({ data: { courseId: course.id, name: "E2E Team Grades" } });
+  await prisma.teamMember.create({ data: { studentId: student5.id, teamId: gradeTeam.id } });
+  await prisma.supervisorTeam.create({ data: { supervisorId: supervisor.id, teamId: gradeTeam.id } });
+  await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 graded milestone", dueAt: new Date(Date.now() + 3 * day) } });
+  // F-10 v0.5: a second milestone for the stale-confirmation journey, so it never touches the one above.
+  await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 stale release milestone", dueAt: new Date(Date.now() + 4 * day) } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();

@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { ApiError, apiFetch } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import { formatBangkok } from "../time";
+import { ManageMilestone } from "./ManageMilestone";
+import { GradeSection } from "./GradeSection";
 import { MilestoneFields, type Milestone } from "./MilestonesPage";
 
 // F-04's read-only milestone page, extended by F-05 with the team's submission and the submit form.
@@ -10,6 +12,7 @@ import { MilestoneFields, type Milestone } from "./MilestonesPage";
 export interface Submission {
   id: number; milestoneId: number; version: number; title: string; description: string; link: string;
   submittedAt: string; submittedBy: { id: number; name: string };
+  late: boolean; // F-09: made in the late window
 }
 type Loaded = { milestone: Milestone; submission: Submission | null };
 type State = { kind: "loading" | "error" | "missing" } | { kind: "ready"; data: Loaded };
@@ -41,6 +44,7 @@ function validate(title: string, description: string, link: string) {
 
 function SubmissionView({ submission }: { submission: Submission }) {
   return <article className="submission">
+    <p className="badges"><span>{`Version ${submission.version}`}</span>{submission.late && <span>Late</span>}</p>
     <h4>{submission.title}</h4>
     {submission.description && <p className="milestone-description">{submission.description}</p>}
     <p>{isWebLink(submission.link)
@@ -50,7 +54,7 @@ function SubmissionView({ submission }: { submission: Submission }) {
   </article>;
 }
 
-function SubmitForm({ milestoneId, onSubmitted }: { milestoneId: number; onSubmitted: (submission: Submission) => void }) {
+function SubmitForm({ milestoneId, heading, onSubmitted }: { milestoneId: number; heading: string; onSubmitted: (submission: Submission) => void }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
@@ -80,7 +84,7 @@ function SubmitForm({ milestoneId, onSubmitted }: { milestoneId: number; onSubmi
   const describedBy = (field: string) => (fields[field] ? `submission-${field}-error` : undefined);
   const fieldError = (field: string) => fields[field] && <p className="field-error" id={`submission-${field}-error`}>{fields[field]}</p>;
   return <form className="milestone-form" onSubmit={submit} noValidate>
-    <h3>Submit work</h3>
+    <h3>{heading}</h3>
     {error && <p role="alert" className="banner">{error}</p>}
     <fieldset disabled={busy}>
       <label htmlFor="submission-title">Title</label>
@@ -136,9 +140,9 @@ function FeedbackForm({ submissionId, onAdded }: { submissionId: number; onAdded
   return <form className="milestone-form" onSubmit={submit} noValidate>
     {error && <p role="alert" className="banner">{error}</p>}
     <fieldset disabled={busy}>
-      <label htmlFor="feedback-text">Feedback</label>
-      <textarea id="feedback-text" value={text} onChange={(e) => setText(e.target.value)} aria-invalid={!!fieldError} aria-describedby={fieldError ? "feedback-text-error" : undefined} />
-      {fieldError && <p className="field-error" id="feedback-text-error">{fieldError}</p>}
+      <label htmlFor={`feedback-text-${submissionId}`}>Feedback</label>
+      <textarea id={`feedback-text-${submissionId}`} value={text} onChange={(e) => setText(e.target.value)} aria-invalid={!!fieldError} aria-describedby={fieldError ? `feedback-text-${submissionId}-error` : undefined} />
+      {fieldError && <p className="field-error" id={`feedback-text-${submissionId}-error`}>{fieldError}</p>}
       <button type="submit">{busy ? "Saving feedback…" : "Add feedback"}</button>
     </fieldset>
   </form>;
@@ -176,11 +180,37 @@ function FeedbackSection({ submissionId, canWrite }: { submissionId: number; can
   </section>;
 }
 
+function EarlierVersions({ milestoneId, latest, canWrite }: { milestoneId: number; latest: number; canWrite: boolean }) {
+  const [load, setLoad] = useState<{ kind: "loading" | "error" } | { kind: "ready"; versions: Submission[] }>({ kind: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setLoad({ kind: "loading" });
+    apiFetch<{ submissions?: Submission[] }>(`/api/milestones/${milestoneId}/submissions`).then(
+      ({ submissions }) => { if (active) setLoad({ kind: "ready", versions: (submissions ?? []).filter((s) => s.version < latest) }); },
+      () => { if (active) setLoad({ kind: "error" }); },
+    );
+    return () => { active = false; };
+  }, [milestoneId, latest, attempt]);
+  if (load.kind === "loading") return <p role="status">Loading earlier versions…</p>;
+  if (load.kind === "error") return <><p role="alert">Could not load earlier versions.</p>
+    <button type="button" onClick={() => setAttempt((n) => n + 1)}>Retry earlier versions</button></>;
+  if (load.kind !== "ready" || !load.versions.length) return null;
+  return <section aria-labelledby="earlier-versions">
+    <h3 id="earlier-versions">Earlier versions</h3>
+    <ul className="milestone-list">{load.versions.map((v) => <li key={v.id}>
+      <SubmissionView submission={v} />
+      <FeedbackSection submissionId={v.id} canWrite={canWrite} />
+    </li>)}</ul>
+  </section>;
+}
+
 export function MilestonePage() {
   const { milestoneId } = useParams();
   const { state: auth } = useAuth();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [saved, setSaved] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     setState({ kind: "loading" });
@@ -202,17 +232,27 @@ export function MilestonePage() {
       const { milestone, submission } = state.data;
       return <>
         <h2>{milestone.title}</h2>
+        {saved && <p role="status">{saved}</p>}
         <MilestoneFields milestone={milestone} />
+        {supervisor && <ManageMilestone milestone={milestone} onSaved={(m, message) => {
+          setSaved(message);
+          setState({ kind: "ready", data: { milestone: m, submission } });
+        }} />}
         <h3>Submission</h3>
+        {milestone.closedAt && !supervisor && <p>This milestone is closed.</p>}
         {submission ? <>
           <SubmissionView submission={submission} />
           <FeedbackSection submissionId={submission.id} canWrite={supervisor} />
         </> : <>
           <p>Not submitted yet</p>
-          {milestone.window === "CLOSED" && <p>The deadline has passed.</p>}
-          {student && milestone.window === "OPEN" && <SubmitForm milestoneId={milestone.id} onSubmitted={(created) =>
-            setState({ kind: "ready", data: { milestone: { ...milestone, teamStatus: "SUBMITTED" }, submission: created } })} />}
+          {!milestone.closedAt && milestone.window === "CLOSED" && <p>The deadline has passed.</p>}
         </>}
+        {student && milestone.window === "LATE" && <p>Submissions now are marked Late.</p>}
+        {student && (milestone.window === "OPEN" || milestone.window === "LATE") && <SubmitForm key={submission?.id ?? 0}
+          milestoneId={milestone.id} heading={submission ? "Submit a new version" : "Submit work"} onSubmitted={(created) =>
+            setState({ kind: "ready", data: { milestone: { ...milestone, teamStatus: created.late ? "LATE" : "SUBMITTED" }, submission: created } })} />}
+        {submission && submission.version > 1 && <EarlierVersions milestoneId={milestone.id} latest={submission.version} canWrite={supervisor} />}
+        <GradeSection key={milestone.id} milestoneId={milestone.id} supervisor={supervisor} />
       </>;
     })()}
   </section>;

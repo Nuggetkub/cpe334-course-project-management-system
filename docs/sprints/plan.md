@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.2 · 2026-11-04 · D1 Part D · Issue #4 (PR #30 review)
+Version 0.3 · 2026-11-25 · D2 (#87): actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December. (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 
@@ -19,11 +19,39 @@ The sprint proves the full Student–Supervisor interaction with the smallest us
 | Sprint | Feature ownership | Checkpoint |
 | --- | --- | --- |
 | 1 | @Nuggetkub: F-01, F-05. @Earth2509: F-03 (both increments), F-04, F-06. Pair: F-02. | D1 — 8 Nov 2026 |
-| 2 | Proposed: @Earth2509 owns F-07, F-10; @Nuggetkub owns F-08, F-09. Confirm at Sprint 2 planning. | D2 — 29 Nov 2026 |
-| 3 | Proposed: @Earth2509 owns F-11, F-13; @Nuggetkub owns F-12. Confirm at Sprint 3 planning. | Progress at D2 — 29 Nov 2026; complete by 13 Dec 2026 |
+| 2 | **Confirmed:** @Earth2509 owns F-07 and F-10; @Nuggetkub owns F-08 and F-09. Each reviews the other's PRs. | D2 — 29 Nov 2026 |
+| 3 | **Confirmed:** @Nuggetkub owns F-11 (moved from @Earth2509 to balance D2, #84) and F-12; @Earth2509 owns F-13. | Progress at D2 — 29 Nov 2026; complete by 13 Dec 2026 |
 
 If D1 runs short, prioritize the tested path on `main`: sign in with the correct role, enforce cross-team denial, view the team, create/view a milestone, persist a submission within its deadline and record/read version-linked feedback (AC-03.3/03.6, AC-04.1/04.3, AC-05.1/05.3/05.5, AC-06.1/06.3/06.4). Do not waive authorization or persistence checks; report any unfinished acceptance criteria rather than declaring Sprint 1 complete.
 
 ## Evidence and release gates
 
 For each feature, record the contract, test cases, implementation evidence and peer review. Integrate feature PRs into the matching `staging/sprint-N` branch, run the applicable regression suite and record reviewer/UAT findings, then release to `main` through a reviewed PR and tag per [DEC-11](../decisions.md). Distinguish work integrated to staging from work released on main. Update issue/project status only when its actual gate has been reached.
+
+**Release path for D2 (DEC-15):** Sprint 2 is released from `staging/sprint-2` as `v0.5.0`. F-11 phase 1 then goes into `staging/sprint-2` and is released as the D2 candidate `v0.6.0`. After that, `staging/sprint-3` is created from `main` for the rest of Sprint 3.
+
+## Remaining work to 13 December
+
+Status date: 25 Nov 2026, staging `4f56155`. Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+
+| Feature or defect | Current status | Remaining action | Owner and target |
+| --- | --- | --- | --- |
+| F-10 grades (#83) | Server integrated (#98). Grade UI and v0.5 release rule implemented and tested on PR #101 | Re-review and merge #101 | @Nuggetkub (UI, as offered on #96/#98); review @Earth2509; 26 Nov |
+| R-01 single-course preflight | **Done** 25 Nov: live count is 1 | None | @Nuggetkub; done |
+| D-10 TEST-02.1 registry | F-08/F-09 done (#100) | Add the F-11 route in #94 when it's updated after `v0.5.0` | @Nuggetkub; 28 Nov |
+| `v0.5.0` Sprint 2 release (#87) | F-07, F-08, F-09 and the F-10 server integrated (`4f56155`); F-10 UI missing | Release PR `staging/sprint-2` → `main`, regression on its commit, tag, deploy, deployed checks (critical journey, persistence NFR-07, a rule rejection, a 403/404) | @Nuggetkub (PR), @Earth2509 (review); 27 Nov |
+| F-11 phase 1 (#84, PR #94) | AC-11.1, 11.2, 11.4, 11.5, 11.6 implemented and tested at `3b72786` (R-94) | Re-review; after the `v0.5.0` sync, update the branch, rerun CI, merge | @Nuggetkub; review @Earth2509; 28 Nov |
+| `v0.6.0` D2 candidate | Not started | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
+| D2 PDF | Documents drafted (this PR) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
+| D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102, `dad3ad0`) | Shared `signIn` waits for the login response; 3 clean full runs. F-10 and F-11 specs switch when #101 / #94 are updated | @Nuggetkub; done |
+| D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
+| F-11 phase 2, AC-11.3 | Planned (needs F-10) | TEST-11.3u/11.3i first, then wire `studentGrade(row)` and the Grade column | @Nuggetkub; 30 Nov |
+| F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |
+| F-13 CSV export (#86) | Contract v0.2 approved (#97) | Tests first, implementation on top of F-12 and `studentGrade`, review | @Earth2509; 5 Dec |
+| NFR-09 performance (AC-12.4) | Not measured | Scaled seed on Cloud Run; TEST-12.4p report with method, revision and date | @Nuggetkub; 6 Dec |
+| SR-01 audit (NFR-10), NFR-08 walkthrough | Planned | E2E audit of every form and list; timed fresh-clone walkthrough by the teammate | @Earth2509; 7 Dec |
+| UAT re-tests | Sprint 1 accepted (`v0.3.0`) | Agree re-test cases for the Sprint 2/3 journeys with the UAT partner; record results and decisions | Both; 8–9 Dec |
+| Final release `v1.0.0` | — | Release PR from `staging/sprint-3`, regression, tag, deploy, deployed checks | @Nuggetkub; review @Earth2509; 10 Dec |
+| Final video and submission | — | Record the demo video (length per the open question in SRS §8), final PDF | Both; 12 Dec (deadline 13 Dec) |
+
+Every item keeps the same gates as before: contract before tests, tests before code (RED then GREEN), teammate review, CI, staging, a reviewed release and a deployed check. A Sprint 2 feature is never moved to Sprint 3 to make the sprint look complete; if F-10 slips past D2, D2 reports Sprint 2 as incomplete.

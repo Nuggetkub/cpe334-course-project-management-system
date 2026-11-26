@@ -23,6 +23,8 @@ function open(role: "STUDENT" | "SUPERVISOR", get: Handler, post: Handler = () =
     if (url.endsWith("/api/auth/me")) return Promise.resolve(Response.json({ user: { id: 1, name: "Somchai Student", role } }));
     // F-06 loads feedback once a submission is shown; F-05's tests only need the empty list.
     if (url.endsWith("/feedback")) return Promise.resolve(Response.json({ feedback: [] }));
+    // F-10 adds a Grade section to this page; answer its read so it never competes with these assertions.
+    if (url.endsWith("/grade")) return Promise.resolve(Response.json({ grade: role === "SUPERVISOR" ? { draftScore: null, released: false } : { released: false } }));
     return Promise.resolve(init?.method === "POST" ? post(url, init) : get(url, init));
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -55,7 +57,9 @@ describe("F-05 milestone page", () => {
     expect(fetchMock.mock.calls.some(([url]) => /\/api\/milestones\/7\/submission$/.test(url))).toBe(true);
   });
 
-  it("TEST-05.7 shows a persisted submission read-only with a safe link and Bangkok time", async () => {
+  // F-09 contract §4: a stored submission no longer ends the form while the window accepts work
+  // (BR-08); the stored version is still shown read-only, and Closed shows no form (below).
+  it("TEST-05.7 shows a persisted submission read-only with a safe link and Bangkok time, plus the new-version form", async () => {
     open("STUDENT", () => page({ teamStatus: "SUBMITTED" }, submission));
     const link = await screen.findByRole("link", { name: "https://github.com/org/repo" });
     expect(link).toHaveAttribute("href", "https://github.com/org/repo");
@@ -64,6 +68,13 @@ describe("F-05 milestone page", () => {
     expect(screen.getByText("Week 1 prototype")).toBeInTheDocument();
     expect(screen.getByText("Submitted by Somchai Student on 8 Nov 2026, 23:59 (ICT)")).toBeInTheDocument();
     expect(screen.getByText("Team status: Submitted")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Submit a new version" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeInTheDocument();
+  });
+
+  it("TEST-05.7 shows a stored submission with no form once the milestone no longer accepts work", async () => {
+    open("STUDENT", () => page({ window: "CLOSED", teamStatus: "SUBMITTED" }, submission));
+    expect(await screen.findByText("Week 1 prototype")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument();
   });
 
@@ -125,6 +136,8 @@ describe("F-05 milestone page", () => {
     submit();
     expect(await screen.findByText("Submitted by Somchai Student on 8 Nov 2026, 23:59 (ICT)")).toBeInTheDocument();
     expect(screen.getByText("Team status: Submitted")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Submit" })).not.toBeInTheDocument();
+    // F-09 (BR-08): the window still accepts work, so the form returns empty as "Submit a new version".
+    expect(screen.getByRole("heading", { name: "Submit a new version" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("");
   });
 });

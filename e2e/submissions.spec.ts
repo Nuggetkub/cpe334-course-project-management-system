@@ -1,17 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support";
 
 // Uses "E2E Submission Team" from server/scripts/e2e-prepare.ts: student2@e2e.test is its only
 // member, supervisor@e2e.test is assigned, and it has one open and one past-due milestone.
-
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
-}
 
 const isSubmit = (r: { request(): { method(): string }; url(): string }) =>
   r.request().method() === "POST" && /\/api\/milestones\/\d+\/submissions$/.test(r.url());
@@ -31,7 +22,8 @@ test("TEST-05.1e Student submits work and the assigned Supervisor sees the same 
   await page.reload();
   await expect(page.getByText("F05 browser submission", { exact: true })).toBeVisible();
   await expect(page.getByText(/^Submitted by E2E Student 2 on .+ \(ICT\)$/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Submit" })).toHaveCount(0);
+  // F-09 (BR-08): the window is still open, so the Student is offered a new version, not a dead end.
+  await expect(page.getByRole("heading", { name: "Submit a new version" })).toBeVisible();
   await page.getByRole("button", { name: "Log out" }).click();
 
   await signIn(page, "supervisor@e2e.test");

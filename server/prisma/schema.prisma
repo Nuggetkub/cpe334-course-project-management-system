@@ -35,9 +35,12 @@ model User {
   sessions          Session[]
   teamMembership    TeamMember?
   supervisedTeams   SupervisorTeam[]
-  createdMilestones Milestone[]
+  createdMilestones Milestone[]      @relation("MilestoneCreator")
+  closedMilestones  Milestone[]      @relation("MilestoneCloser")
   submissions       Submission[]
   feedback          Feedback[]
+  updatedGrades     Grade[]       @relation("GradeUpdater")
+  releasedGrades    Grade[]       @relation("GradeReleaser")
 
   @@map("users")
 }
@@ -109,9 +112,15 @@ model Milestone {
   description String       @default("") @db.VarChar(2000)
   dueAt       DateTime     @map("due_at") @db.Timestamp(3)
   createdBy   Int          @map("created_by")
-  creator     User         @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  creator     User         @relation("MilestoneCreator", fields: [createdBy], references: [id], onDelete: Restrict)
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp(3)
+  // F-08: optional late window (BR-12) and manual close (FR-11, BR-11). Nullable: no backfill.
+  lateUntil   DateTime?    @map("late_until") @db.Timestamp(3)
+  closedAt    DateTime?    @map("closed_at") @db.Timestamp(3)
+  closedBy    Int?         @map("closed_by")
+  closer      User?        @relation("MilestoneCloser", fields: [closedBy], references: [id], onDelete: Restrict)
   submissions Submission[]
+  grade       Grade?
 
   @@index([teamId, dueAt, id])
   @@map("milestones")
@@ -130,6 +139,8 @@ model Submission {
   submittedBy Int        @map("submitted_by")
   submitter   User       @relation(fields: [submittedBy], references: [id], onDelete: Restrict)
   submittedAt DateTime   @map("submitted_at") @db.Timestamp(3)
+  // F-09: made inside the late window (FR-17, DEC-14). Existing rows are on-time version 1.
+  late        Boolean    @default(false)
   feedback    Feedback[]
 
   @@unique([milestoneId, version])
@@ -148,4 +159,21 @@ model Feedback {
 
   @@index([submissionId, createdAt, id])
   @@map("feedback")
+}
+
+// F-10: draft and last published snapshot are separate. Team scope comes from the milestone.
+// The migration supplies range and all-or-none published-snapshot CHECK constraints.
+model Grade {
+  milestoneId   Int       @id @map("milestone_id")
+  milestone     Milestone @relation(fields: [milestoneId], references: [id], onDelete: Restrict)
+  draftScore    Int       @map("draft_score")
+  updatedBy     Int       @map("updated_by")
+  updater       User      @relation("GradeUpdater", fields: [updatedBy], references: [id], onDelete: Restrict)
+  updatedAt     DateTime  @map("updated_at") @db.Timestamp(3)
+  releasedScore Int?      @map("released_score")
+  releasedBy    Int?      @map("released_by")
+  releaser      User?     @relation("GradeReleaser", fields: [releasedBy], references: [id], onDelete: Restrict)
+  releasedAt    DateTime? @map("released_at") @db.Timestamp(3)
+
+  @@map("grades")
 }
