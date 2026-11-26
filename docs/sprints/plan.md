@@ -32,7 +32,7 @@ For each feature, record the contract, test cases, implementation evidence and p
 
 ## Remaining work to 13 December
 
-Status date: 26 Nov 2026, `main` `2fde19e` (`v0.5.0`), staging `107b82a`. Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+Status date: 26 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-2` `52ef350` (after #107). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
