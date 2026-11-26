@@ -1,12 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { signIn } from "./support";
 
 // F-11 contract v0.3 TEST-11.1e: real Chromium, API and cpms_e2e database (E2E Progress Team).
 test("TEST-11.1e Student reads the progress board and follows a row to the milestone page", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill("student4@e2e.test");
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await signIn(page, "student4@e2e.test"); // shared helper (D-11)
   await page.getByRole("link", { name: "Progress", exact: true }).click();
 
   const table = page.getByRole("table", { name: "Progress for E2E Progress Team" });
@@ -41,10 +38,7 @@ for (const viewport of [390, 768]) test(`TEST-11.6e the board stays within a ${v
     body.rows[0].title = title;
     await route.fulfill({ response: res, json: body });
   });
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill("student4@e2e.test");
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await signIn(page, "student4@e2e.test"); // shared helper (D-11)
   await page.getByRole("link", { name: "Progress", exact: true }).click();
   await expect(page.getByRole("link", { name: title })).toBeVisible();
   const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: window.innerWidth }));
