@@ -84,7 +84,7 @@ npm run dev                   # http://localhost:5173
 | `npm test` (`server/`) | Vitest + Supertest against an isolated `cpms_test` schema (reset and migrated each run; never touches `public`) |
 | `npm run typecheck` (`server/`) | `tsc` over source and tests |
 | `npm test` (`client/`) | Vitest + Testing Library (jsdom) |
-| `npm install && npm run e2e:install && npm run e2e` (root) | Playwright: resets a separate `cpms_e2e` schema with one test Student and Supervisor, starts the API on 3101 and the UI on 4173, then drives Chromium |
+| `npm install && npm run e2e:install && npm run e2e` (root) | Playwright: resets a separate `cpms_e2e` schema with synthetic journey accounts, starts the API on 3101 and the UI on 4173, then drives Chromium |
 
 ### API endpoints
 
@@ -95,11 +95,21 @@ npm run dev                   # http://localhost:5173
 | `POST /api/auth/login` | `{email, password}` → `200 {token, user}`; `401` for a wrong password or unknown email (same message) |
 | `GET /api/auth/me` | `Authorization: Bearer <token>` → `200 {user}`; `401` when missing, expired (8 h) or logged out |
 | `POST /api/auth/logout` | `Authorization: Bearer <token>` → `204`; the token stops working immediately |
+| `GET /api/teams/mine` | Student's own roster; `404` if unassigned |
+| `GET /api/teams` | Supervisor's assigned teams, or an empty list |
+| `POST /api/teams` | Supervisor only; `{name}` → `201 {team}` with the creator automatically assigned to the new team |
+| `GET /api/teams/:teamId` | Assigned Supervisor only → `{team}` with the team's roster |
+| `GET /api/teams/:teamId/member-candidates?q=&page=1` | Assigned Supervisor only; up to 25 eligible students → `{students,page,hasMore}` |
+| `POST /api/teams/:teamId/members` | Assigned Supervisor only; `{studentId}` → `201 {member}`; unavailable candidate → `409 STUDENT_UNAVAILABLE` |
+| `DELETE /api/teams/:teamId/members/:studentId` | Assigned Supervisor only; `204` on removal, or `409 MEMBER_HAS_SUBMISSIONS` if the student authored any version for the team |
 | `POST /api/teams/:teamId/milestones` | Assigned Supervisor only; `{title,description?,dueAt}` with explicit-zone future date → 201 `{milestone}` |
 | `GET /api/teams/:teamId/milestones?page=1` | Team members / assigned Supervisors only; 50 rows per page ordered by dueAt, id → `{milestones,page,pageSize,total}` |
 | `GET /api/milestones/:milestoneId` | Authorized read-only milestone detail, with separate window/team status |
-| `POST /api/milestones/:milestoneId/submissions` | Students of the milestone's team only; `{title,description?,link}` (absolute http/https link) → 201 `{submission}` as version 1; 409 `ALREADY_SUBMITTED` (one per milestone in Sprint 1) or `DEADLINE_PASSED` (server time after `due_at`) |
+| `POST /api/milestones/:milestoneId/submissions` | Students of the milestone's team only; `{title,description?,link}` (absolute http/https link) → `201 {submission}` with the next version; a closed window rejects the write, and membership is rechecked inside the transaction |
 | `GET /api/milestones/:milestoneId/submission` | Team members and assigned Supervisors → `{milestone, submission}`; `submission` is `null` until the team submits |
+| `GET /api/milestones/:milestoneId/grade` | Team Students see only the released score (including 0) or `{grade:{released:false}}`; assigned Supervisors also see the draft and, after release, `releasedAt` |
+| `PUT /api/milestones/:milestoneId/grade` | Assigned Supervisor only; `{score}` (integer 0–100) → `200 {grade}`; saves the draft without changing the published score |
+| `POST /api/milestones/:milestoneId/grade/release` | Assigned Supervisor only; JSON `{expectedScore}` (integer 0–100, the score the Supervisor confirmed) → `200 {grade}` with the released snapshot; `400` if `expectedScore` is missing or invalid; `409 GRADE_NOT_RECORDED` if no draft exists; `409 GRADE_DRAFT_CHANGED` if the saved draft no longer matches `expectedScore` (nothing is published) |
 | `POST /api/submissions/:submissionId/feedback` | Assigned Supervisors only; `{text}` (1–2000 characters) → 201 `{feedback}` with author, time and the submission version |
 | `GET /api/submissions/:submissionId/feedback` | Team members and assigned Supervisors → `{feedback: [...]}`, oldest first |
 

@@ -1,15 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support";
 
 // F-08 contract TEST-08.1e: real Chromium, API and cpms_e2e database.
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
-}
 // datetime-local value in Asia/Bangkok, `days` from now.
 const bangkok = (days: number) => new Date(Date.now() + days * 24 * 3600 * 1000 + 7 * 3600 * 1000).toISOString().slice(0, 16);
 

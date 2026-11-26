@@ -9,6 +9,7 @@
 | 0.1 | 2026-11-03 | @Nuggetkub | @Earth2509 | Initial baseline draft (Issue #1) |
 | 0.2 | 2026-11-03 | @Nuggetkub | @Earth2509 | Review on PR #14: zero-team students (DEC-02), milestone status model (§4.3.1, DEC-13; team status by deadline, independent of manual close), late-window scope (DEC-14), NFR-09 method, DEC-11/12 referenced |
 | 0.3 | 2026-11-24 | @Nuggetkub | @Earth2509 | Lab 7 change CR-01 (#73): BR-05 due date must be at least 24 h after server time on create (was: any future time) |
+| 0.4 | 2026-11-25 | @Nuggetkub | @Earth2509 | D2 (#87): rules aligned with the approved Sprint 2/3 contracts. BR-07 retired; BR-08 covers the late window and concurrent submissions; BR-14 (no delete endpoint); BR-15 draft and released snapshot; BR-16 covers older versions; AS-01 single-course team creation; FR-22 grade in phase 2; DEC-15. No requirement added or removed ([changes.md](changes.md) §3) |
 
 ---
 
@@ -167,7 +168,7 @@ Every row of both tables and every example above is covered by a status test (F-
 
 | ID | Requirement | Priority | Sprint |
 |---|---|---|---|
-| FR-22 | A student can view a progress board for their team showing each milestone's status, latest version, feedback status and released grade. | M | 3 |
+| FR-22 | A student can view a progress board for their team showing each milestone's status, latest version, feedback status and released grade. | M | 3 (released grade in phase 2, after F-10; DEC-15) |
 | FR-23 | A supervisor can view an overview of all supervised teams showing, per milestone, whether work is submitted, late, missing or awaiting feedback. | M | 3 |
 | FR-24 | Supervisors can filter milestones and submissions by team and status. | S | 3 |
 | FR-25 | A supervisor can export a CSV summary of progress and grades for their supervised teams. | S | 3 |
@@ -184,16 +185,16 @@ Every row of both tables and every example above is covered by a status test (F-
 | BR-04 | A student belongs to at most one team in the course and may belong to none (DEC-02). A student with no team has no team-scoped data: their requests for team milestones, submissions or feedback return 404 (DEC-10), and the UI shows the FR-05 empty state. | DB unique constraint + API | 1 (seed), 2 (UI) |
 | BR-05 | A milestone's title is 1–120 characters. Its due date must be at least 24 hours after the server's current time when the milestone is created or extended (CR-01, #73; was: "in the future"). | API validation (+ UI message) | 1 (changed by CR-01 in Lab 7) |
 | BR-06 | A submission is rejected when the server time is later than the milestone's due date, unless it falls within an allowed late window (BR-12). The client's clock is never used. | API (server time) | 1 |
-| BR-07 | **Sprint 1 only:** a team has at most one submission per milestone; a second submission is rejected. Superseded by BR-08 in Sprint 2 (DEC-04). | API + DB unique constraint | 1 |
-| BR-08 | From Sprint 2, a submission made before the deadline when one already exists creates version N+1. Earlier versions are never changed or deleted. | API + DB | 2 |
+| BR-07 | **Sprint 1 only, retired:** a team had at most one submission per milestone. Superseded by BR-08 in Sprint 2 (DEC-04); retired with F-09 (#92). | — (retired) | 1 |
+| BR-08 | From Sprint 2, a submission made while the window accepts work (Open, or the late window under BR-12) when one already exists creates version N+1. Earlier versions are never changed or deleted. Simultaneous submissions get consecutive versions, with no duplicate or gap. | API (transaction + retry) + DB unique (`milestone_id`, `version`) | 2 |
 | BR-09 | A submission title is 1–120 characters, the description at most 2000 characters, and the link must be an absolute `http` or `https` URL. | API validation (+ UI) | 1 |
 | BR-10 | Feedback is attached to exactly one submission version and stays attached to it when newer versions are submitted. Feedback text is 1–2000 characters. | API + DB foreign key | 1 |
 | BR-11 | Submissions to a Closed milestone are rejected, regardless of the deadline. | API | 2 |
 | BR-12 | A late window, if set, must end after the due date. While it is open, both a team's first submission and a new version (N+1) are accepted; every version created in it is marked Late (DEC-14). | API | 2 |
 | BR-13 | A due-date change may only extend the deadline (new due date later than the current one). | API | 2 |
-| BR-14 | A milestone that has submissions cannot be deleted; it can only be closed. | API | 2 |
-| BR-15 | A grade is an integer from 0 to 100. A student sees a grade only after the supervisor has released it for that milestone. | API | 2 |
-| BR-16 | A student cannot be removed from a team if they have authored submissions for that team; submission authorship is preserved. | API | 2 |
+| BR-14 | A milestone that has submissions cannot be deleted; it can only be closed. The product provides no delete operation for milestones at all (F-08). | API (no endpoint) | 2 |
+| BR-15 | A grade is an integer from 0 to 100. A student sees a grade only after the supervisor has released it for that milestone. A grade changed after a release stays private until it is released again; until then the student sees the last released value (F-10). | API + DB checks | 2 |
+| BR-16 | A student cannot be removed from a team if they have authored any submission version for that team; submission authorship is preserved. A removal and a submission by the same student at the same moment cannot both succeed. | API (row locks) | 2 |
 
 ---
 
@@ -220,7 +221,7 @@ Every row of both tables and every example above is covered by a status test (F-
 
 | ID | Assumption |
 |---|---|
-| AS-01 | One course offering is managed per deployment; accounts, teams and supervisors are seeded for demonstration. |
+| AS-01 | One course offering is managed per deployment; accounts, teams and supervisors are seeded for demonstration. Team creation (FR-07) requires exactly one course row and is refused otherwise (F-07). |
 | AS-02 | The server clock is the authority for deadlines; the deployment host keeps time synchronised (NTP). |
 | AS-03 | Submission links point to work hosted elsewhere (GitHub, Google Drive, YouTube); the system does not check that the link is reachable. |
 | AS-04 | A team has 2–4 students and 1–2 supervisors; the system does not enforce team size. |
@@ -247,6 +248,7 @@ Design decisions are recorded in [`decisions.md`](decisions.md) and referenced h
 | DEC-12 | Cloud-ready Sprint 1: DB sessions, `PORT` from env, `/api/health` + `/api/ready`, env-sourced idempotent seed, `/api/auth/*` | FR-01–03, NFR-04, NFR-08, NFR-12 |
 | DEC-13 | Milestone window and team status are separate values with fixed precedence | FR-09, FR-11, FR-22–24, §4.3.1 |
 | DEC-14 | The late window accepts a first submission and new versions; each is marked Late | FR-12, FR-15, FR-17, BR-08, BR-12 |
+| DEC-15 | For D2, F-11 phase 1 goes through `staging/sprint-2` into `v0.6.0`; `staging/sprint-3` starts after `v0.6.0` (deviation from DEC-11) | Delivery process, FR-22 |
 
 | Open question | Owner | Status |
 |---|---|---|

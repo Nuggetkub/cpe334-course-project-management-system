@@ -1,17 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-import { E2E_PASSWORD } from "./support";
+import { expect, test } from "@playwright/test";
+import { signIn } from "./support";
 
 // Uses "F06 submitted milestone" from server/scripts/e2e-prepare.ts: Student 2 has already
 // submitted it, and supervisor@e2e.test is assigned to its team.
-
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Log out" })).toBeVisible();
-  await page.getByRole("link", { name: "Milestones", exact: true }).click();
-}
 
 test("TEST-06.1e Supervisor records feedback and the team's Student reads it with its version", async ({ page }) => {
   await signIn(page, "supervisor@e2e.test");

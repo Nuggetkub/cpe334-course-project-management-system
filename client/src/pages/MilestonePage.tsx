@@ -4,6 +4,7 @@ import { ApiError, apiFetch } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import { formatBangkok } from "../time";
 import { ManageMilestone } from "./ManageMilestone";
+import { GradeSection } from "./GradeSection";
 import { MilestoneFields, type Milestone } from "./MilestonesPage";
 
 // F-04's read-only milestone page, extended by F-05 with the team's submission and the submit form.
@@ -251,6 +252,7 @@ export function MilestonePage() {
           milestoneId={milestone.id} heading={submission ? "Submit a new version" : "Submit work"} onSubmitted={(created) =>
             setState({ kind: "ready", data: { milestone: { ...milestone, teamStatus: created.late ? "LATE" : "SUBMITTED" }, submission: created } })} />}
         {submission && submission.version > 1 && <EarlierVersions milestoneId={milestone.id} latest={submission.version} canWrite={supervisor} />}
+        <GradeSection key={milestone.id} milestoneId={milestone.id} supervisor={supervisor} />
       </>;
     })()}
   </section>;
