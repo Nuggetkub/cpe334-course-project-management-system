@@ -1,12 +1,11 @@
 # System-level software design specification
 
-Version 0.6 · 2026-11-26 · D2 (#87): `v0.5.0` released (F-01 to F-10); F-11 phase 1 integrated on staging `107b82a`; F-11 phase 2, F-12 and F-13 are approved designs not yet built. (v0.5: 2026-11-25, D2 Part D, staging `4f56155` and PR #94.) (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
+Version 0.7 · 2026-11-26 · D2 (#87): `v0.6.0` (`6464f87`) on `main`, F-01 to F-10 and F-11 phase 1 released; F-11 phase 2, F-12 and F-13 are approved designs not yet built. (v0.6: 2026-11-26, `v0.5.0` released; F-11 phase 1 integrated on staging `107b82a`.) (v0.5: 2026-11-25, D2 Part D, staging `4f56155` and PR #94.) (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
 
 This document describes the system design. The [SRS](srs.md) defines required behavior, the [decision log](decisions.md) records design decisions, the [traceability matrix](traceability.md) maps requirements to verification and the [change register](changes.md) lists findings since Sprint 1. Feature contracts specify concrete endpoints and tests.
 
 **What is built (26 Nov 2026):**
-- **Released on `main`** (`v0.5.0`, `2fde19e`, deployed revision `cpms-00009-2jg`): F-01 to F-10 and CR-01.
-- **Integrated on `staging/sprint-2`** (`107b82a`), release `v0.6.0` planned (DEC-15): F-11 phase 1.
+- **Released on `main`** (`v0.6.0`, `6464f87`, deployed revision `cpms-00010-6vv`): F-01 to F-10, CR-01 and F-11 phase 1. Sprint 2 was accepted as `v0.5.0` (`2fde19e`).
 - **Design only** (contracts approved): F-11 phase 2, F-12, F-13. Their rows below say "planned".
 
 ## Architecture and enforcement
@@ -115,7 +114,7 @@ API routes live under `/api` and return JSON, except intentional no-content resp
 | `POST /api/milestones/:milestoneId/submissions` | Student | F-05, F-09 | Released |
 | `GET /api/milestones/:milestoneId/submission` (latest), `GET …/submissions` (history) | Team | F-05, F-09 | Released |
 | `GET` / `POST /api/submissions/:submissionId/feedback` | Team (read), Supervisor (write) | F-06 | Released |
-| `GET /api/teams/:teamId/progress` | Team | F-11 | Integrated (`v0.6.0` planned) |
+| `GET /api/teams/:teamId/progress` | Team | F-11 | Released (phase 1, `v0.6.0`) |
 | `GET`, `PUT /api/milestones/:milestoneId/grade`, `POST …/grade/release` (`{expectedScore}` from F-10 v0.5) | Team (read), Supervisor (write) | F-10 | Released |
 | `GET /api/overview`, `GET /api/overview/export` | Supervisor | F-12, F-13 | Planned |
 
