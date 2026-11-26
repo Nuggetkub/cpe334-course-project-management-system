@@ -1,14 +1,13 @@
 # System-level software design specification
 
-Version 0.5 · 2026-11-25 · D2 Part D (#87): matches staging `4f56155` (F-01 to F-09, F-10 server) and PR #94 (F-11 phase 1); the F-10 Grade UI, F-11 phase 2, F-12 and F-13 marked as approved designs not yet built. (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
+Version 0.6 · 2026-11-26 · D2 (#87): `v0.5.0` released (F-01 to F-10); F-11 phase 1 integrated on staging `107b82a`; F-11 phase 2, F-12 and F-13 are approved designs not yet built. (v0.5: 2026-11-25, D2 Part D, staging `4f56155` and PR #94.) (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
 
 This document describes the system design. The [SRS](srs.md) defines required behavior, the [decision log](decisions.md) records design decisions, the [traceability matrix](traceability.md) maps requirements to verification and the [change register](changes.md) lists findings since Sprint 1. Feature contracts specify concrete endpoints and tests.
 
-**What is built (25 Nov 2026):**
-- **Released on `main`** (`v0.4.0`, `aa191ba`, deployed revision `cpms-00008-l48`): F-01 to F-06 and CR-01.
-- **Integrated on `staging/sprint-2`** (`4f56155`), release `v0.5.0` planned: F-07, F-08, F-09 and the F-10 server.
-- **On PR #94**, for `v0.6.0` after `v0.5.0` (DEC-15): F-11 phase 1.
-- **Design only** (contracts approved): the F-10 Grade UI, F-11 phase 2, F-12, F-13. Their rows below say "planned".
+**What is built (26 Nov 2026):**
+- **Released on `main`** (`v0.5.0`, `2fde19e`, deployed revision `cpms-00009-2jg`): F-01 to F-10 and CR-01.
+- **Integrated on `staging/sprint-2`** (`107b82a`), release `v0.6.0` planned (DEC-15): F-11 phase 1.
+- **Design only** (contracts approved): F-11 phase 2, F-12, F-13. Their rows below say "planned".
 
 ## Architecture and enforcement
 
@@ -46,7 +45,7 @@ For nested records, resolve the owning team and apply the same ownership check a
 
 ### Major fields
 
-Rows mirror [the Prisma schema](../server/prisma/schema.prisma) and its nine migrations, using database column names. The Grade table is integrated on staging and not yet deployed.
+Rows mirror [the Prisma schema](../server/prisma/schema.prisma) and its nine migrations, using database column names. All nine migrations, including the Grade table, are deployed with `v0.5.0`.
 
 | Entity | Fields and key constraints |
 | --- | --- |
@@ -109,15 +108,15 @@ API routes live under `/api` and return JSON, except intentional no-content resp
 | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Any | F-01 | Released |
 | `GET /api/teams/mine` | Student | F-03.2 | Released |
 | `GET /api/teams` | Supervisor | F-03.2 | Released |
-| `POST /api/teams`, `GET /api/teams/:teamId`, `GET /api/teams/:teamId/member-candidates`, `POST /api/teams/:teamId/members`, `DELETE /api/teams/:teamId/members/:studentId` | Supervisor | F-07 | Integrated |
+| `POST /api/teams`, `GET /api/teams/:teamId`, `GET /api/teams/:teamId/member-candidates`, `POST /api/teams/:teamId/members`, `DELETE /api/teams/:teamId/members/:studentId` | Supervisor | F-07 | Released |
 | `GET` / `POST /api/teams/:teamId/milestones` | Team (read), Supervisor (create) | F-04 | Released |
 | `GET /api/milestones/:milestoneId` | Team | F-04 | Released |
-| `PATCH /api/milestones/:milestoneId`, `POST /api/milestones/:milestoneId/close` | Supervisor | F-08 | Integrated |
-| `POST /api/milestones/:milestoneId/submissions` | Student | F-05, F-09 | Released (versions integrated) |
-| `GET /api/milestones/:milestoneId/submission` (latest), `GET …/submissions` (history) | Team | F-05, F-09 | Latest released; history integrated |
+| `PATCH /api/milestones/:milestoneId`, `POST /api/milestones/:milestoneId/close` | Supervisor | F-08 | Released |
+| `POST /api/milestones/:milestoneId/submissions` | Student | F-05, F-09 | Released |
+| `GET /api/milestones/:milestoneId/submission` (latest), `GET …/submissions` (history) | Team | F-05, F-09 | Released |
 | `GET` / `POST /api/submissions/:submissionId/feedback` | Team (read), Supervisor (write) | F-06 | Released |
-| `GET /api/teams/:teamId/progress` | Team | F-11 | PR #94 |
-| `GET`, `PUT /api/milestones/:milestoneId/grade`, `POST …/grade/release` (`{expectedScore}` from F-10 v0.5) | Team (read), Supervisor (write) | F-10 | Integrated (server); UI and v0.5 release rule on PR #101 |
+| `GET /api/teams/:teamId/progress` | Team | F-11 | Integrated (`v0.6.0` planned) |
+| `GET`, `PUT /api/milestones/:milestoneId/grade`, `POST …/grade/release` (`{expectedScore}` from F-10 v0.5) | Team (read), Supervisor (write) | F-10 | Released |
 | `GET /api/overview`, `GET /api/overview/export` | Supervisor | F-12, F-13 | Planned |
 
 | Operation | Student | Supervisor |
@@ -141,7 +140,7 @@ API routes live under `/api` and return JSON, except intentional no-content resp
 | Milestones (F-04) | List with window and team status, pagination, and the Supervisor create form with field errors. |
 | Milestone page (F-05, F-06, F-08, F-09) | Latest version, Earlier versions with their own feedback, "Submit a new version" while the window accepts work (with a Late notice), Supervisor edit/extend/late window/close with confirmation. |
 | Progress (F-11, Student) | Table per milestone: due (ICT), window, team status, latest version with a Late badge, feedback status. Stacked rows on narrow screens; no horizontal scrolling. No grade column in phase 1. |
-| Grades (F-10, PR #101); overview and export (**planned**) | Grade section on the milestone page: Students see Not released or the score; Supervisors save a draft and release the confirmed one. Supervisor Overview with filters kept in the URL (F-12) and Download CSV (F-13) are planned. |
+| Grades (F-10); overview and export (**planned**) | Grade section on the milestone page: Students see Not released or the score; Supervisors save a draft and release the confirmed one. Supervisor Overview with filters kept in the URL (F-12) and Download CSV (F-13) are planned. |
 
 ## Configuration and delivery
 

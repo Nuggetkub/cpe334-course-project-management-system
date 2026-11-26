@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.3 · 2026-11-25 · D2 (#87): actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December. (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
+Version 0.4 · 2026-11-26 · D2 (#87): `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated. (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 
@@ -32,18 +32,19 @@ For each feature, record the contract, test cases, implementation evidence and p
 
 ## Remaining work to 13 December
 
-Status date: 25 Nov 2026, staging `4f56155`. Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+Status date: 26 Nov 2026, `main` `2fde19e` (`v0.5.0`), staging `107b82a`. Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
-| F-10 grades (#83) | Server integrated (#98). Grade UI and v0.5 release rule implemented and tested on PR #101 | Re-review and merge #101 | @Nuggetkub (UI, as offered on #96/#98); review @Earth2509; 26 Nov |
+| F-10 grades (#83) | **Done**: server #98, Grade UI and v0.5 release rule #101; released in `v0.5.0` | None | @Nuggetkub (UI); review @Earth2509; done 25 Nov |
 | R-01 single-course preflight | **Done** 25 Nov: live count is 1 | None | @Nuggetkub; done |
-| D-10 TEST-02.1 registry | F-08/F-09 done (#100) | Add the F-11 route in #94 when it's updated after `v0.5.0` | @Nuggetkub; 28 Nov |
-| `v0.5.0` Sprint 2 release (#87) | F-07, F-08, F-09 and the F-10 server integrated (`4f56155`); F-10 UI missing | Release PR `staging/sprint-2` → `main`, regression on its commit, tag, deploy, deployed checks (critical journey, persistence NFR-07, a rule rejection, a 403/404) | @Nuggetkub (PR), @Earth2509 (review); 27 Nov |
-| F-11 phase 1 (#84, PR #94) | AC-11.1, 11.2, 11.4, 11.5, 11.6 implemented and tested at `3b72786` (R-94) | Re-review; after the `v0.5.0` sync, update the branch, rerun CI, merge | @Nuggetkub; review @Earth2509; 28 Nov |
-| `v0.6.0` D2 candidate | Not started | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
-| D2 PDF | Documents drafted (this PR) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
-| D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102, `dad3ad0`) | Shared `signIn` waits for the login response; 3 clean full runs. F-10 and F-11 specs switch when #101 / #94 are updated | @Nuggetkub; done |
+| D-10 TEST-02.1 registry | **Done**: F-08/F-09 (#100), F-11 (`c24db4b` in #94) | None | @Nuggetkub; done 26 Nov |
+| `v0.5.0` Sprint 2 release (#87) | **Done** 26 Nov: #103 → `2fde19e`, revision `cpms-00009-2jg`; deployed checks 13/13 PASS ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7192705886)); synced back (#104) | None | @Nuggetkub (PR, checks), @Earth2509 (review, merge); done 26 Nov |
+| F-11 phase 1 (#84, PR #94) | **Integrated** 26 Nov (`107b82a`, R-S4) | Deployed Progress check on `v0.6.0`; #84 stays open for phase 2 | @Nuggetkub; review @Earth2509; 28 Nov |
+| `v0.6.0` D2 candidate | Staging ready (`107b82a`) | Release PR, regression, tag, deploy, deployed F-11 check | @Nuggetkub; 28 Nov |
+| D2 PDF | Documents updated for `v0.5.0`; Sprint 2 demos captured (D5) | Demos and screenshots on `v0.6.0`, build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
+| D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102); F-10 and F-11 specs switched (#101, #94) | None | @Nuggetkub; done |
+| D-14 Manage milestone panel layout (Minor) | Open (found in D5-04/D5-05) | Stack labels above fields; client layout check; deployed re-check | @Nuggetkub; review @Earth2509; 3 Dec |
 | D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
 | F-11 phase 2, AC-11.3 | Planned (needs F-10) | TEST-11.3u/11.3i first, then wire `studentGrade(row)` and the Grade column | @Nuggetkub; 30 Nov |
 | F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |
