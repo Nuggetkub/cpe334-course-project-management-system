@@ -13,6 +13,8 @@
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests, before any F-11 test or code |
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #93 review of `598c92b`: phase 1 and phase 2 tests separated (TEST-11.2u is feedback only; new TEST-11.3u for grades). AC-11.3 stays planned until F-11 is wired to F-10 and the before/after-release check passes; a merged F-10 alone doesn't complete it. §6 records the release path into `v0.6.0` and the DEC-11 deviation (DEC-15) |
 | 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #93 re-review of `4f0138f`: F-10 ships in `v0.5.0` before the phase 1 board, so a phase 1 "Not released" could be false. Phase 1 now **omits `grade` from every row and has no Grade column**; `{released: false}` and "Not released" are used only for the real F-10 state in phase 2. TEST-11.1i, TEST-11.6c and TEST-11.1e assert the omission |
+| 0.4 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #94 review of `15c59f6`, recorded with the tests before the fix: the team lookup is scoped inside the snapshot, so access lost after the route guard gives the fixed 404 and never team metadata (new TEST-11.4bi); the board never widens the viewport, stacked at 390 px or as a table at 768 px (new TEST-11.6e) |
+| 0.5 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #94 re-review of `e69c9e6`: the raw `page` is validated inside the snapshot, after the scoped team lookup, so access lost after the guard with an invalid page is still the fixed 404, never 400. TEST-11.4bi adds that case |
 
 ## 1. Feature design
 
@@ -32,7 +34,7 @@ AC-11.3 stays **planned** until that wiring is done and the before/after-release
 
 ### Workflow and authorization
 
-`GET /api/teams/:teamId/progress?page=N` runs requireAuth (401) → requireTeamAccess (404, the fixed F-02 body) → page validation (400) → one scoped query → 200.
+`GET /api/teams/:teamId/progress?page=N` runs requireAuth (401) → requireTeamAccess (404, the fixed F-02 body) → page validation (400) → one scoped snapshot → 200. Inside the snapshot the team itself is read with the caller's scope too, so if access was lost after the guard (for example an F-07 removal), the response is the same fixed 404 and never the team's name. The raw `page` is validated only after that scoped lookup, so the 401 → 404 → 400 order also holds in that case.
 
 | Caller | Result |
 | --- | --- |
@@ -108,8 +110,10 @@ Levels as in F-08: **U** (Vitest), **I** (Supertest against PostgreSQL `cpms_tes
 | TEST-11.1i | 11.1 | I | Team A with the five milestone states from AC-11.1, team B with one milestone, fixed clock | GET A's progress as sA; GET the F-04 list as sA | Only A's rows, in order. `window` and `teamStatus` equal the F-04 list values row by row. Phase 1: no row has a `grade` key |
 | TEST-11.2i | 11.2 | I | Versions 1 and 2, feedback on version 1 | GET; then add feedback to version 2 and GET again | Latest is version 2; `AWAITING`, then `RECEIVED` |
 | TEST-11.4i | 11.4 | I | Anonymous, sB, s0, pB, malformed or missing ID | GET A's progress | 401, then the fixed 404 ×4. Response bodies contain no team A titles |
+| TEST-11.4bi | 11.4 | I | sB and pB (never had access); sA, then sA removed from team A | Call `readProgress` directly (the snapshot read after the guard), then GET as sA; then call it again for each caller with page `abc` and `0` | Fixed 404 `NOT_FOUND` for every caller without access at snapshot time, with no team metadata; sA's GET is the fixed 404 after removal; an invalid page without access is still the fixed 404, not 400 |
 | TEST-11.5i | 11.5 | I | 51 milestones in A with tied due dates | GET page 1, page 2, page 0, page `abc` | 50 + 1 rows, stable order, total 51; 400 for an invalid page |
 | TEST-11.6c | 11.6 | C | Mocked deferred, empty, failing-then-recovering responses; a no-team Student | Render `/progress` | Loading, empty, error with Retry and recovery; no-team state; Late badge and labels in rows; phase 1: no Grade column header and no "Not released" text |
+| TEST-11.6e | 11.6 | E | Chromium at 390 px (stacked rows) and 768 px (table, just above the breakpoint); the board response stubbed with a valid 120-character unbroken title | Open Progress | The page is no wider than the viewport (no horizontal scroll); the long title wraps inside its row |
 | TEST-11.1e | 11.1, 11.2 | E | A seeded team with a submitted milestone and an unsubmitted one | The Student opens Progress and follows a row link | The rows show the version and feedback status, with no Grade column; the link opens the milestone page |
 | TEST-11.3u (phase 2) | 11.3 | U | F-10 grade unreleased; released with a score | Call `progressRow(...)` | `{released: false}` with no `score` key; then `{released: true, score}`. The Grade column appears with this change |
 | TEST-11.3i (phase 2) | 11.3 | I | After F-10 and the F-11 wiring: a grade recorded, then released | GET before and after the release | Before: no `score` key anywhere in the JSON. After: `{released: true, score}` |
