@@ -21,6 +21,7 @@
 | 0.15 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 review: coverage splits fully from partly verified; AC-05.3 qualified for the late window; D-10 resolved for F-08/F-09 (#100); F-10 Grade UI on PR #101 (result set R-101) |
 | 0.16 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 re-review: result set R-100 for the run that executed #100's registry cases, cited for AC-02.1, AC-08.7, AC-09.7 and NFR-02; R-102 and D-11 resolved (#102); version rows in order |
 | 0.17 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.5.0` released and checked on the deployed app: result set R-S3 (release regression and deployed checks D5-00 to D5-12), F-07 to F-10 accepted; F-11 phase 1 integrated (R-S4, #94) with its TEST-02.1 entry (D-10 resolved); coverage recounted |
+| 0.18 | 2026-11-26 | @Nuggetkub | @Earth2509 | PR #105 review: D5-12 scoped to what was observed (AC-07.1, AC-07.2, FR-07); registry runs scoped: R-100 is the Sprint 2 routes, R-S4 adds the F-11 progress route (AC-02.1, NFR-02) |
 
 ## ID conventions
 
@@ -49,7 +50,7 @@ A contract author may split or renumber AC, and updates this file **in the same 
 | **R-S4** | `staging/sprint-2` at `107b82a` (`v0.5.0` + F-11 phase 1, #94; release `v0.6.0` planned) | CI run [45811793125](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45811793125) on #94's head `7817401`, whose tree is identical to `107b82a`; local run on `7817401` | Server 346/346, client 89/89 (CI and local), both builds pass, E2E 15/15 (local) |
 | **R-94** | PR #94 head `3b72786` (F-11 phase 1, based on staging `2d5364e`) | CI run [45586183430](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45586183430); local Playwright | Server 260/260, client 69/69, E2E 12/12 |
 
-No test in these sets was skipped. The one failure is disclosed in R-101 (flaky TEST-05.1e sign-in wait, D-11, passed on rerun; fixed by #102, R-102). R-S2 holds the feature-level results; R-100 is the run that executed the complete integrated-route registry. R-S3 is the accepted Sprint 2 release: the full regression on the release commit plus the deployed checks; D5-xx IDs refer to those checks.
+No test in these sets was skipped. The one failure is disclosed in R-101 (flaky TEST-05.1e sign-in wait, D-11, passed on rerun; fixed by #102, R-102). R-S2 holds the feature-level results. R-100 is the run that executed the registry with every Sprint 2 protected route (before F-11); R-S4 is the first run with the F-11 route `GET /api/teams/:teamId/progress` in it, so R-S4 covers the full registry for everything integrated. R-S3 is the accepted Sprint 2 release: the full regression on the release commit plus the deployed checks; D5-xx IDs refer to those checks.
 
 ## Sprint 1 acceptance criteria
 
@@ -67,7 +68,7 @@ All Sprint 1 AC are implemented and released (`v0.3.0`, accepted by StudyTrack U
 | AC-01.8 | The Login form shows field-level messages for a missing or malformed email and a missing password, without sending the request; on a 401 it shows one generic message ("Email or password is incorrect") that is the same for wrong password and unknown email | FR-01, NFR-10 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-01.9 | When login fails on the server (5xx or network error), the Login form shows a visible error, keeps the email, clears the password and lets the user retry | FR-01, NFR-10 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-01.10 | When a signed-in user's session expires or is revoked during use, the next API request's 401 returns them to the login page with "Your session has expired. Please sign in again." and the token is cleared; no page shows its own error for it. A late 401 for a token that is no longer the current one (signed in again, or logged out) changes nothing | FR-03, NFR-04, NFR-10 | Yes | PASS R-S1, R-S2, R-S3 |
-| AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 | Yes | PASS R-S1, R-S2, R-S3; complete integrated-route registry R-100 |
+| AC-02.1 | Every protected endpoint (listed in the protected-endpoint test list) without a valid token → 401, no data | NFR-02 | Yes | PASS R-S1, R-S2, R-S3. Registry with every Sprint 2 route: R-100 (and R-S3). Registry including the F-11 progress route: R-S4 |
 | AC-02.2 | A Student calling a Supervisor-only operation (even for their own team), or a Supervisor calling a Student-only operation → 403 | BR-01, NFR-03 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-02.3 | A Supervisor reading or acting on an unassigned team's records → 404, identical to a nonexistent record; every assigned supervisor passes | BR-02, NFR-03 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-02.4 | A Student reading another team's records, or a Student with no team → 404, identical to a nonexistent record, no data | BR-03, BR-04, NFR-03 | Yes | PASS R-S1, R-S2, R-S3 |
@@ -111,8 +112,8 @@ Full wording, inputs and expected results are in each contract. Sprint 2 is **ac
 
 | AC | Criterion (short) | Requirements | Planned tests → actual file | Impl. | Verification |
 |---|---|---|---|---|---|
-| AC-07.1 | Create a team: one team and one creator assignment; no orphans on any failure | FR-07, BR-01 | TEST-07.1u, 07.1i, 07.1e → `server/tests/team-management-units.test.ts`, `team-management.test.ts`, `e2e/team-management.spec.ts` | Yes | PASS R-S2, R-S3; deployed D5-12 |
-| AC-07.2 | Roster and add an unassigned Student; no transfer or second membership | FR-07, BR-02, BR-04 | TEST-07.2i, 07.2bi → `team-management.test.ts` | Yes | PASS R-S2, R-S3; deployed D5-12 |
+| AC-07.1 | Create a team: one team and one creator assignment; no orphans on any failure | FR-07, BR-01 | TEST-07.1u, 07.1i, 07.1e → `server/tests/team-management-units.test.ts`, `team-management.test.ts`, `e2e/team-management.spec.ts` | Yes | PASS R-S2, R-S3; deployed D5-12 (team created, empty roster, Student search and picker; no Student added) |
+| AC-07.2 | Roster and add an unassigned Student; no transfer or second membership | FR-07, BR-02, BR-04 | TEST-07.2i, 07.2bi → `team-management.test.ts` | Yes | PASS R-S2, R-S3: adding an unassigned Student and the no-transfer / no-second-membership rules are verified by TEST-07.2i and TEST-07.2bi. Deployed D5-12 shows only the roster and the Student search and picker on a new team; no seeded Student was added |
 | AC-07.3 | Remove a member without authored work; they see the no-team state and 404s | FR-07, BR-03, BR-04, BR-16 | TEST-07.3i → `team-management.test.ts` | Yes | PASS R-S2, R-S3 |
 | AC-07.4 | Removing an author (any version) → 409; removal and submission can't both succeed | BR-16 | TEST-07.4i, 07.4bi (sequential, concurrent and **held lock**) → `team-management.test.ts` | Yes | PASS R-S2, R-S3. Held-lock cases fail with the lock removed (D-04) |
 | AC-07.5 | 401 → 403 → 404 before validation; denied writes change nothing | BR-01–BR-03, NFR-03, NFR-05 | TEST-07.5i → `team-management.test.ts`; routes in the TEST-02.1 registry | Yes | PASS R-S2, R-S3 |
@@ -174,7 +175,7 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | FR-04 | F-01 | 1 | AC-01.7 | TEST-01.7a/b | `auth.test.tsx`; `auth.spec.ts` | PASS R-S1, R-S2, R-S3 |
 | FR-05 | F-03.2 | 1 | AC-03.3, 03.4 | TEST-03.3, 03.3c, 03.4, 03.4c | `team-views.test.ts`; `team-views.test.tsx` | PASS R-S1, R-S2, R-S3 |
 | FR-06 | F-03.2 | 1 | AC-03.6, 03.7 | TEST-03.6, 03.6c, 03.7, 03.7c | `team-views.test.ts`; `team-views.test.tsx` | PASS R-S1, R-S2, R-S3 |
-| FR-07 | F-07 | 2 | AC-07.1–07.3, 07.6 | TEST-07.1u/i/e, 07.2i/bi, 07.3i, 07.6c | `team-management(-units).test.ts`; `team-management.test.tsx`; `team-management.spec.ts` | PASS R-S2, R-S3; deployed D5-12 |
+| FR-07 | F-07 | 2 | AC-07.1–07.3, 07.6 | TEST-07.1u/i/e, 07.2i/bi, 07.3i, 07.6c | `team-management(-units).test.ts`; `team-management.test.tsx`; `team-management.spec.ts` | PASS R-S2, R-S3; deployed D5-12 (team created, empty roster, Student search and picker; no Student added) |
 | FR-08 | F-04 | 1 | AC-04.1, 04.2, 04.7 | TEST-04.1i/e, 04.2u/i/c/e, 04.7i | `milestones(-units).test.ts`; `milestones.test.tsx`; `milestones.spec.ts` | PASS R-S1, R-S2, R-S3 |
 | FR-09 | F-04, F-05; F-08, F-09 (Late rows) | 1 → 2 | AC-04.3, 04.4, 04.6, 04.8, 05.8, 08.5, 09.2, 09.5 | TEST-04.3i/c, 04.4u, 04.6i/c, 04.8i/c, 05.8a–c, 08.5u, 09.2u/i, 09.5i | `milestones-units.test.ts`, `milestones.test.ts`, `submissions.test.ts`, `milestones-lifecycle-units.test.ts`, `resubmission(-units).test.ts`; `milestone-time.test.ts`, `milestones.test.tsx` | PASS R-S2, R-S3 (S1 rows also R-S1) |
 | FR-10 | F-08 | 2 | AC-08.1, 08.2, 08.8 | TEST-08.1i/e, 08.2u/i, 08.8c | `milestones-lifecycle(-units).test.ts`; `milestone-manage.test.tsx`; `lifecycle.spec.ts` | PASS R-S2, R-S3 |
@@ -220,7 +221,7 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | Req | Feature / responsibility | Sprint | AC or verification | Planned test | Actual file / test or measurement | Result and version |
 |---|---|---|---|---|---|---|
 | NFR-01 | F-01, F-03.1 | 1 | AC-01.6, 03.2 | TEST-01.6a–c, 03.2 | `auth.test.ts`, `auth-units.test.ts`, `demo-seed.test.ts` | PASS R-S1, R-S2, R-S3 |
-| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1; each feature's 401 case | TEST-02.1 over `support/protected-endpoints.ts`; TEST-07.5i, 08.7i, 09.7i, 10.4i, 11.4i | `authz.test.ts`; feature files | PASS R-S2 (feature-level 401 cases); R-100: every Sprint 2 route in the registry (F-08/F-09 added by #100); R-S3; R-S4 adds the F-11 route (`c24db4b`), so D-10 is resolved |
+| NFR-02 | F-02 (every protected endpoint) | 1 → 2, 3 | AC-02.1; each feature's 401 case | TEST-02.1 over `support/protected-endpoints.ts`; TEST-07.5i, 08.7i, 09.7i, 10.4i, 11.4i | `authz.test.ts`; feature files | PASS R-S2 (feature-level 401 cases); R-100 and R-S3: every Sprint 2 route in the registry (F-08/F-09 added by #100); R-S4: the registry with the F-11 route (`c24db4b`), so D-10 is resolved |
 | NFR-03 | F-02; each feature | 1 → 2, 3 | AC-02.2–02.5, 07.5, 08.7, 09.7, 10.4, 11.4 | TEST-02.2–02.5, 07.5i, 08.7i, 09.7i, 10.4i, 11.4i/bi | `authz.test.ts`, feature files | PASS R-S2, R-S3, R-94; F-12 **planned** |
 | NFR-04 | F-01 | 1 | AC-01.4, 01.5, 01.10 | TEST-01.4, 01.5a–c, 01.10a–c | `auth.test.ts`, `auth-units.test.ts`, `auth.test.tsx` | PASS R-S1, R-S2, R-S3 |
 | NFR-05 | SR-01 | 1 → 2, 3 | AC-SR1.1; error bodies in every feature | TEST-SR1.1 and each feature's 400/404/409 assertions | `auth.test.ts`, feature files | PASS R-S2, R-S3, R-94 |
