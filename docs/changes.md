@@ -8,7 +8,7 @@
 | 0.2 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 review: D-10 resolved for F-08/F-09 by #100; new D-11 (flaky sign-in wait), D-12 and D-13 (PR #101 review); grade release revision |
 | 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 re-review: D-11 resolved by #102 (`dad3ad0`) |
 | 0.4 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.5.0` released and accepted on the deployed app; fixes in it marked released; F-11 fixes integrated (#94); D-10 resolved; new D-14 from the deployed checks |
-| 0.5 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and accepted on the deployed app; F-11 fixes D-05 to D-08 released |
+| 0.5 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and verified on the deployed app; F-11 fixes D-05 to D-08 released |
 
 This register records every finding that changed the product, its tests or its baseline since the accepted Sprint 1 release. Earlier records keep their own detail ([Lab 6 findings](labs/lab06/findings.md), the Lab 7 report, PR reviews); this page is the one index with current status.
 
@@ -25,7 +25,7 @@ This register records every finding that changed the product, its tests or its b
 | `v0.3.0` (**accepted Sprint 1**) | `b6cffa1` | `cpms-00007-7r8` | F-01 to F-06 | StudyTrack UAT: **Accepted for the tested scope**, 22 Nov 2026 ([#70 comment](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/70#issuecomment-7079679438)) |
 | `v0.4.0` (Lab 7) | `aa191ba` | `cpms-00008-l48` | `v0.3.0` + CR-01 + Lab 6 docs/tests | Deployed checks L7-D00 to D04 PASS (24 Nov) |
 | `v0.5.0` (**accepted Sprint 2**) | `2fde19e` (#103, 26 Nov) | `cpms-00009-2jg` | F-07 to F-10 | Release regression and deploy PASS (R-S3: server 331, client 83, E2E 12/12; deploy run [45744194715](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45744194715), 3 additive migrations, smoke test). Deployed checks D5-00 to D5-12 **13/13 PASS** on 26 Nov ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7192705886)), including persistence of the Lab 7 record across the deploy (D5-01). Single-course preflight passed before release (R-01) |
-| `v0.6.0` (**D2 candidate**, submitted) | `6464f87` (#106, 26 Nov) | `cpms-00010-6vv` | `v0.5.0` + F-11 phase 1 (#94) | Release regression and deploy PASS (R-S5: server 346, client 89, E2E 15/15; deploy run [45843344608](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45843344608), no migration, smoke test). Deployed checks D6-00 to D6-06 **7/7 PASS** on 26 Nov ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7195860387)), including persistence across the deploy (D6-06) |
+| `v0.6.0` (**D2 candidate**, released and verified) | `6464f87` (#106, 26 Nov) | `cpms-00010-6vv` | `v0.5.0` + F-11 phase 1 (#94) | Release regression and deploy PASS (R-S5: server 346, client 89, E2E 15/15; deploy run [45843344608](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45843344608), no migration, smoke test). Deployed checks D6-00 to D6-06 **7/7 PASS** on 26 Nov ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7195860387)), including persistence across the deploy (D6-06) |
 
 ## 2. Findings and defects
 

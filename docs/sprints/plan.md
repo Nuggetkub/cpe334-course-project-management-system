@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.4 · 2026-11-26 · D2 (#87): `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated. (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
+Version 0.5 · 2026-11-26 · D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released. (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 

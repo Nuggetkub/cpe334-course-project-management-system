@@ -1,6 +1,6 @@
 # System-level software design specification
 
-Version 0.6 · 2026-11-26 · D2 (#87): `v0.5.0` released (F-01 to F-10); F-11 phase 1 integrated on staging `107b82a`; F-11 phase 2, F-12 and F-13 are approved designs not yet built. (v0.5: 2026-11-25, D2 Part D, staging `4f56155` and PR #94.) (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
+Version 0.7 · 2026-11-26 · D2 (#87): `v0.6.0` (`6464f87`) on `main`, F-01 to F-10 and F-11 phase 1 released; F-11 phase 2, F-12 and F-13 are approved designs not yet built. (v0.6: 2026-11-26, `v0.5.0` released; F-11 phase 1 integrated on staging `107b82a`.) (v0.5: 2026-11-25, D2 Part D, staging `4f56155` and PR #94.) (v0.4: 2026-11-24, Lab 7 CR-01, #73; v0.3: 2026-11-04, D1 Part C, Issue #3, PR #30 re-review.)
 
 This document describes the system design. The [SRS](srs.md) defines required behavior, the [decision log](decisions.md) records design decisions, the [traceability matrix](traceability.md) maps requirements to verification and the [change register](changes.md) lists findings since Sprint 1. Feature contracts specify concrete endpoints and tests.
 
