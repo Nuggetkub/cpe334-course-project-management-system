@@ -5,6 +5,24 @@ import { signIn } from "./support";
 // datetime-local value in Asia/Bangkok, `days` from now.
 const bangkok = (days: number) => new Date(Date.now() + days * 24 * 3600 * 1000 + 7 * 3600 * 1000).toISOString().slice(0, 16);
 
+// D-14 (F-08 contract v0.5) TEST-08.8e: in the Manage panel each label sits above its field, aligned
+// with it, at desktop and phone widths. Read-only: it opens the seeded "F08 late milestone".
+for (const viewport of [1280, 390]) test(`TEST-08.8e the Manage panel stacks each label above its field at ${viewport} px`, async ({ page }) => {
+  await page.setViewportSize({ width: viewport, height: 900 });
+  await signIn(page, "supervisor@e2e.test");
+  await page.getByLabel("Team", { exact: true }).selectOption({ label: "E2E Lifecycle Team" });
+  await page.getByRole("link", { name: "F08 late milestone" }).click();
+  await expect(page.getByRole("heading", { name: "Manage milestone" })).toBeVisible();
+  for (const name of ["Milestone title", "Milestone description", "Due date and time (Asia/Bangkok)", "Late window end (Asia/Bangkok)"]) {
+    const label = await page.locator("label", { hasText: name }).boundingBox();
+    const field = await page.getByLabel(name, { exact: true }).boundingBox();
+    expect(label!.y + label!.height, `${name}: label above its field`).toBeLessThanOrEqual(field!.y + 1);
+    expect(Math.abs(label!.x - field!.x), `${name}: label aligned with its field`).toBeLessThanOrEqual(1);
+  }
+  const width = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, viewport: window.innerWidth }));
+  expect(width.scroll).toBeLessThanOrEqual(width.viewport);
+});
+
 test("TEST-08.1e Supervisor edits, extends, sets a late window and closes; the Student sees it closed", async ({ page }) => {
   await signIn(page, "supervisor@e2e.test");
   await page.getByLabel("Team", { exact: true }).selectOption({ label: "E2E Lifecycle Team" });
