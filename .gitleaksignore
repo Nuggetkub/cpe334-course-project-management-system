@@ -1,0 +1,8 @@
+# Reviewed gitleaks false positives (D-09, NFR-12): one exact fingerprint per line,
+# commit:file:rule:line. Each entry covers that single finding only; any later commit,
+# file or line is still scanned. Never list a real secret here: rotate it instead.
+
+# PR #109, RED commit b2e0192: scripts/secret-scan.test.sh wrote the PEM header of a
+# FAKE key generated at runtime (no key material in the file). Since 8e253c0 the header
+# is assembled at runtime, so the file no longer matches.
+b2e0192b7f27a439cb016d331df3beeffd2937fb:scripts/secret-scan.test.sh:private-key:51

@@ -12,8 +12,11 @@
 #
 # Findings are printed as rule, file, line and commit only, read from a redacted JSON
 # report: no secret value and no author name or email reaches the CI log.
-# A false positive is handled in .gitleaks.toml with a reviewed, commented allowlist,
-# never by switching the step off.
+# The scanner is downloaded into a fresh private folder (mktemp -d) on every run and
+# verified against the pinned SHA-256 there, so no pre-existing executable is ever run.
+# A reviewed false positive is listed by its exact fingerprint (commit:file:rule:line) in
+# .gitleaksignore, with a comment; never by path or rule alone, and never by switching
+# the step off.
 set -uo pipefail
 
 VERSION="8.30.1"
@@ -29,18 +32,16 @@ case "$mode" in git|dir) ;; *) error "usage: secret-scan.sh git|dir <path>" ;; e
 [ -n "$target" ] && [ -e "$target" ] || error "path not found: ${target:-<none>}"
 [ "$(uname -s)-$(uname -m)" = "Linux-x86_64" ] || error "only Linux x64 is supported (CI runner)"
 
-BIN_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gitleaks-${VERSION}"
+BIN_DIR="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/gitleaks.XXXXXXXX")" || error "cannot create a private folder"
+trap 'rm -rf "$BIN_DIR"' EXIT
 BIN="$BIN_DIR/gitleaks"
-if [ ! -x "$BIN" ]; then
-  mkdir -p "$BIN_DIR" || error "cannot create $BIN_DIR"
-  curl -fsSL --retry 3 -o "$BIN_DIR/gitleaks.tar.gz" "$URL" || error "download failed"
-  echo "$SHA256  $BIN_DIR/gitleaks.tar.gz" | sha256sum -c --quiet - || error "checksum mismatch for gitleaks ${VERSION}"
-  tar -xzf "$BIN_DIR/gitleaks.tar.gz" -C "$BIN_DIR" gitleaks || error "cannot unpack gitleaks"
-fi
+curl -fsSL --retry 3 -o "$BIN_DIR/gitleaks.tar.gz" "$URL" || error "download failed"
+echo "$SHA256  $BIN_DIR/gitleaks.tar.gz" | sha256sum -c --quiet - || error "checksum mismatch for gitleaks ${VERSION}"
+tar -xzf "$BIN_DIR/gitleaks.tar.gz" -C "$BIN_DIR" gitleaks || error "cannot unpack gitleaks"
 
-REPORT="$BIN_DIR/report-$$.json"
-args=(--redact --no-banner --exit-code "$LEAKS_EXIT" --report-format json --report-path "$REPORT")
-[ -f "$ROOT/.gitleaks.toml" ] && args+=(--config "$ROOT/.gitleaks.toml")
+REPORT="$BIN_DIR/report.json"
+args=(--redact --no-banner --exit-code "$LEAKS_EXIT" --report-format json --report-path "$REPORT"
+      --gitleaks-ignore-path "$ROOT/.gitleaksignore")
 
 status=0
 "$BIN" "$mode" "${args[@]}" "$target" || status=$?
