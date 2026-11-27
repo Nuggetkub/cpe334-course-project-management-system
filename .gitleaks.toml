@@ -1,0 +1,12 @@
+# gitleaks configuration for scripts/secret-scan.sh (D-09, NFR-12).
+# The default gitleaks rules apply. Every allowlist entry below must name the rule,
+# the exact file and the reason, and is reviewed in a PR. Never allowlist a real secret:
+# rotate it instead.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "secret-scan.test.sh writes the PEM header and footer of a FAKE key, generated at runtime into a temp folder, to prove the scan catches it. The file itself holds no key material."
+targetRules = ["private-key"]
+paths = ['''^scripts/secret-scan\.test\.sh$''']

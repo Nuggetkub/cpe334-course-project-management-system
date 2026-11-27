@@ -10,7 +10,8 @@
 #   1  a secret was found (rule and file are printed; the value is redacted)
 #   2  the scan could not run (bad arguments, missing path, download or checksum failure)
 #
-# The findings are printed with --redact, so a real secret never reaches the CI log.
+# Findings are printed as rule, file, line and commit only, read from a redacted JSON
+# report: no secret value and no author name or email reaches the CI log.
 # A false positive is handled in .gitleaks.toml with a reviewed, commented allowlist,
 # never by switching the step off.
 set -uo pipefail
@@ -37,13 +38,16 @@ if [ ! -x "$BIN" ]; then
   tar -xzf "$BIN_DIR/gitleaks.tar.gz" -C "$BIN_DIR" gitleaks || error "cannot unpack gitleaks"
 fi
 
-args=(--redact --no-banner --verbose --exit-code "$LEAKS_EXIT")
+REPORT="$BIN_DIR/report-$$.json"
+args=(--redact --no-banner --exit-code "$LEAKS_EXIT" --report-format json --report-path "$REPORT")
 [ -f "$ROOT/.gitleaks.toml" ] && args+=(--config "$ROOT/.gitleaks.toml")
 
 status=0
 "$BIN" "$mode" "${args[@]}" "$target" || status=$?
 case "$status" in
   0) echo "secret-scan: no secrets found ($mode $target)"; exit 0 ;;
-  "$LEAKS_EXIT") echo "secret-scan: SECRET FOUND ($mode $target); see the redacted findings above" >&2; exit 1 ;;
+  "$LEAKS_EXIT")
+    jq -r '.[] | "finding: \(.RuleID)  \(.File):\(.StartLine)\(if .Commit != "" then "  commit \(.Commit[0:7])" else "" end)"' "$REPORT"       || error "cannot read the gitleaks report"
+    echo "secret-scan: SECRET FOUND ($mode $target)" >&2; exit 1 ;;
   *) error "gitleaks failed with exit $status" ;;
 esac
