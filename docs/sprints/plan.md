@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.5 · 2026-11-26 · D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released. (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
+Version 0.6 · 2026-11-27 · `staging/sprint-3` created; D-09 done (#109). (v0.5: 2026-11-26, D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released.) (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 
@@ -28,11 +28,11 @@ If D1 runs short, prioritize the tested path on `main`: sign in with the correct
 
 For each feature, record the contract, test cases, implementation evidence and peer review. Integrate feature PRs into the matching `staging/sprint-N` branch, run the applicable regression suite and record reviewer/UAT findings, then release to `main` through a reviewed PR and tag per [DEC-11](../decisions.md). Distinguish work integrated to staging from work released on main. Update issue/project status only when its actual gate has been reached.
 
-**Release path for D2 (DEC-15):** Sprint 2 is released from `staging/sprint-2` as `v0.5.0`. F-11 phase 1 then goes into `staging/sprint-2` and is released as the D2 candidate `v0.6.0`. After that, `staging/sprint-3` is created from `main` for the rest of Sprint 3.
+**Release path for D2 (DEC-15):** Sprint 2 is released from `staging/sprint-2` as `v0.5.0`. F-11 phase 1 then goes into `staging/sprint-2` and is released as the D2 candidate `v0.6.0`. After that, `staging/sprint-3` is created for the rest of Sprint 3. It was created on 27 Nov from `staging/sprint-2` `3e17c25`, not from `main`: that commit is `main` plus the reviewed D2 documents (#108), with the same code as `v0.6.0` ([#87 comment](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7211467410)).
 
 ## Remaining work to 13 December
 
-Status date: 26 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-2` `52ef350` (after #107). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `1544ca0` (after #109). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
@@ -41,11 +41,11 @@ Status date: 26 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-2` `52ef3
 | D-10 TEST-02.1 registry | **Done**: F-08/F-09 (#100), F-11 (`c24db4b` in #94) | None | @Nuggetkub; done 26 Nov |
 | `v0.5.0` Sprint 2 release (#87) | **Done** 26 Nov: #103 → `2fde19e`, revision `cpms-00009-2jg`; deployed checks 13/13 PASS ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7192705886)); synced back (#104) | None | @Nuggetkub (PR, checks), @Earth2509 (review, merge); done 26 Nov |
 | F-11 phase 1 (#84, PR #94) | **Done** 26 Nov: released in `v0.6.0`, deployed checks D6 7/7 PASS | None; #84 stays open for phase 2 | @Nuggetkub; review @Earth2509; done |
-| `v0.6.0` D2 candidate | **Done** 26 Nov: #106 → `6464f87`, revision `cpms-00010-6vv`, tag `v0.6.0`; sync back (#107) | Create `staging/sprint-3` from `main` after #107 | @Nuggetkub; review @Earth2509; 27 Nov |
+| `v0.6.0` D2 candidate | **Done** 26 Nov: #106 → `6464f87`, revision `cpms-00010-6vv`, tag `v0.6.0`; sync back (#107) | None: `staging/sprint-3` created 27 Nov from `3e17c25` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | D2 PDF | Documents current; demos captured on `v0.5.0` (D5) and `v0.6.0` (D6) | Build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
 | D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102); F-10 and F-11 specs switched (#101, #94) | None | @Nuggetkub; done |
 | D-14 Manage milestone panel layout (Minor) | Open (found in D5-04/D5-05) | Stack labels above fields; client layout check; deployed re-check | @Nuggetkub; review @Earth2509; 3 Dec |
-| D-09 CI secret scan (NFR-12) | Open | Add a secret-scanning step to `ci.yml`; prove it fails on a seeded fake secret | @Nuggetkub; 30 Nov |
+| D-09 CI secret scan (NFR-12) | **Done** 27 Nov: #109 → `1544ca0` (integrated); seeded fake secrets fail the scan | Reaches `main` in `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | F-11 phase 2, AC-11.3 | Planned (needs F-10) | TEST-11.3u/11.3i first, then wire `studentGrade(row)` and the Grade column | @Nuggetkub; 30 Nov |
 | F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |
 | F-13 CSV export (#86) | Contract v0.2 approved (#97) | Tests first, implementation on top of F-12 and `studentGrade`, review | @Earth2509; 5 Dec |
