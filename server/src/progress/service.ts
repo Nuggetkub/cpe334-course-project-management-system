@@ -5,12 +5,14 @@ import { notFoundError } from "../errors.js";
 import { prisma } from "../prisma.js";
 import { progressRow } from "./rows.js";
 
-// Per milestone: only the latest version, with the feedback count of that version (BR-10).
+// Per milestone: only the latest version, with the feedback count of that version (BR-10), and only the
+// released F-10 score (the draft is never selected, so it can't reach the board).
 const withLatest = {
   submissions: {
     orderBy: { version: "desc" }, take: 1,
     select: { version: true, late: true, submittedAt: true, _count: { select: { feedback: true } } },
   },
+  grade: { select: { releasedScore: true } },
 } as const;
 
 /**
@@ -34,7 +36,7 @@ export async function readProgress(user: AuthUser, teamId: number, rawPage: unkn
   }, { isolationLevel: "RepeatableRead" });
   const rows = milestones.map((m) => {
     const latest = m.submissions[0];
-    return progressRow(m, latest ? { ...latest, feedbackCount: latest._count.feedback } : null, now);
+    return progressRow(m, latest ? { ...latest, feedbackCount: latest._count.feedback } : null, now, m.grade);
   });
   return { team, rows, page, pageSize: PAGE_SIZE, total };
 }

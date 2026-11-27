@@ -9,6 +9,8 @@ const before = new Date(D.getTime() - 1000);
 const after = new Date(D.getTime() + 1000);
 const milestone: ProgressMilestone = { id: 7, title: "Prototype", dueAt: D, lateUntil: null, closedAt: null };
 const latest = (feedbackCount: number, version = 1, late = false) => ({ version, late, submittedAt: before, feedbackCount });
+// A stored F-10 grade row, draft included, as the database could return it; the board must ignore the draft.
+const f10 = (draftScore: number, releasedScore: number | null) => ({ draftScore, releasedScore });
 
 describe("F-11 unit contract", () => {
   it("TEST-11.2u gives NONE and a null latest when nothing was submitted", () => {
@@ -44,7 +46,7 @@ describe("F-11 unit contract", () => {
   });
 
   it("TEST-11.3u gives {released: false} with no score key until F-10 releases the grade", () => {
-    for (const grade of [null, { draftScore: 90, releasedScore: null }]) {
+    for (const grade of [null, f10(90, null)]) {
       const row = progressRow(milestone, latest(1), before, grade);
       expect(row.grade).toEqual({ released: false });
       expect(row.grade).not.toHaveProperty("score");
@@ -53,8 +55,8 @@ describe("F-11 unit contract", () => {
   });
 
   it("TEST-11.3u gives {released: true, score} from the released snapshot, not the newer draft", () => {
-    expect(progressRow(milestone, latest(1), after, { draftScore: 85, releasedScore: 85 }).grade).toEqual({ released: true, score: 85 });
-    expect(progressRow(milestone, latest(1), after, { draftScore: 92, releasedScore: 85 }).grade).toEqual({ released: true, score: 85 });
-    expect(progressRow(milestone, latest(1), after, { draftScore: 0, releasedScore: 0 }).grade).toEqual({ released: true, score: 0 });
+    expect(progressRow(milestone, latest(1), after, f10(85, 85)).grade).toEqual({ released: true, score: 85 });
+    expect(progressRow(milestone, latest(1), after, f10(92, 85)).grade).toEqual({ released: true, score: 85 });
+    expect(progressRow(milestone, latest(1), after, f10(0, 0)).grade).toEqual({ released: true, score: 0 });
   });
 });
