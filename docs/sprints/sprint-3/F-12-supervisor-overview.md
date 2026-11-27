@@ -12,6 +12,7 @@
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests. **D2 target: contract only**; implementation is planned for Final Delivery (13 Dec) |
 | 0.2 | 2026-11-27 | @Nuggetkub | @Earth2509 | Recorded with the RED tests (API part): the check order 401 → 403 → 400 (`state`, `page`) → fixed 404 (`team`); a malformed, unknown, unsupervised or repeated `team` is the fixed 404; the `filters` echo; a page past the end; states computed by the shared functions, then filtered and paged (§1 Dependencies); `GET /api/overview` added to the TEST-02.1 registry. The UI part (TEST-12.5c, TEST-12.1e) follows in its own PR |
+| 0.3 | 2026-11-27 | @Nuggetkub | @Earth2509 | Recorded with the RED tests (UI part): the URL query format and order; a filter change goes back to page 1; the Team options come from `GET /api/teams`; Students are sent home from `/overview`; the fixed 404 for a `team` in the URL shows "Team not found." with "Show all my teams"; a team-list error with its own retry; the display labels; AC-12.4 also measures an unfiltered first page for a Supervisor of all 20 teams (#113 review) |
 
 ## 1. Feature design
 
@@ -52,7 +53,7 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 
 ### Dependencies and scope
 - **No schema change:** it only reads data.
-- **Performance (NFR-09):** one scoped query in one snapshot. The states are computed with the shared functions (`submissionState` maps the F-09 `teamStatus`, DEC-13), then the rows are filtered and paged, so the overview can't drift from the board or the milestone page. AC-12.4 measures this design. With the demo seed scaled to 20 teams and 200 submissions, p95 must be < 500 ms on the deployed instance, measured with the SRS method (5 warm-up requests discarded, then 50 sequential requests).
+- **Performance (NFR-09):** one scoped query in one snapshot. The states are computed with the shared functions (`submissionState` maps the F-09 `teamStatus`, DEC-13), then the rows are filtered and paged, so the overview can't drift from the board or the milestone page. AC-12.4 measures this design. With the demo seed scaled to 20 teams and 200 submissions, p95 must be < 500 ms on the deployed instance, measured with the SRS method (5 warm-up requests discarded, then 50 sequential requests). Paging caps the response, not the milestones read, so the run includes an **unfiltered first page for a Supervisor assigned to all 20 seeded teams** (#113 review).
 - **Out of scope:** writes; CSV (F-13); grades in the overview (F-10 covers grade entry; the overview shows only states).
 
 ## 2. Layer specifications
@@ -66,6 +67,10 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 - **Table:** Team | Milestone (links to `/milestones/:id`) | Due (ICT) | Window | Submission | Feedback.
 - **States:** loading, empty ("Nothing matches these filters" / "No milestones yet"), error with Retry, and pagination.
 - **Stale responses:** a response for an older filter set must never replace the current one.
+- **URL (v0.3):** `/overview?team=ID&state=S&page=N`, always written in the order team, states (in the `filters` order), page. `page` is left out on page 1, and any filter change goes back to page 1. The request uses the same query with `page` always present. A reloaded or shared URL restores the select and checkboxes. The Team options are "All my teams" plus the caller's teams from `GET /api/teams` (F-02). If that list fails to load, "Could not load your teams." and a "Retry loading teams" button appear beside the select; the table stays, and retrying the teams does not refetch the rows (#114 review).
+- **Access (v0.3):** the link and route are for Supervisors. A Student who opens `/overview` is sent to `/` without an overview request (the API would answer 403 anyway).
+- **Fixed 404 (v0.3):** a `team` in the URL that the API answers with the fixed 404 shows "Team not found." and a "Show all my teams" button that removes `team`. Other errors show "Could not load the overview." with Retry.
+- **Labels (v0.3):** submission Late / Submitted / Missing / Not due; feedback Awaiting feedback / Feedback received / "—"; window Open / Late window / Closed; the `AWAITING` checkbox reads "Awaiting feedback". The rows stack below 640 px like the F-11 board.
 
 ## 3. Acceptance criteria
 
@@ -86,8 +91,8 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 | TEST-12.2i | 12.2 | I | Each filter combination; a repeated value; 52 matching rows | Matching rows and totals; the `filters` echo; pages of 50 and 2, then an empty page with the same total |
 | TEST-12.3i | 12.3 | I | Unauthorized or invalid callers and filters | 401, 403 (also with a bad `state`), fixed 404 for B, unknown, malformed or repeated `team`, 400 `fields.state` / `fields.page` (also with B's ID); no B data |
 | TEST-12.4p | 12.4 | Performance script | Scaled seed on Cloud Run | p95 report with method, revision and date |
-| TEST-12.5c | 12.5 | C | Deferred or failing fetch; fast filter switch | States shown; no stale replacement; URL sync |
-| TEST-12.1e | 12.1, 12.2 | E | Seeded Supervisor with two teams | Filter to Missing, open a row, go back with the filter kept |
+| TEST-12.5c | 12.5 | C | Deferred or failing fetch; fast filter switch; a filtered or shared URL; the fixed 404; a Student; a failing team list | States shown; no stale replacement; URL sync in the fixed order, page 1 after a filter change; Team not found with Show all my teams; Student sent home; team-list error with its own retry, table kept |
+| TEST-12.1e | 12.1, 12.2 | E | Seeded Supervisor with two teams (E2E Overview Alpha and Beta, in the one E2E course) | Filter to Missing, open a row, go back with the filter kept |
 
 ## 5. Definition of Done
 

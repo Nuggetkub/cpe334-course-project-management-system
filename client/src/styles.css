@@ -146,7 +146,13 @@ textarea[aria-invalid="true"] { border-color: var(--danger); }
 /* anywhere (unlike break-word) also lowers the cell's min-content width, so a long title wraps in the table. */
 .progress-table td { overflow-wrap: anywhere; }
 .badge-late { padding: 2px 6px; border: 1px solid var(--border); border-radius: 6px; font-weight: 600; }
-nav[aria-label="Progress pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+nav[aria-label="Progress pages"], nav[aria-label="Overview pages"] { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+/* F-12 overview filters: the board's table styles are reused for the rows. */
+.overview-filters { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-start; margin-block: 12px; }
+.overview-filters fieldset { display: flex; flex-wrap: wrap; gap: 8px 16px; border: 1px solid var(--border); border-radius: 8px; margin: 0; }
+.overview-teams-error { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.overview-filters fieldset label { display: inline-flex; gap: 6px; align-items: center; }
+.overview-filters select, .overview button { min-height: 44px; box-sizing: border-box; }
 @media (max-width: 640px) {
   .progress-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .progress-table, .progress-table tbody { display: block; }
