@@ -7,6 +7,7 @@
 | Version | Date | Author | Reviewer | Change |
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-27 | @Nuggetkub | @Earth2509 | Contract and planned tests for the scaled seed and the timing script, recorded before any code. The measurement itself runs on the deployed `v1.0.0` |
+| 0.2 | 2026-11-28 | @Nuggetkub | @Earth2509 | #118 review: the seed checks every reserved row before writing and aborts on any conflict, all in one transaction (§2); the script checks the exact 20 Perf teams, 200 submissions and 60 feedback entries before timing (§3); TEST-P.2i and TEST-P.4i add the conflict and wrong-workload cases |
 
 ## 1. What is measured
 
@@ -33,6 +34,13 @@ A new step in the existing seed entry (`npm run prisma:seed`). It stays **off** 
   - 10 milestones per team ("Perf milestone 01" to "10"): 5 already due, 5 due in the future.
   - **200 submissions** (10 per team): "Perf milestone 01" has versions 1 to 5, and milestones 02 to 06 have version 1. On 3 of each team's 6 submitted milestones (01, 02, 03), the latest version has one feedback entry: **60 feedback entries**, so the overview shows Awaiting and Received.
 - **Idempotent:** existing rows are found by their natural keys (email, course and team name, team and milestone title, milestone and version) and never changed. A second run writes nothing. Nothing is ever deleted.
+- **Conflicts abort (#118 review):** a natural-key match alone doesn't prove a row is a Perf fixture. Before writing anything, the step reads every reserved row and checks that it matches the fixture exactly:
+  - a reserved email belongs to a user with the expected role (Supervisor or Student) and name;
+  - a Perf team is in `CPE334-DEMO`; its only Supervisor is the Perf Supervisor and its only Student is its own Perf Student;
+  - a Perf Student is on no other team, and the Perf Supervisor supervises no team outside the Perf set;
+  - a Perf team has no milestones outside "Perf milestone 01" to "10"; a matched milestone has the expected due-date side (past or future); its submissions are the expected versions by its team's Perf Student, and feedback sits only on the expected latest versions, by the Perf Supervisor.
+
+  If any check fails, the step **aborts without writing** and prints a safe message that names the rule (for example "a reserved Perf team has another member"), never the row's data. The checks and all writes run in **one database transaction**, so a failure part-way leaves no partial data. Rows that match are kept, so a rerun on valid fixtures still writes nothing, and a run after an interrupted one only adds what is missing.
 - **Isolation:** the demo accounts are not assigned to any Perf team, so their pages don't change. The Perf Students are all assigned, so they never appear in F-07's "Available student" list.
 - **Logging:** the same safe messages as the demo seed (`seedFailureMessage`), with no inputs, hashes or passwords.
 
@@ -48,7 +56,14 @@ A new step in the existing seed entry (`npm run prisma:seed`). It stays **off** 
   4. Find E1's team ("Perf Team 01") and E2's milestone ("Perf milestone 01") through the API.
   5. Run §1 for E1, E2 and E3, in that order.
   6. Sign out.
-- **Checks before timing:** E3's first page has 50 rows and `total` 200, which proves the caller sees all 20 teams. E2 has 5 versions. If either check fails, the script stops with no result.
+- **Checks before timing (#118 review):** `total` 200 counts milestones, not submissions, and doesn't show which teams the caller sees. So the script checks the workload directly, with untimed requests:
+  1. **Teams:** `GET /api/teams` returns exactly the 20 teams "Perf Team 01" to "Perf Team 20", with no other team.
+  2. **Overview:** all 4 pages of `GET /api/overview` give 200 rows, `total` 200 on each page, 10 rows per team, and only those 20 team IDs.
+  3. **Submissions:** for each milestone that has a submission, `GET /api/milestones/:id/submissions` is read; the versions add up to **200**, 10 per team, with 5 on "Perf milestone 01" and 1 on each of 02 to 06.
+  4. **Feedback:** the overview shows **60** milestones with feedback received, 3 per team.
+  5. **E2:** the E2 milestone has 5 versions.
+
+  If any check fails, the script stops with exit code 2 and writes no timings and no PASS. The report records that the checks passed.
 - **Output:** a Markdown report and a JSON file. They hold the date (ICT), base URL, `commit`, cold-start sample, and for each endpoint n, min, median, p95, max, and PASS or FAIL. **Never** the password, the token or any response body. Exit code: 0 for all PASS, 1 for any FAIL, 2 for an error.
 - **Revision:** the person running it adds the Cloud Run revision from the Console to the report. The script can't read it without GCP access.
 
@@ -61,17 +76,17 @@ The seed writes to the live database, so it runs **once, by @Nuggetkub**, after 
 | AC | Given | When | Then |
 | --- | --- | --- | --- |
 | AC-P.1 | An empty test database with the demo seed | The perf step runs with the flag on; then again | 1 Supervisor on 20 teams, 20 Students, 200 milestones, 200 submissions, 60 feedback entries; the second run writes nothing; demo users see no Perf data |
-| AC-P.2 | The flag unset or `false`; a bad flag value; a bad password; no `CPE334-DEMO` course | The perf step runs | Nothing written; a safe error for the bad inputs and the missing course; no course created |
+| AC-P.2 | The flag unset or `false`; a bad flag value; a bad password; no `CPE334-DEMO` course; a reserved row that doesn't match the fixture (wrong role, extra member, other Supervisor, extra milestone), alone or after part of the data exists | The perf step runs | Nothing written, or the database left exactly as before the run (no partial data); a safe error naming the rule; no course created |
 | AC-P.3 | 50 known durations | The statistics are computed | min, median and max, and p95 as the 48th sorted value; PASS only when p95 < 500 ms |
-| AC-P.4 | The app running locally with the perf seed | The script runs against it | A report with E1–E3, 50 timed samples each, the checks passed, the cold-start sample apart, and no password or token in the output |
+| AC-P.4 | The app running locally with the perf seed | The script runs against it | A report with E1–E3, 50 timed samples each, the workload checks passed, the cold-start sample apart, and no password or token in the output. When the overview still totals 200 but the team set, the submission count or the feedback count is wrong, the script stops with exit code 2 and no PASS |
 | AC-12.4 | The deployed `v1.0.0` with the perf seed | @Nuggetkub runs the script | p95 < 500 ms for E1, E2 and E3; cold start reported separately; the report has the method, `commit`, revision and date |
 
 | Test ID | AC | Level | Expected |
 | --- | --- | --- | --- |
 | TEST-P.1i | P.1 | I (`cpms_test`) | Exact counts; idempotent; demo Supervisors' overview and team list unchanged |
-| TEST-P.2i | P.2 | I | No writes in each case; the messages match the demo seed's style; course count unchanged |
+| TEST-P.2i | P.2 | I | No writes in each case; the messages match the demo seed's style; course count unchanged. Conflict cases: each incompatible match aborts, and a conflict found after other Perf rows were checked leaves the row counts of every table unchanged (rollback) |
 | TEST-P.3u | P.3 | U | The nearest-rank p95, including ties and unsorted input; the PASS/FAIL boundary at 499 ms and 500 ms |
-| TEST-P.4i | P.4 | I (the app on a local port) | The report as in AC-P.4; the script stops when E3's total isn't 200 |
+| TEST-P.4i | P.4 | I (the app on a local port) | The report as in AC-P.4. The script stops with exit 2 and no PASS when: E3's total isn't 200; the total is 200 but one Perf team is swapped for another team; the total is 200 but one submission is missing; the feedback count is wrong |
 | TEST-12.4p | 12.4 | Performance (deployed) | The run as in AC-12.4, attached to #87 and recorded in the traceability matrix |
 
 ## 6. Definition of Done
