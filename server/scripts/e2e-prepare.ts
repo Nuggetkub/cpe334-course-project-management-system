@@ -97,6 +97,21 @@ try {
   await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 graded milestone", dueAt: new Date(Date.now() + 3 * day) } });
   // F-10 v0.5: a second milestone for the stale-confirmation journey, so it never touches the one above.
   await prisma.milestone.create({ data: { teamId: gradeTeam.id, createdBy: supervisor.id, title: "F10 stale release milestone", dueAt: new Date(Date.now() + 4 * day) } });
+  // F-12: its own Supervisor and two teams, so no other journey adds rows to this overview. They stay in
+  // the one E2E course, because F-07 creates teams only while exactly one course exists (AS-01).
+  // Alpha has a Missing (past due, nothing submitted) and a Not due milestone; Beta has a submission awaiting feedback.
+  const overviewSupervisor = await prisma.user.create({ data: { email: "overview@e2e.test", name: "E2E Overview Supervisor", role: "SUPERVISOR", passwordHash } });
+  const student6 = await prisma.user.create({ data: { email: "student6@e2e.test", name: "E2E Student 6", role: "STUDENT", passwordHash } });
+  const alpha = await prisma.team.create({ data: { courseId: course.id, name: "E2E Overview Alpha" } });
+  const beta = await prisma.team.create({ data: { courseId: course.id, name: "E2E Overview Beta" } });
+  await prisma.teamMember.create({ data: { studentId: student6.id, teamId: beta.id } });
+  await prisma.supervisorTeam.createMany({ data: [alpha, beta].map((t) => ({ supervisorId: overviewSupervisor.id, teamId: t.id })) });
+  await prisma.milestone.createMany({ data: [
+    { teamId: alpha.id, createdBy: overviewSupervisor.id, title: "F12 missing milestone", dueAt: new Date(Date.now() - 2 * day) },
+    { teamId: alpha.id, createdBy: overviewSupervisor.id, title: "F12 not due milestone", dueAt: new Date(Date.now() + 6 * day) },
+  ] });
+  const awaiting = await prisma.milestone.create({ data: { teamId: beta.id, createdBy: overviewSupervisor.id, title: "F12 awaiting milestone", dueAt: new Date(Date.now() + 3 * day) } });
+  await prisma.submission.create({ data: { milestoneId: awaiting.id, version: 1, title: "F12 work", link: "https://example.com/f12-v1", submittedBy: student6.id, submittedAt: new Date() } });
   console.log(`[e2e] schema "${E2E_SCHEMA}" reset, migrated and seeded`);
 } finally {
   await prisma.$disconnect();
