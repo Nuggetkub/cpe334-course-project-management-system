@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.7 · 2026-11-27 · F-11 phase 2 done (#111). (v0.6: 2026-11-27, `staging/sprint-3` created; D-09 done (#109).) (v0.5: 2026-11-26, D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released.) (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
+Version 0.8 · 2026-11-27 · F-12 done (#113, #114). (v0.7: 2026-11-27, F-11 phase 2 done (#111).) (v0.6: 2026-11-27, `staging/sprint-3` created; D-09 done (#109).) (v0.5: 2026-11-26, D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released.) (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 
@@ -32,7 +32,7 @@ For each feature, record the contract, test cases, implementation evidence and p
 
 ## Remaining work to 13 December
 
-Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `8bb3f3c` (after #111). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `793250e` (after #114). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
@@ -47,9 +47,9 @@ Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `8bb3f
 | D-14 Manage milestone panel layout (Minor) | Open (found in D5-04/D5-05) | Stack labels above fields; client layout check; deployed re-check | @Nuggetkub; review @Earth2509; 3 Dec |
 | D-09 CI secret scan (NFR-12) | **Done** 27 Nov: #109 → `1544ca0` (integrated); seeded fake secrets fail the scan | Reaches `main` in `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | F-11 phase 2, AC-11.3 | **Done** 27 Nov: #111 → `8bb3f3c` (integrated; R-111) | Deployed check with `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
-| F-12 overview and filters (#85) | Contract approved (#93) | Tests first, implementation, review, through `staging/sprint-3` | @Nuggetkub; 2 Dec |
+| F-12 overview and filters (#85) | **Done** 27 Nov: API #113 → `b654dde`, UI #114 → `793250e` (integrated; R-113, R-114) | AC-12.4 timing and the deployed check with `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | F-13 CSV export (#86) | Contract v0.2 approved (#97) | Tests first, implementation on top of F-12 and `studentGrade`, review | @Earth2509; 5 Dec |
-| NFR-09 performance (AC-12.4) | Not measured | Scaled seed on Cloud Run; TEST-12.4p report with method, revision and date | @Nuggetkub; 6 Dec |
+| NFR-09 performance (AC-12.4) | Not measured; F-12 code integrated | Scaled seed on Cloud Run, including an unfiltered first page for a Supervisor of all 20 teams (#113 review); TEST-12.4p report with method, revision and date | @Nuggetkub; 6 Dec |
 | SR-01 audit (NFR-10), NFR-08 walkthrough | Planned | E2E audit of every form and list; timed fresh-clone walkthrough by the teammate | @Earth2509; 7 Dec |
 | UAT re-tests | Sprint 1 accepted (`v0.3.0`) | Agree re-test cases for the Sprint 2/3 journeys with the UAT partner; record results and decisions | Both; 8–9 Dec |
 | Final release `v1.0.0` | — | Release PR from `staging/sprint-3`, regression, tag, deploy, deployed checks | @Nuggetkub; review @Earth2509; 10 Dec |
