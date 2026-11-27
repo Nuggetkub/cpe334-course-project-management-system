@@ -18,7 +18,8 @@ trap 'rm -rf "$WORK"' EXIT
 
 fail() { echo "FAIL: $*"; exit 1; }
 
-random_alnum() { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c "$1"; }
+# `tr` gets SIGPIPE when `head` has enough bytes; that is expected, so it must not trip pipefail.
+random_alnum() { { LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null || true; } | head -c "$1"; }
 
 # run_case <name> <dir> <expected exit> [rule id that must be reported]
 run_case() {
