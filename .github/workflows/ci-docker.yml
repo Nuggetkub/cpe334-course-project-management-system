@@ -48,6 +48,11 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Secret scan (NFR-12, D-09)
+        id: secret-scan
+        run: |
+          bash scripts/secret-scan.test.sh
+
       - name: Check deployment tooling offline
         id: deploy-tools
         run: |
@@ -89,6 +94,7 @@ jobs:
       - name: Write verification summary
         if: ${{ always() }}
         env:
+          SECRET_SCAN_OUTCOME: ${{ steps.secret-scan.outcome }}
           DEPLOY_TOOLS_OUTCOME: ${{ steps.deploy-tools.outcome }}
           SERVER_OUTCOME: ${{ steps.server.outcome }}
           CLIENT_OUTCOME: ${{ steps.client.outcome }}
