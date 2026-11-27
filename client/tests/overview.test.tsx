@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
@@ -46,7 +46,7 @@ describe("F-12 supervisor overview page", () => {
     const fetchMock = open(() => overview([]), "/overview", "STUDENT");
     expect(await screen.findByRole("link", { name: "Progress" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Overview" })).not.toBeInTheDocument();
-    expect(where()).toBe("/");
+    await waitFor(() => expect(where()).toBe("/")); // <Navigate> redirects in an effect, after the shell renders
     expect(overviewCalls(fetchMock)).toEqual([]);
   });
 
