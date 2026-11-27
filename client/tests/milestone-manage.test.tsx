@@ -31,6 +31,24 @@ beforeEach(() => sessionStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("F-08 manage milestone", () => {
+  // D-14 (contract v0.5): the panel uses the shared stacked form, so each label sits above its field.
+  // jsdom has no layout, so this checks the structure; TEST-08.8e measures the real layout in Chromium.
+  it("TEST-08.8c lays the Manage panel out as the shared stacked form, each label directly before its field", async () => {
+    open("SUPERVISOR", { lateUntil: "2026-11-28T12:00:00.000Z" });
+    await screen.findByLabelText("Milestone title");
+    const panel = screen.getByRole("heading", { name: "Manage milestone" }).closest("section")!;
+    const form = panel.querySelector("form")!;
+    expect(form).toHaveClass("milestone-form");
+    const fieldset = form.querySelector("fieldset")!;
+    for (const [label, id] of [["Milestone title", "manage-title"], ["Milestone description", "manage-description"],
+      ["Due date and time (Asia/Bangkok)", "manage-due"], ["Late window end (Asia/Bangkok)", "manage-late"]] as const) {
+      const field = screen.getByLabelText(label);
+      expect(field.id).toBe(id);
+      expect(field.parentElement).toBe(fieldset);
+      expect(field.previousElementSibling).toHaveTextContent(label);
+    }
+  });
+
   it("TEST-08.8c sends only changed fields, shows busy state, then the saved milestone", async () => {
     let respond!: (r: Response) => void;
     const fetchMock = open("SUPERVISOR", {}, () => new Promise<Response>((resolve) => { respond = resolve; }));

@@ -57,7 +57,7 @@ export function ManageMilestone({ milestone, onSaved }: { milestone: Milestone; 
   const fieldError = (key: string) => fields[key] && <p className="field-error" id={`manage-${key}-error`} role="alert">{fields[key]}</p>;
   return <section aria-labelledby="manage-heading">
     <h3 id="manage-heading">Manage milestone</h3>
-    <form onSubmit={save} noValidate>
+    <form className="milestone-form" onSubmit={save} noValidate>
       {busy && <p role="status">Saving…</p>}
       {error && <p role="alert">{error}</p>}
       {fieldError("body")}
