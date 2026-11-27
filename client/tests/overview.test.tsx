@@ -18,11 +18,12 @@ function Where() {
   const location = useLocation();
   return <div data-testid="where">{location.pathname + location.search}</div>;
 }
-function open(handler: Handler, path = "/overview", role: "STUDENT" | "SUPERVISOR" = "SUPERVISOR") {
+function open(handler: Handler, path = "/overview", role: "STUDENT" | "SUPERVISOR" = "SUPERVISOR",
+  teamsHandler: () => Response = () => Response.json({ teams })) {
   sessionStorage.setItem(TOKEN_KEY, "token");
   const fetchMock = vi.fn((url: string) => {
     if (url.endsWith("/api/auth/me")) return Promise.resolve(Response.json({ user: { id: 9, name: "Pim Supervisor", role } }));
-    if (url.endsWith("/api/teams")) return Promise.resolve(Response.json({ teams }));
+    if (url.endsWith("/api/teams")) return Promise.resolve(teamsHandler());
     return Promise.resolve(handler(url));
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -144,6 +145,25 @@ describe("F-12 supervisor overview page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("link", { name: "Milestone 1" })).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("TEST-12.5c shows a team-list error beside the select, keeps the table, and Retry restores the options", async () => {
+    let teamCalls = 0;
+    const fetchMock = open(() => overview([row(1)]), "/overview", "SUPERVISOR",
+      () => (teamCalls++ === 0 ? Response.json({}, { status: 500 }) : Response.json({ teams })));
+    expect(await screen.findByRole("link", { name: "Milestone 1" })).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load your teams.");
+    const select = screen.getByLabelText("Team");
+    expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(["All my teams"]);
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument(); // the overview itself is fine
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry loading teams" }));
+    expect(await within(select).findByRole("option", { name: "Team A2" })).toBeInTheDocument();
+    expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(["All my teams", "Team A", "Team A2"]);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Milestone 1" })).toBeInTheDocument(); // the table stayed throughout
+    expect(teamCalls).toBe(2);
+    expect(overviewCalls(fetchMock)).toEqual(["/api/overview?page=1"]); // retrying the teams never refetches the rows
   });
 
   it("TEST-12.5c answers the fixed 404 for a team in the URL with a way back to all teams", async () => {
