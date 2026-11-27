@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Baseline:** [SRS v0.4](srs.md) · **Features:** [features.md](features.md) · **Changes:** [changes.md](changes.md) · **Issues:** #2, #87 · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `1544ca0`)
+**Baseline:** [SRS v0.4](srs.md) · **Features:** [features.md](features.md) · **Changes:** [changes.md](changes.md) · **Issues:** #2, #87 · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `8bb3f3c`)
 
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
@@ -24,6 +24,7 @@
 | 0.18 | 2026-11-26 | @Nuggetkub | @Earth2509 | PR #105 review: D5-12 scoped to what was observed (AC-07.1, AC-07.2, FR-07); registry runs scoped: R-100 is the Sprint 2 routes, R-S4 adds the F-11 progress route (AC-02.1, NFR-02) |
 | 0.19 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and checked on the deployed app: result set R-S5 (release regression and deployed checks D6-00 to D6-06); F-11 phase 1 accepted. AC-11.2, AC-11.4 and AC-11.6 rows state what the deployed check covers and what only the automated tests cover |
 | 0.20 | 2026-11-27 | @Nuggetkub | @Earth2509 | D-09: CI secret scan integrated (#109); NFR-12 fully verified; NFR-11 cites the actual workflow file |
+| 0.21 | 2026-11-27 | @Nuggetkub | @Earth2509 | F-11 phase 2 integrated (#111): result set R-111; AC-11.3 PASS; FR-22 fully verified on integrated code (deployed check with the Final release); BR-15 adds F-11 phase 2 |
 
 ## ID conventions
 
@@ -52,6 +53,7 @@ A contract author may split or renumber AC, and updates this file **in the same 
 | **R-S4** | `staging/sprint-2` at `107b82a` (`v0.5.0` + F-11 phase 1, #94; later released as `v0.6.0`, R-S5) | CI run [45811793125](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45811793125) on #94's head `7817401`, whose tree is identical to `107b82a`; local run on `7817401` | Server 346/346, client 89/89 (CI and local), both builds pass, E2E 15/15 (local) |
 | **R-S5** | `v0.6.0` = `main` `6464f87` (#106; staging head `eca4c2f`, identical tree), deployed as revision `cpms-00010-6vv` | Release PR CI [45838967013](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45838967013) on `eca4c2f`; local regression on `eca4c2f`; deploy run [45843344608](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45843344608) (smoke test); deployed checks D6-00 to D6-06 on 26 Nov ([#87](https://github.com/Nuggetkub/cpe334-course-project-management-system/issues/87#issuecomment-7195860387)) | Server 346/346, client 89/89 (CI and local), both builds pass, E2E 15/15 (local), no schema drift; smoke test PASS; deployed checks **7/7 PASS** for the checks performed (what each D6 check covers is stated on its AC row) |
 | **R-94** | PR #94 head `3b72786` (F-11 phase 1, based on staging `2d5364e`) | CI run [45586183430](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45586183430); local Playwright | Server 260/260, client 69/69, E2E 12/12 |
+| **R-111** | PR #111 head `ffce81f` (F-11 phase 2, based on staging `5abfe6b`), integrated at staging `8bb3f3c` with the same tree | CI run [45968262769](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45968262769); local regression on `ffce81f` | Server 348/348, client 89/89 (CI and local), both builds pass, secret scan PASS, E2E 15/15 (local) |
 
 No test in these sets was skipped. The one failure is disclosed in R-101 (flaky TEST-05.1e sign-in wait, D-11, passed on rerun; fixed by #102, R-102). R-S2 holds the feature-level results. R-100 is the run that executed the registry with every Sprint 2 protected route (before F-11); R-S4 is the first run with the F-11 route `GET /api/teams/:teamId/progress` in it, so R-S4 covers the full registry for everything integrated. R-S3 is the accepted Sprint 2 release: the full regression on the release commit plus the deployed checks; D5-xx IDs refer to those checks. R-S5 is the D2 candidate `v0.6.0` in the same way; D6-xx IDs refer to its deployed checks.
 
@@ -149,7 +151,7 @@ Full wording, inputs and expected results are in each contract. Sprint 2 is **ac
 |---|---|---|---|---|---|
 | AC-11.1 | One row per own-team milestone, in due order, same window and team status as F-04 | FR-22, DEC-13 | TEST-11.1i, 11.1e → `server/tests/progress.test.ts`, `e2e/progress.spec.ts` | Yes | PASS R-94, R-S4, R-S5; deployed D6-01 |
 | AC-11.2 | Latest version and its own feedback status: AWAITING, then RECEIVED | FR-22, BR-10 | TEST-11.2u, 11.2i → `progress-units.test.ts`, `progress.test.ts` | Yes | PASS R-94, R-S4, R-S5. Deployed D6-01 shows AWAITING only (Version 2, "Awaiting feedback"); the change to RECEIVED is verified by TEST-11.2u/11.2i, not on the deployed app |
-| AC-11.3 | Released grade only after release; no `score` key before (phase 2) | FR-22, BR-15, DEC-06 | TEST-11.3u, 11.3i → not written (needs F-10) | No | Planned |
+| AC-11.3 | Released grade only after release; no `score` key before (phase 2) | FR-22, BR-15, DEC-06 | TEST-11.3u, 11.3i → `progress-units.test.ts`, `progress.test.ts`; Grade checks in TEST-11.1i, 11.6c, 11.1e (contract v0.6) | Yes | PASS R-111 (integrated on `staging/sprint-3`, `8bb3f3c`). Not released yet: deployed check planned on the Final release |
 | AC-11.4 | 401 then the fixed 404 for hidden or missing scope, also inside the snapshot | BR-03, BR-04, NFR-03 | TEST-11.4i, 11.4bi → `progress.test.ts` | Yes | PASS R-94, R-S4, R-S5. Deployed D6-04 shows only the UI scope: Team B's Progress board lists none of Team A's milestones. The 401, the fixed 404 and the access-loss case are verified by TEST-11.4i/11.4bi, not by D6-04. Route added to the TEST-02.1 registry (`c24db4b`, D-10 resolved) |
 | AC-11.5 | 50 + 1 rows in dueAt/id order; invalid page → 400 after ownership | NFR-09, NFR-10 | TEST-11.5i → `progress.test.ts` | Yes | PASS R-94, R-S4, R-S5 |
 | AC-11.6 | Loading, empty, error with Retry, no-team; no horizontal overflow | NFR-10 | TEST-11.6c, 11.6e → `client/tests/progress.test.tsx`, `e2e/progress.spec.ts` | Yes | PASS R-94, R-S4, R-S5. Deployed D6-05 is a visual layout check at 390 px only; the loading, empty, Retry, no-team and overflow assertions are TEST-11.6c/11.6e |
@@ -193,7 +195,7 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | FR-19 | F-06 | 1 | AC-06.3, 06.5 | TEST-06.3, 06.5a–c, 06.1e | `feedback.test.ts`; `feedback.test.tsx`; `feedback.spec.ts` | PASS R-S1, R-S2, R-S3 |
 | FR-20 | F-10 | 2 | AC-10.1, 10.3, 10.5 | TEST-10.1u/i/bi/ci, 10.3i/bi/di; 10.5c, 10.1e | `grades(-units/-concurrency).test.ts`; `grade.test.tsx`; `grades.spec.ts` | PASS R-S2, R-101, R-S3; deployed D5-07, D5-08 |
 | FR-21 | F-10 | 2 | AC-10.2, 10.3 | TEST-10.1u, 10.2i, 10.3i/bi/di; 10.1e | `grades(-units/-concurrency).test.ts`; `grades.spec.ts` | PASS R-S2, R-101, R-S3; deployed D5-07, D5-08, D5-10, D5-11 |
-| FR-22 | F-11 | 3 | AC-11.1, 11.2, 11.5, 11.6 (phase 1); AC-11.3 (phase 2) | TEST-11.1i/e, 11.2u/i, 11.5i, 11.6c/e; 11.3u/i | `progress(-units).test.ts`; `progress.test.tsx`; `progress.spec.ts` | **Partly verified**: phase 1 PASS R-94, R-S4, R-S5; deployed D6-01 to D6-05 (`v0.6.0`); AC-11.3 **planned** |
+| FR-22 | F-11 | 3 | AC-11.1, 11.2, 11.5, 11.6 (phase 1); AC-11.3 (phase 2) | TEST-11.1i/e, 11.2u/i, 11.5i, 11.6c/e; 11.3u/i | `progress(-units).test.ts`; `progress.test.tsx`; `progress.spec.ts` | **Fully verified** on integrated code: phase 1 PASS R-94, R-S4, R-S5, deployed D6-01 to D6-05 (`v0.6.0`); phase 2 (AC-11.3) PASS R-111, integrated on `staging/sprint-3` (`8bb3f3c`). Phase 2 is released with `v1.0.0` and checked on the deployed app then |
 | FR-23 | F-12 | 3 | AC-12.1 | TEST-12.1u/i/e | Not written | **Planned** (Final) |
 | FR-24 | F-12 | 3 | AC-12.2, 12.5 | TEST-12.2i, 12.5c, 12.1e | Not written | **Planned** (Final) |
 | FR-25 | F-13 | 3 | AC-13.1–13.5 | TEST-13.1i/e, 13.2i, 13.3i/u, 13.4u, 13.5c | Not written | **Planned** (Final) |
@@ -216,7 +218,7 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | BR-12 | F-08 (window); F-09 (Late) | 2 | AC-08.3, 09.2 | TEST-08.2u, 08.3i, 09.2u/i | `milestones-lifecycle(-units).test.ts`, `resubmission(-units).test.ts` | PASS R-S2, R-S3 |
 | BR-13 | F-08 | 2 | AC-08.2 | TEST-08.2u/i | `milestones-lifecycle(-units).test.ts` | PASS R-S2, R-S3 |
 | BR-14 | F-08 | 2 | AC-08.7 | TEST-08.7i (`DELETE` → 404, row kept) | `milestones-lifecycle.test.ts` | PASS R-S2, R-S3 |
-| BR-15 | F-10; F-11 phase 2; F-13 | 2 → 3 | AC-10.1–10.3; 11.3; 13.2 | TEST-10.1u/ci, 10.2i, 10.3i/bi; 11.3u/i; 13.2i | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts` | F-10 PASS R-S2, R-S3; deployed D5-07, D5-08. F-11 phase 2 and F-13 **planned**; F-11 phase 1 returns no grade at all (TEST-11.1i) |
+| BR-15 | F-10; F-11 phase 2; F-13 | 2 → 3 | AC-10.1–10.3; 11.3; 13.2 | TEST-10.1u/ci, 10.2i, 10.3i/bi; 11.3u/i; 13.2i | `server/tests/grades-units.test.ts`, `grades.test.ts`, `grades-concurrency.test.ts`; `progress-units.test.ts`, `progress.test.ts` | F-10 PASS R-S2, R-S3; deployed D5-07, D5-08. F-11 phase 2 PASS R-111 (integrated): no `score` key before the release, a newer draft never shown. F-13 **planned** |
 | BR-16 | F-07 | 2 | AC-07.3, 07.4 | TEST-07.3i, 07.4i, 07.4bi (held lock) | `team-management.test.ts` | PASS R-S2, R-S3 |
 
 ### Non-functional requirements
@@ -238,17 +240,17 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 
 ## Coverage
 
-**Fully verified** means every AC of the requirement has run and passed on integrated code (R-S1 to R-S5). **Partly verified** means some of its verification passed and some is still in a PR, missing or planned; the row says which part.
+**Fully verified** means every AC of the requirement has run and passed on integrated code (R-S1 to R-S5, R-111). **Partly verified** means some of its verification passed and some is still in a PR, missing or planned; the row says which part.
 
 | Set | Total | Fully verified | Partly verified | Planned | Retired |
 |---|---|---|---|---|---|
-| FR | 25 | 21: FR-01 to FR-21 | 1: FR-22 (phase 1 released and accepted in `v0.6.0`, R-S5; AC-11.3 planned) | 3: FR-23, FR-24, FR-25 | 0 |
-| BR | 16 | 14: BR-01 to BR-06, BR-08 to BR-14, BR-16 | 1: BR-15 (F-10 released and verified; F-11 phase 2 and F-13 planned) | 0 | 1: BR-07 |
+| FR | 25 | 22: FR-01 to FR-22 (FR-22 phase 2 integrated, R-111; released with `v1.0.0`) | 0 | 3: FR-23, FR-24, FR-25 | 0 |
+| BR | 16 | 14: BR-01 to BR-06, BR-08 to BR-14, BR-16 | 1: BR-15 (F-10 released and verified; F-11 phase 2 integrated, R-111; F-13 planned) | 0 | 1: BR-07 |
 | NFR | 12 | 10: NFR-01 to NFR-07, NFR-08 (D1 walkthrough; re-run planned), NFR-11, NFR-12 (CI secret scan integrated, #109) | 1: NFR-10 (F-12/F-13 and the SR-01 audit planned) | 1: NFR-09 | 0 |
 
 **Uncovered or partly covered at the D2 checkpoint:**
 - **Sprint 2:** none. F-07 to F-10 are released as `v0.5.0` and accepted (R-S3, deployed checks 13/13 PASS).
-- **Sprint 3:** FR-22's AC-11.3 (needs F-10), FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final. F-11 phase 1 is released as `v0.6.0` and accepted (R-S5) (DEC-15).
+- **Sprint 3:** FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final. F-11 phase 1 is released as `v0.6.0` and accepted (R-S5) (DEC-15); phase 2 (AC-11.3) is integrated (#111, R-111) and not released yet.
 - **Open gaps from the change register:** D-14 (Minor: Manage milestone panel layout). D-09 (integrated, #109), D-10 and D-11 are resolved.
 - **Re-runs planned before Final:** NFR-07 persistence on each new release, NFR-08 walkthrough, the NFR-10 SR-01 audit, the NFR-12 manual TEST-SR2.1 (client bundle).
 
@@ -280,6 +282,7 @@ Every baseline FR, BR and NFR still maps to a feature or system responsibility a
 | 2026-11-25 | Grade draft and released snapshot; shared `studentGrade(row)` | F-10 contract v0.2 (#96) | AC-10.1 to 10.3, 11.3, 13.2 |
 | 2026-11-25 | F-11 phase 1 omits the grade; DEC-15 release path | F-11 contract v0.3 (#93) | AC-11.3 planned; F-11 phase 1 integrated after `v0.5.0` (R-S4), released and accepted with `v0.6.0` (R-S5) |
 | 2026-11-25 | F-12 fixed 404 for an unsupervised team filter; F-13 published-only export | #93, #97 | AC-12.3, AC-13.2, AC-13.3 |
+| 2026-11-27 | F-11 phase 2: the board shows F-10's released grade; phase 1 omission checks replaced | F-11 contract v0.6 (#111) | AC-11.3 PASS R-111; TEST-11.1i, 11.6c, 11.1e revised |
 | 2026-11-25 | A grade release names the confirmed draft (`expectedScore`; 409 `GRADE_DRAFT_CHANGED`) | F-10 contract v0.5, PR #101 review | AC-10.3, AC-10.5; TEST-10.3di added, TEST-10.3bi (a) changed |
 
 Later changes are added here with the PR that approved them.
