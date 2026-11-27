@@ -12,6 +12,7 @@ import { submissionsRouter } from "./submissions/routes.js";
 import { feedbackRouter } from "./feedback/routes.js";
 import { progressRouter } from "./progress/routes.js";
 import { gradesRouter } from "./grades/routes.js";
+import { overviewRouter } from "./overview/routes.js";
 
 export interface AppOptions {
   /** Test-only clock injection, shared with F-05. Production uses server time. */
@@ -56,6 +57,7 @@ export function createApp(options: AppOptions = {}) {
   app.use("/api/auth", authRouter);
   app.use("/api/teams/:teamId/milestones", teamMilestonesRouter);
   app.use("/api/teams/:teamId/progress", progressRouter);
+  app.use("/api/overview", overviewRouter);
   app.use("/api/milestones/:milestoneId/grade", gradesRouter);
   app.use("/api/milestones/:milestoneId", submissionsRouter);
   app.use("/api/milestones", milestonesRouter);

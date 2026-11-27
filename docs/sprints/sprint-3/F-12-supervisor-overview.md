@@ -11,6 +11,7 @@
 | Version | Date | Author | Reviewer | Change |
 | --- | --- | --- | --- | --- |
 | 0.1 | 2026-11-25 | @Nuggetkub | @Earth2509 | Contract and planned tests. **D2 target: contract only**; implementation is planned for Final Delivery (13 Dec) |
+| 0.2 | 2026-11-27 | @Nuggetkub | @Earth2509 | Recorded with the RED tests (API part): the check order 401 → 403 → 400 (`state`, `page`) → fixed 404 (`team`); a malformed, unknown, unsupervised or repeated `team` is the fixed 404; the `filters` echo; a page past the end; states computed by the shared functions, then filtered and paged (§1 Dependencies); `GET /api/overview` added to the TEST-02.1 registry. The UI part (TEST-12.5c, TEST-12.1e) follows in its own PR |
 
 ## 1. Feature design
 
@@ -35,11 +36,11 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 
 ### Workflow and authorization
 
-`GET /api/overview?team=ID&state=S&page=N` runs requireAuth (401) → requireRole(SUPERVISOR) (403) → filter validation (400) → one query scoped to the caller's supervised teams (BR-02) → 200.
+`GET /api/overview?team=ID&state=S&page=N` runs requireAuth (401) → requireRole(SUPERVISOR) (403) → validation of `state` and `page` (400) → one RepeatableRead snapshot: the `team` filter is checked against the caller's supervised teams (fixed 404), then one query scoped to those teams (BR-02) → 200. A bad `state` or `page` is therefore 400 even with another team's ID, so validation never confirms a team.
 
-- **`team`:** optional. It must be one of the caller's supervised teams. An unsupervised or unknown team returns **404 with the fixed body** (DEC-10), not an empty list, so another team's existence isn't confirmed.
-- **`state`:** optional and repeatable: `LATE`, `SUBMITTED`, `MISSING`, `NOT_DUE` or `AWAITING`. `AWAITING` filters on `feedbackState`, and the others filter on `submissionState`. Repeated values are combined with OR. Any other value → 400 `fields.state`.
-- **`page`:** a positive integer, default 1, 50 rows per page.
+- **`team`:** optional. It must be one of the caller's supervised teams. An unsupervised, unknown, malformed (`abc`, `0`) or repeated `team` returns **404 with the fixed body** (DEC-10), not an empty list, so another team's existence isn't confirmed.
+- **`state`:** optional and repeatable: `LATE`, `SUBMITTED`, `MISSING`, `NOT_DUE` or `AWAITING`. `AWAITING` filters on `feedbackState`, and the others filter on `submissionState`. Repeated values are combined with OR; a value given twice counts once. Any other value (also lowercase, empty, `NONE` or `RECEIVED`) → 400 `fields.state`.
+- **`page`:** a positive integer, default 1, 50 rows per page (the F-04 `parsePage` rule). A page past the end is 200 with no rows and the filtered total.
 - **Order:** team name, then `dueAt`, then milestone `id`.
 
 | Caller | Result |
@@ -51,12 +52,12 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 
 ### Dependencies and scope
 - **No schema change:** it only reads data.
-- **Performance (NFR-09):** one scoped query plus one count. With the demo seed scaled to 20 teams and 200 submissions, p95 must be < 500 ms on the deployed instance, measured with the SRS method (5 warm-up requests discarded, then 50 sequential requests).
+- **Performance (NFR-09):** one scoped query in one snapshot. The states are computed with the shared functions (`submissionState` maps the F-09 `teamStatus`, DEC-13), then the rows are filtered and paged, so the overview can't drift from the board or the milestone page. AC-12.4 measures this design. With the demo seed scaled to 20 teams and 200 submissions, p95 must be < 500 ms on the deployed instance, measured with the SRS method (5 warm-up requests discarded, then 50 sequential requests).
 - **Out of scope:** writes; CSV (F-13); grades in the overview (F-10 covers grade entry; the overview shows only states).
 
 ## 2. Layer specifications
 
-**API:** `GET /api/overview` returns 200 `{rows, page, pageSize: 50, total, filters: {team, state}}`. Each row is `{teamId, teamName, milestoneId, title, dueAt, window, submissionState, feedbackState, latestVersion}`.
+**API:** `GET /api/overview` returns 200 `{rows, page, pageSize: 50, total, filters: {team, state}}`. `total` counts the filtered rows. `filters.team` is the team ID or `null`; `filters.state` lists the accepted values once each, in the order `LATE`, `SUBMITTED`, `MISSING`, `NOT_DUE`, `AWAITING`. Each row is `{teamId, teamName, milestoneId, title, dueAt, window, submissionState, feedbackState, latestVersion}`.
 
 **Data:** no migration. Reads only.
 
@@ -80,10 +81,10 @@ A Supervisor opens **Overview** and sees one row per milestone across all the te
 
 | Test ID | AC | Level | Inputs | Expected |
 | --- | --- | --- | --- | --- |
-| TEST-12.1u | 12.1 | U | Latest version on time, Late or none; feedback count; clock before and after due | The state functions return exactly the §1 tables |
-| TEST-12.1i | 12.1 | I | Fixture with A, A2 and B; all states | Scoped rows, order, states equal to F-04/F-11 values |
-| TEST-12.2i | 12.2 | I | Each filter combination | Matching rows and totals |
-| TEST-12.3i | 12.3 | I | Unauthorized or invalid callers and filters | 401, 403, 404, 400 bodies; no B data |
+| TEST-12.1u | 12.1 | U | Latest version on time, Late or none; feedback count; clock before, at and after due | The state functions return exactly the §1 tables; the deadline is inclusive; `submissionState` equals the `teamStatus` mapping in every case |
+| TEST-12.1i | 12.1 | I | Fixture with A, A2 and B; all states; pB; a Supervisor with no teams | Scoped rows, order, states equal to F-04/F-11 values; pB sees only B; no teams → 200 empty |
+| TEST-12.2i | 12.2 | I | Each filter combination; a repeated value; 52 matching rows | Matching rows and totals; the `filters` echo; pages of 50 and 2, then an empty page with the same total |
+| TEST-12.3i | 12.3 | I | Unauthorized or invalid callers and filters | 401, 403 (also with a bad `state`), fixed 404 for B, unknown, malformed or repeated `team`, 400 `fields.state` / `fields.page` (also with B's ID); no B data |
 | TEST-12.4p | 12.4 | Performance script | Scaled seed on Cloud Run | p95 report with method, revision and date |
 | TEST-12.5c | 12.5 | C | Deferred or failing fetch; fast filter switch | States shown; no stale replacement; URL sync |
 | TEST-12.1e | 12.1, 12.2 | E | Seeded Supervisor with two teams | Filter to Missing, open a row, go back with the filter kept |
