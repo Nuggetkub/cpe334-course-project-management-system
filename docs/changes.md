@@ -1,6 +1,6 @@
 # Change and defect register
 
-**Issue:** #87 (D2) · **Baseline:** [SRS v0.4](srs.md) · **Matrix:** [traceability.md](traceability.md) · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `8bb3f3c`)
+**Issue:** #87 (D2) · **Baseline:** [SRS v0.4](srs.md) · **Matrix:** [traceability.md](traceability.md) · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `0f87e20`)
 
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
@@ -11,6 +11,7 @@
 | 0.5 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and verified on the deployed app; F-11 fixes D-05 to D-08 released |
 | 0.6 | 2026-11-27 | @Nuggetkub | @Earth2509 | D-09 resolved, integrated (#109, `1544ca0`) on `staging/sprint-3` |
 | 0.7 | 2026-11-27 | @Nuggetkub | @Earth2509 | #110 review wording: the secret scan is the first *validation* step (checkout and setup run before it) |
+| 0.8 | 2026-11-27 | @Nuggetkub | @Earth2509 | D-14 resolved, integrated (#116, `0f87e20`) on `staging/sprint-3`; F-08 contract v0.5 |
 
 This register records every finding that changed the product, its tests or its baseline since the accepted Sprint 1 release. Earlier records keep their own detail ([Lab 6 findings](labs/lab06/findings.md), the Lab 7 report, PR reviews); this page is the one index with current status.
 
@@ -49,7 +50,7 @@ This register records every finding that changed the product, its tests or its b
 | D-11 | F-10 UI regression run | 25 Nov | NFR-11 (test reliability), F-05 | Test defect: TEST-05.1e's sign-in step waits only 5 s for "Log out". In one full local run it timed out; alone it passed 2/2 and the full rerun passed 12/12. The cause of the slow sign-in is not yet known | **Resolved, released** (#102, `v0.5.0`) | One shared `signIn` in `e2e/support.ts` awaits the `POST /api/auth/login` response under the test timeout and asserts 200 before the 5 s wait for the signed-in shell; the five journey specs use it (the F-10 spec in #101, the F-11 spec in #94) | PASS: a 6 s delayed-login probe fails the old helper and passes the new one; three consecutive full runs 10/10; CI 45638408957 (R-102) |
 | D-12 | PR #101 review (F-10) | 25 Nov | AC-10.3, AC-10.5, BR-15 | Defect: a release confirmed for draft 70 published another Supervisor's newer draft 82 (the release had no body) | **Resolved, released** (#101, `v0.5.0`) | F-10 v0.5: `{expectedScore}` compared under the milestone lock, 409 `GRADE_DRAFT_CHANGED` (`c4c86c2`) | RED `582ff7a` (CI 45632905007), GREEN CI 45633427363; E2E two-session journey |
 | D-13 | PR #101 review (F-10) | 25 Nov | AC-10.5, NFR-10 | Defect: a malformed `200` grade body (no `releasedAt`) crashed the milestone page | **Resolved, released** (#101, `v0.5.0`) | Strict role-specific response checks on read, save and release (`c4c86c2`) | 7 new TEST-10.5c cases; RED 9 failed, GREEN 83/83 |
-| D-14 | Deployed checks on `v0.5.0` (D5-04, D5-05) | 26 Nov | AC-08.8, NFR-10 (F-08 UI) | Defect, **Minor**: the Supervisor's Manage milestone panel lays its labels and fields out side by side in one row (title, description, due date, late window), instead of each label above its field. Saving and closing work; layout only | **Open** | Stack each label above its field in the panel, as in the other forms; add a client layout check | Planned: TEST-08.8c layout case and a deployed re-check |
+| D-14 | Deployed checks on `v0.5.0` (D5-04, D5-05) | 26 Nov | AC-08.8, NFR-10 (F-08 UI) | Defect, **Minor**: the Supervisor's Manage milestone panel lays its labels and fields out side by side in one row (title, description, due date, late window), instead of each label above its field. Saving and closing work; layout only | **Resolved, integrated** (#116, `0f87e20`) | The Manage form had no `milestone-form` class, so its fieldset laid the labels and fields out inline. It now uses that class, like the create and grade forms. F-08 contract v0.5 | RED `e1bdc33` (CI [46025092254](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/46025092254): the new TEST-08.8c case fails; locally TEST-08.8e fails at 1280 and 390 px) → GREEN `fa04464` (CI [46025692125](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/46025692125)); E2E 18/18 locally. Deployed re-check planned with `v1.0.0` |
 | R-01 | F-07 design (#95) | 25 Nov | FR-07, AS-01 | Risk: team creation needs exactly one course row | **Resolved** (gate passed) | Read-only `SELECT COUNT(*) FROM courses;` on the live `cpms` database (Cloud SQL `cpms-pg`, via Cloud SQL Auth Proxy in Cloud Shell), run by @Nuggetkub on 25 Nov | **1 course**: F-07 team creation will work after `v0.5.0`. No data changed |
 
 ## 3. Approved baseline revisions
