@@ -24,6 +24,12 @@ test('successful test steps require readable passing reports', () => {
   assert.deepEqual(missing.problems, ['Server: valid passing test report missing']);
 });
 
+test('the secret scan has its own row (D-09)', () => {
+  const result = renderSummary({ SECRET_SCAN_OUTCOME: 'failure' }, () => passing);
+  assert.match(result.markdown, /Secret scan \| failure \| .*seeded fake secret/);
+  assert.match(renderSummary({}, () => passing).markdown, /Secret scan \| not run/);
+});
+
 test('failure and skipped steps cannot be reported as passing', () => {
   const result = renderSummary({ SERVER_OUTCOME: 'failure', CLIENT_OUTCOME: 'skipped', DOCKER_OUTCOME: 'cancelled' }, () => {
     throw new Error('Must not read a report for an unsuccessful step');
