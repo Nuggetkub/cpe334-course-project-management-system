@@ -11,6 +11,7 @@ const NAV: Record<User["role"], Array<{ to: string; label: string }>> = {
   SUPERVISOR: [
     { to: "/teams", label: "My teams" },
     { to: "/milestones", label: "Milestones" },
+    { to: "/overview", label: "Overview" },
   ],
 };
 
