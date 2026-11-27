@@ -44,17 +44,22 @@ function OverviewContent() {
   const filters = readFilters(params);
   const apiQuery = toQuery(filters, true);
   const [teams, setTeams] = useState<{ id: number; name: string }[]>([]);
+  const [teamsFailed, setTeamsFailed] = useState(false);
+  const [teamsAttempt, setTeamsAttempt] = useState(0);
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
 
+  // The Team options load on their own: a failure shows beside the select with its own retry,
+  // and never hides or refetches the overview rows (#114 review).
   useEffect(() => {
     let active = true;
+    setTeamsFailed(false);
     apiFetch<{ teams: { id: number; name: string }[] }>("/api/teams").then(
       ({ teams: list }) => { if (active) setTeams(list); },
-      () => { /* the select keeps "All my teams"; the overview itself still loads */ },
+      () => { if (active) setTeamsFailed(true); },
     );
     return () => { active = false; };
-  }, []);
+  }, [teamsAttempt]);
 
   useEffect(() => {
     let active = true; // a response for an older query never replaces the current one (AC-12.5)
@@ -87,6 +92,8 @@ function OverviewContent() {
           {teams.map((t) => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
         </select>
       </label>
+      {teamsFailed && <span className="overview-teams-error"><span role="alert">Could not load your teams.</span>{" "}
+        <button type="button" onClick={() => setTeamsAttempt((n) => n + 1)}>Retry loading teams</button></span>}
       <fieldset>
         <legend>State</legend>
         {STATES.map((s) => <label key={s}>
