@@ -5,11 +5,12 @@ import { useAuth } from "../auth/AuthContext";
 import { formatBangkok } from "../time";
 import type { Milestone } from "./MilestonesPage";
 
-// F-11 contract v0.3 §2 UI. Phase 1 shows no grade at all (no column, no "Not released" text).
+// F-11 contract v0.6 §2 UI. Phase 2: the Grade column shows the released F-10 score or "Not released".
 type Row = {
   milestoneId: number; title: string; dueAt: string; window: Milestone["window"]; teamStatus: Milestone["teamStatus"];
   latest: { version: number; late: boolean; submittedAt: string } | null;
   feedbackStatus: "NONE" | "AWAITING" | "RECEIVED";
+  grade: { released: false } | { released: true; score: number };
 };
 type Board = { team: { id: number; name: string }; rows: Row[]; page: number; pageSize: number; total: number };
 type Load<T> = { kind: "loading" } | { kind: "ready"; data: T } | { kind: "error" };
@@ -17,7 +18,7 @@ type Load<T> = { kind: "loading" } | { kind: "ready"; data: T } | { kind: "error
 const WINDOW = { OPEN: "Open", LATE: "Late window", CLOSED: "Closed" } as const;
 const TEAM_STATUS = { NOT_SUBMITTED: "Not submitted", OVERDUE: "Overdue", SUBMITTED: "Submitted", LATE: "Late" } as const;
 const FEEDBACK = { NONE: "—", AWAITING: "Awaiting feedback", RECEIVED: "Feedback received" } as const;
-const COLUMNS = ["Milestone", "Due (ICT)", "Window", "Team status", "Latest version", "Feedback"] as const;
+const COLUMNS = ["Milestone", "Due (ICT)", "Window", "Team status", "Latest version", "Feedback", "Grade"] as const;
 
 function ProgressTable({ teamId }: { teamId: number }) {
   const [page, setPage] = useState(1);
@@ -49,6 +50,7 @@ function ProgressTable({ teamId }: { teamId: number }) {
           ? <><span>{`Version ${r.latest.version}`}</span>{r.latest.late && <> <span className="badge-late">Late</span></>}</>
           : "Not submitted"}</td>
         <td data-label={COLUMNS[5]}>{FEEDBACK[r.feedbackStatus]}</td>
+        <td data-label={COLUMNS[6]}>{r.grade.released ? `${r.grade.score} / 100` : "Not released"}</td>
       </tr>)}</tbody>
     </table>}
     <nav aria-label="Progress pages"><button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>Previous</button>
