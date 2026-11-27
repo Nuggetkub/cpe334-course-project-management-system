@@ -1,6 +1,6 @@
 # Three-sprint delivery plan
 
-Version 0.8 · 2026-11-27 · F-12 done (#113, #114). (v0.7: 2026-11-27, F-11 phase 2 done (#111).) (v0.6: 2026-11-27, `staging/sprint-3` created; D-09 done (#109).) (v0.5: 2026-11-26, D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released.) (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
+Version 0.9 · 2026-11-27 · D-14 done (#116). (v0.8: 2026-11-27, F-12 done (#113, #114).) (v0.7: 2026-11-27, F-11 phase 2 done (#111).) (v0.6: 2026-11-27, `staging/sprint-3` created; D-09 done (#109).) (v0.5: 2026-11-26, D2 (#87): `v0.6.0` (`6464f87`) released on `main` and verified; F-11 phase 1 released.) (v0.4: 2026-11-26, `v0.5.0` released and accepted; F-11 phase 1 integrated; remaining work updated.) (v0.3: 2026-11-25, actual Sprint 2/3 ownership, release path (DEC-15) and the remaining-work plan to 13 December.) (v0.2: 2026-11-04, D1 Part D, Issue #4, PR #30 review.)
 
 Scope follows the [feature catalogue](../features.md), [SRS](../srs.md) and [traceability matrix](../traceability.md). Completion outcomes are acceptance targets, not delivery claims.
 
@@ -32,7 +32,7 @@ For each feature, record the contract, test cases, implementation evidence and p
 
 ## Remaining work to 13 December
 
-Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `793250e` (after #114). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
+Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `0f87e20` (after #116). Exams run 1–11 Dec, so the product work is front-loaded: Sprint 2 ships before D2, and the remaining Sprint 3 features finish in the first days of December, leaving the last days for verification, UAT re-tests, the video and the release. **The target dates are a proposal for @Earth2509 to confirm in review.**
 
 | Feature or defect | Current status | Remaining action | Owner and target |
 | --- | --- | --- | --- |
@@ -44,7 +44,7 @@ Status date: 27 Nov 2026, `main` `6464f87` (`v0.6.0`), `staging/sprint-3` `79325
 | `v0.6.0` D2 candidate | **Done** 26 Nov: #106 → `6464f87`, revision `cpms-00010-6vv`, tag `v0.6.0`; sync back (#107) | None: `staging/sprint-3` created 27 Nov from `3e17c25` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | D2 PDF | Documents current; demos captured on `v0.5.0` (D5) and `v0.6.0` (D6) | Build the PDF, teammate review, submit on LEB2 | @Nuggetkub; review @Earth2509; 29 Nov |
 | D-11 flaky sign-in wait (TEST-05.1e) | **Done** 25 Nov (#102); F-10 and F-11 specs switched (#101, #94) | None | @Nuggetkub; done |
-| D-14 Manage milestone panel layout (Minor) | Open (found in D5-04/D5-05) | Stack labels above fields; client layout check; deployed re-check | @Nuggetkub; review @Earth2509; 3 Dec |
+| D-14 Manage milestone panel layout (Minor) | **Done** 27 Nov: #116 → `0f87e20` (integrated; R-116) | Deployed re-check with `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | D-09 CI secret scan (NFR-12) | **Done** 27 Nov: #109 → `1544ca0` (integrated); seeded fake secrets fail the scan | Reaches `main` in `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | F-11 phase 2, AC-11.3 | **Done** 27 Nov: #111 → `8bb3f3c` (integrated; R-111) | Deployed check with `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
 | F-12 overview and filters (#85) | **Done** 27 Nov: API #113 → `b654dde`, UI #114 → `793250e` (integrated; R-113, R-114) | AC-12.4 timing and the deployed check with `v1.0.0` | @Nuggetkub; review @Earth2509; done 27 Nov |
