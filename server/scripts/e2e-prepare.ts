@@ -76,6 +76,12 @@ try {
   const reviewedOnBoard = await prisma.milestone.create({ data: { teamId: progressTeam.id, createdBy: supervisor.id, title: "F11 submitted milestone", dueAt: new Date(Date.now() + 2 * day) } });
   const boardVersion = await prisma.submission.create({ data: { milestoneId: reviewedOnBoard.id, version: 1, title: "F11 work", link: "https://example.com/f11-v1", submittedBy: student4.id, submittedAt: new Date() } });
   await prisma.feedback.create({ data: { submissionId: boardVersion.id, supervisorId: supervisor.id, text: "F11 feedback", createdAt: new Date() } });
+  // F-11 phase 2: a released F-10 grade on this milestone; the open milestone has none ("Not released").
+  const gradedAt = new Date();
+  await prisma.grade.create({ data: {
+    milestoneId: reviewedOnBoard.id, draftScore: 88, updatedBy: supervisor.id, updatedAt: gradedAt,
+    releasedScore: 88, releasedBy: supervisor.id, releasedAt: gradedAt,
+  } });
   await prisma.milestone.create({ data: { teamId: progressTeam.id, createdBy: supervisor.id, title: "F11 open milestone", dueAt: new Date(Date.now() + 5 * day) } });
   // F-07 uses an empty Supervisor account and unassigned Student in the existing course.
   await prisma.user.createMany({ data: [

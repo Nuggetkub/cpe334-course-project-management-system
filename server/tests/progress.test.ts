@@ -6,7 +6,7 @@ import { readProgress } from "../src/progress/service.js";
 import { expectHidden, UNAUTHENTICATED } from "./support/authz.js";
 import { cleanDatabase, createTeamsFixture, signIn } from "./support/teams.js";
 
-// F-11 contract v0.3 §3 and §4: real API and PostgreSQL with a fixed server clock.
+// F-11 contract v0.6 §3 and §4: real API and PostgreSQL with a fixed server clock.
 const NOW = new Date("2026-11-28T12:00:00Z");
 const hours = (h: number) => new Date(NOW.getTime() + h * 3600_000);
 const app = createApp({ clientDistDir: null, now: () => NOW });
@@ -83,10 +83,11 @@ describe("F-11 progress board", () => {
     expect(lateRow).toEqual({
       milestoneId: late.id, title: "Latest version late", dueAt: hours(-6).toISOString(), window: "LATE", teamStatus: "LATE",
       latest: { version: 2, late: true, submittedAt: hours(-1).toISOString() }, feedbackStatus: "AWAITING",
+      grade: { released: false },
     });
     expect(res.body.rows[0]).toMatchObject({ latest: null, feedbackStatus: "NONE" });
-    // Phase 1 (contract v0.3): no row has a grade key.
-    for (const row of res.body.rows) expect(row).not.toHaveProperty("grade");
+    // Phase 2 (contract v0.6): every row has F-10's student grade; none is recorded here.
+    for (const row of res.body.rows) expect(row.grade).toEqual({ released: false });
   });
 
   it("TEST-11.2i shows the latest version and its own feedback status: AWAITING, then RECEIVED", async () => {
@@ -104,6 +105,33 @@ describe("F-11 progress board", () => {
 
     const second = await progress("sA", f.teamA.id);
     expect(second.body.rows[0]).toMatchObject({ latest: { version: 2, late: true }, feedbackStatus: "RECEIVED" });
+  });
+
+  it("TEST-11.3i shows no score before the F-10 release and the released score after it", async () => {
+    const m = await milestone("Graded milestone", hours(-24));
+    await version(m.id, 1, hours(-30));
+    const gradePath = `/api/milestones/${m.id}/grade`;
+    const saved = await request(app).put(gradePath).set("Authorization", await auth("pA")).send({ score: 73 });
+    expect(saved.status).toBe(200);
+
+    // Before the release: the draft exists, but no caller's board has a score key or the draft value.
+    for (const who of ["sA", "pA"] as const) {
+      const before = await progress(who, f.teamA.id);
+      expect(before.status).toBe(200);
+      expect(before.body.rows[0].grade).toEqual({ released: false });
+      expect(JSON.stringify(before.body)).not.toMatch(/"score"|"draftScore"/);
+    }
+
+    const released = await request(app).post(`${gradePath}/release`).set("Authorization", await auth("pA")).send({ expectedScore: 73 });
+    expect(released.status).toBe(200);
+    const after = await progress("sA", f.teamA.id);
+    expect(after.body.rows[0].grade).toEqual({ released: true, score: 73 });
+
+    // A newer draft after the release does not change what the board shows.
+    expect((await request(app).put(gradePath).set("Authorization", await auth("pA")).send({ score: 95 })).status).toBe(200);
+    const later = await progress("sA", f.teamA.id);
+    expect(later.body.rows[0].grade).toEqual({ released: true, score: 73 });
+    expect(JSON.stringify(later.body)).not.toContain('"draftScore"');
   });
 
   it("TEST-11.4i answers 401, then the fixed 404 for hidden or missing scope, without team A data", async () => {

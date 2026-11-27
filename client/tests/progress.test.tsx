@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import { TOKEN_KEY } from "../src/auth/token";
 
-// F-11 contract v0.3 §2 UI and AC-11.6 (TEST-11.6c). Phase 1: no Grade column and no grade text.
+// F-11 contract v0.6 §2 UI and AC-11.6 (TEST-11.6c). Phase 2: a Grade column with the released score or "Not released".
 const team = { id: 1, name: "Team A", members: [], supervisors: [] };
 const row = (id: number, extra: object = {}) => ({
   milestoneId: id, title: `Milestone ${id}`, dueAt: "2026-11-28T05:00:00.000Z", window: "OPEN", teamStatus: "NOT_SUBMITTED",
-  latest: null, feedbackStatus: "NONE", ...extra,
+  latest: null, feedbackStatus: "NONE", grade: { released: false }, ...extra,
 });
 const board = (rows: object[], page = 1, total = rows.length) => Response.json({ team: { id: 1, name: "Team A" }, rows, page, pageSize: 50, total });
 type Routes = { mine?: () => Response | Promise<Response>; progress: (url: string) => Response | Promise<Response> };
@@ -41,11 +41,11 @@ describe("F-11 progress page", () => {
     resolve(board([
       row(1, { title: "Overdue one", window: "CLOSED", teamStatus: "OVERDUE" }),
       row(2, { title: "Late one", window: "LATE", teamStatus: "LATE", latest: { version: 2, late: true, submittedAt: "2026-11-28T06:00:00.000Z" }, feedbackStatus: "AWAITING" }),
-      row(3, { title: "Reviewed one", teamStatus: "SUBMITTED", latest: { version: 1, late: false, submittedAt: "2026-11-27T06:00:00.000Z" }, feedbackStatus: "RECEIVED" }),
+      row(3, { title: "Reviewed one", teamStatus: "SUBMITTED", latest: { version: 1, late: false, submittedAt: "2026-11-27T06:00:00.000Z" }, feedbackStatus: "RECEIVED", grade: { released: true, score: 85 } }),
     ]));
     const table = await screen.findByRole("table", { name: "Progress for Team A" });
     expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
-      ["Milestone", "Due (ICT)", "Window", "Team status", "Latest version", "Feedback"]);
+      ["Milestone", "Due (ICT)", "Window", "Team status", "Latest version", "Feedback", "Grade"]);
     const rows = within(table).getAllByRole("row").slice(1);
     expect(rows).toHaveLength(3);
 
@@ -68,9 +68,11 @@ describe("F-11 progress page", () => {
     expect(reviewed.queryByText("Late")).not.toBeInTheDocument();
     expect(reviewed.getByText("Feedback received")).toBeInTheDocument();
 
-    // Phase 1: nothing about grades.
-    expect(screen.queryByRole("columnheader", { name: "Grade" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Not released/)).not.toBeInTheDocument();
+    // Phase 2: the released score, otherwise "Not released" (labelled for the stacked layout).
+    expect(reviewed.getByText("85 / 100")).toHaveAttribute("data-label", "Grade");
+    expect(overdue.getByText("Not released")).toHaveAttribute("data-label", "Grade");
+    expect(late.getByText("Not released")).toBeInTheDocument();
+    expect(reviewed.queryByText("Not released")).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.map(([url]) => url)).toContain("/api/teams/1/progress?page=1");
   });
 

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "./support";
 
-// F-11 contract v0.3 TEST-11.1e: real Chromium, API and cpms_e2e database (E2E Progress Team).
+// F-11 contract v0.6 TEST-11.1e: real Chromium, API and cpms_e2e database (E2E Progress Team).
 test("TEST-11.1e Student reads the progress board and follows a row to the milestone page", async ({ page }) => {
   await signIn(page, "student4@e2e.test"); // shared helper (D-11)
   await page.getByRole("link", { name: "Progress", exact: true }).click();
@@ -17,9 +17,10 @@ test("TEST-11.1e Student reads the progress board and follows a row to the miles
   const open = rows.nth(2);
   await expect(open.getByRole("link", { name: "F11 open milestone" })).toBeVisible();
   await expect(open.getByText("Not submitted", { exact: true }).first()).toBeVisible();
-  // Phase 1: no Grade column and no grade text.
-  await expect(table.getByRole("columnheader", { name: "Grade" })).toHaveCount(0);
-  await expect(page.getByText("Not released")).toHaveCount(0);
+  // Phase 2: the Grade column shows the released F-10 score, otherwise "Not released".
+  await expect(table.getByRole("columnheader", { name: "Grade" })).toBeVisible();
+  await expect(submitted.getByText("88 / 100", { exact: true })).toBeVisible();
+  await expect(open.getByText("Not released", { exact: true })).toBeVisible();
 
   await submitted.getByRole("link", { name: "F11 submitted milestone" }).click();
   await expect(page).toHaveURL(/\/milestones\/\d+$/);
