@@ -18,6 +18,7 @@ export function renderSummary(outcomes, readReport) {
   const lines = ['## CI verification', '', '| Check | Outcome | Evidence |', '| --- | --- | --- |'];
   const problems = [];
   for (const [label, key, reportPath, evidence] of [
+    ['Secret scan', 'SECRET_SCAN_OUTCOME', null, 'gitleaks 8.30.1 (checksum-verified) over the full Git history; self-test: a seeded fake secret must fail the scan'],
     ['Deploy tooling', 'DEPLOY_TOOLS_OUTCOME', null, 'Shell syntax, summary tests, offline deploy/release stubs and Python smoke tests'],
     ['Server', 'SERVER_OUTCOME', 'artifacts/ci/server-tests.json', 'Install, migrations, opt-in CI seed, typecheck, tests and build'],
     ['Client', 'CLIENT_OUTCOME', 'artifacts/ci/client-tests.json', 'Install, tests and production build'],
