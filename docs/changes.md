@@ -1,6 +1,6 @@
 # Change and defect register
 
-**Issue:** #87 (D2) · **Baseline:** [SRS v0.4](srs.md) · **Matrix:** [traceability.md](traceability.md) · **Status date:** 2026-11-26 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`)
+**Issue:** #87 (D2) · **Baseline:** [SRS v0.4](srs.md) · **Matrix:** [traceability.md](traceability.md) · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `1544ca0`)
 
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
@@ -9,12 +9,13 @@
 | 0.3 | 2026-11-25 | @Nuggetkub | @Earth2509 | PR #99 re-review: D-11 resolved by #102 (`dad3ad0`) |
 | 0.4 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.5.0` released and accepted on the deployed app; fixes in it marked released; F-11 fixes integrated (#94); D-10 resolved; new D-14 from the deployed checks |
 | 0.5 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and verified on the deployed app; F-11 fixes D-05 to D-08 released |
+| 0.6 | 2026-11-27 | @Nuggetkub | @Earth2509 | D-09 resolved, integrated (#109, `1544ca0`) on `staging/sprint-3` |
 
 This register records every finding that changed the product, its tests or its baseline since the accepted Sprint 1 release. Earlier records keep their own detail ([Lab 6 findings](labs/lab06/findings.md), the Lab 7 report, PR reviews); this page is the one index with current status.
 
 **Status values:**
 - **Resolved, released**: the fix is on `main` and checked on the deployed app.
-- **Resolved, integrated**: the fix is reviewed and merged into `staging/sprint-2`, waiting for the next release.
+- **Resolved, integrated**: the fix is reviewed and merged into the staging branch (`staging/sprint-2` until `v0.6.0`, then `staging/sprint-3`), waiting for the next release.
 - **Resolved in PR**: fixed and green on its PR, not yet integrated.
 - **Open**: not fixed yet. The remaining-work plan ([plan.md](sprints/plan.md#remaining-work-to-13-december)) gives the owner and date.
 
@@ -42,7 +43,7 @@ This register records every finding that changed the product, its tests or its b
 | D-06 | PR #94 review (F-11) | 25 Nov | AC-11.4, BR-03, DEC-10 | Defect: the team lookup inside the snapshot wasn't scoped, so access lost after the guard could return the team name | **Resolved, released** (#94, `v0.6.0`) | `e69c9e6` (TEST-11.4bi) | RED `b9fd690`, GREEN CI `45576686309` |
 | D-07 | PR #94 review (F-11) | 25 Nov | AC-11.6, NFR-10 | Defect: a 120-character unbroken title widened the page (1,440 px at 390 px; 1,722 px at 768 px, found while fixing) | **Resolved, released** (#94, `v0.6.0`) | `e69c9e6` (TEST-11.6e) | Local E2E RED 2 failed, GREEN 12/12; re-checked by Earth2509 at 320/390/768 px |
 | D-08 | PR #94 re-review (F-11) | 25 Nov | AC-11.4, NFR-03 | Defect: an invalid page after lost access returned 400 instead of the fixed 404 | **Resolved, released** (#94, `v0.6.0`) | `3b72786` | RED `0410f25` (1 failed), GREEN CI `45586183430` |
-| D-09 | D2 document audit | 25 Nov | NFR-12 | Gap: SRS v0.3 planned a **CI secret scan** for Sprint 2. No workflow has one; only `.env` ignoring and review apply | **Open** | Add a secret-scanning step to `ci.yml` | Planned: a seeded fake secret must fail the check |
+| D-09 | D2 document audit | 25 Nov | NFR-12 | Gap: SRS v0.3 planned a **CI secret scan** for Sprint 2. No workflow has one; only `.env` ignoring and review apply | **Resolved, integrated** (#109, `1544ca0`) | `scripts/secret-scan.sh` (gitleaks 8.30.1, checksum-verified on every run) is the first step of `test-and-docker` (`ci-docker.yml`) and scans the full Git history on every PR and before every deploy. One reviewed false positive is ignored by its exact fingerprint (`.gitleaksignore`) | RED `b2e0192` (CI [45952489324](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45952489324)) → GREEN `8d60911` (CI [45952835480](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45952835480)); review RED `8e253c0` (CI [45962221973](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45962221973)) → GREEN `f894d26` (CI [45962350592](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45962350592)): seeded fake secrets fail the scan in dir and git mode; 201 commits, no leaks |
 | D-10 | D2 document audit | 25 Nov | NFR-02, AC-02.1 (F-02 registry rule) | Process defect: F-08 (`PATCH /api/milestones/:id`, `POST …/close`), F-09 (`GET …/submissions`) and F-11 (`GET /api/teams/:teamId/progress`) didn't add their routes to `server/tests/support/protected-endpoints.ts`, so TEST-02.1 didn't sweep them. Each route's 401 was still tested by its own feature test | **Resolved**: F-08/F-09 entries released in `v0.5.0` ([#100](https://github.com/Nuggetkub/cpe334-course-project-management-system/pull/100)); the F-11 entry released in `v0.6.0` (#94, `c24db4b`) | `2d9d900`: 14 new TEST-02.1 cases | CI 45613251584 (server 329); mutation: without `requireAuth` on the history route its 4 cases fail |
 | D-11 | F-10 UI regression run | 25 Nov | NFR-11 (test reliability), F-05 | Test defect: TEST-05.1e's sign-in step waits only 5 s for "Log out". In one full local run it timed out; alone it passed 2/2 and the full rerun passed 12/12. The cause of the slow sign-in is not yet known | **Resolved, released** (#102, `v0.5.0`) | One shared `signIn` in `e2e/support.ts` awaits the `POST /api/auth/login` response under the test timeout and asserts 200 before the 5 s wait for the signed-in shell; the five journey specs use it (the F-10 spec in #101, the F-11 spec in #94) | PASS: a 6 s delayed-login probe fails the old helper and passes the new one; three consecutive full runs 10/10; CI 45638408957 (R-102) |
 | D-12 | PR #101 review (F-10) | 25 Nov | AC-10.3, AC-10.5, BR-15 | Defect: a release confirmed for draft 70 published another Supervisor's newer draft 82 (the release had no body) | **Resolved, released** (#101, `v0.5.0`) | F-10 v0.5: `{expectedScore}` compared under the milestone lock, 409 `GRADE_DRAFT_CHANGED` (`c4c86c2`) | RED `582ff7a` (CI 45632905007), GREEN CI 45633427363; E2E two-session journey |

@@ -1,6 +1,6 @@
 # Requirements Traceability
 
-**Baseline:** [SRS v0.4](srs.md) · **Features:** [features.md](features.md) · **Changes:** [changes.md](changes.md) · **Issues:** #2, #87 · **Status date:** 2026-11-26 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`)
+**Baseline:** [SRS v0.4](srs.md) · **Features:** [features.md](features.md) · **Changes:** [changes.md](changes.md) · **Issues:** #2, #87 · **Status date:** 2026-11-27 (released `v0.6.0` = `main` `6464f87`; Sprint 2 accepted as `v0.5.0` = `2fde19e`; `staging/sprint-3` `1544ca0`)
 
 | Version | Date | Author | Reviewer | Change |
 |---|---|---|---|---|
@@ -23,6 +23,7 @@
 | 0.17 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.5.0` released and checked on the deployed app: result set R-S3 (release regression and deployed checks D5-00 to D5-12), F-07 to F-10 accepted; F-11 phase 1 integrated (R-S4, #94) with its TEST-02.1 entry (D-10 resolved); coverage recounted |
 | 0.18 | 2026-11-26 | @Nuggetkub | @Earth2509 | PR #105 review: D5-12 scoped to what was observed (AC-07.1, AC-07.2, FR-07); registry runs scoped: R-100 is the Sprint 2 routes, R-S4 adds the F-11 progress route (AC-02.1, NFR-02) |
 | 0.19 | 2026-11-26 | @Nuggetkub | @Earth2509 | `v0.6.0` released and checked on the deployed app: result set R-S5 (release regression and deployed checks D6-00 to D6-06); F-11 phase 1 accepted. AC-11.2, AC-11.4 and AC-11.6 rows state what the deployed check covers and what only the automated tests cover |
+| 0.20 | 2026-11-27 | @Nuggetkub | @Earth2509 | D-09: CI secret scan integrated (#109); NFR-12 fully verified; NFR-11 cites the actual workflow file |
 
 ## ID conventions
 
@@ -105,7 +106,7 @@ All Sprint 1 AC are implemented and released (`v0.3.0`, accepted by StudyTrack U
 | AC-06.4 | A Student recording feedback → 403; an unassigned Supervisor → 404; other teams' Students and Students with no team reading it → 404; order 401 → 403 → 404 → 400 | BR-01, BR-02, BR-03 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-06.5 | The feedback list shows a loading state and "No feedback yet" when empty; the feedback form shows server errors and keeps the text | FR-19, NFR-10 | Yes | PASS R-S1, R-S2, R-S3 |
 | AC-SR1.1 | Validation, auth and not-found errors use `{ "error": { "code", "message" } }` with no stack trace or SQL | NFR-05 | Yes | PASS R-S1, R-S2, R-S3 |
-| AC-SR2.1 | `.env` is git-ignored; `.env.example` lists every variable; the client bundle contains no secret | NFR-12 | Yes | PASS manual TEST-SR2.1 at `v0.1.0` (D1 Part F, 6 Nov). The CI secret scan planned for Sprint 2 is missing (D-09) |
+| AC-SR2.1 | `.env` is git-ignored; `.env.example` lists every variable; the client bundle contains no secret | NFR-12 | Yes | PASS manual TEST-SR2.1 at `v0.1.0` (D1 Part F, 6 Nov); re-run planned before Final. Since #109 (`1544ca0`) the CI secret scan checks every commit for committed secrets (D-09; CI [45962350592](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45962350592)) |
 | AC-SR2.2 | Teammate follows the README from a fresh clone to passing tests in ≤ 15 min | NFR-08 | Yes | PASS manual TEST-SR2.2 at `v0.1.0` (D1 Part F; time met, one deviation). Re-run planned before Final |
 
 ## Sprint 2 acceptance criteria
@@ -232,8 +233,8 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 | NFR-08 | SR-02 | 1 → 2 | AC-SR2.2 | Timed walkthrough | D1 Part F (`v0.1.0`); Docker in #17 | PASS at `v0.1.0`. **Planned** re-run before Final |
 | NFR-09 | F-12, SR-03 | 3 | AC-12.4 | TEST-12.4p (scaled seed, Cloud Run) | Not run | **Planned** (Final); uncovered at D2 |
 | NFR-10 | Each feature; SR-01 audit | 1 → 2 → 3 | Field: AC-01.8, 04.2, 05.2, 06.2, 07.6, 08.8, 09.8, 10.5. Server error: AC-01.9, 01.10, 04.5, 05.6, 06.5, 07.6, 08.8, 09.8, 10.5. Loading/empty: AC-03.7, 04.6, 05.7, 06.5, 07.6, 09.8, 10.5, 11.6 | Matching TEST IDs (C and E) | Client and E2E files listed above | **Partly verified**: Sprint 1 and F-07 to F-10 PASS R-S3; F-11 phase 1 PASS R-S4, R-S5; F-12/F-13 and the SR-01 audit **planned** (Final) |
-| NFR-11 | SR-03 | 2 (Lab 5) | Required check on `main` and `staging/**` | `test-and-docker` on every PR | `.github/workflows/ci.yml`; ruleset `protect-main` | PASS: every merged Sprint 2 PR ran it (for example 45592941608) |
-| NFR-12 | SR-02 | 1 → 2 | AC-03.1, AC-SR2.1; CI secret scan | TEST-03.1a–d, TEST-SR2.1; CI scan | `demo-seed.test.ts`, `seed-policy.test.ts`; manual SR2.1 at `v0.1.0` | **Partly verified**: tests and the manual check PASS; the CI secret scan doesn't exist yet (D-09) |
+| NFR-11 | SR-03 | 2 (Lab 5) | Required check on `main` and `staging/**` | `test-and-docker` on every PR | `.github/workflows/ci-docker.yml`; ruleset `protect-main` | PASS: every merged Sprint 2 PR ran it (for example 45592941608) |
+| NFR-12 | SR-02 | 1 → 2 | AC-03.1, AC-SR2.1; CI secret scan | TEST-03.1a–d, TEST-SR2.1; CI scan and its self-test | `demo-seed.test.ts`, `seed-policy.test.ts`; manual SR2.1 at `v0.1.0`; `scripts/secret-scan.sh`, `scripts/secret-scan.test.sh` | **Fully verified**: tests and the manual check PASS; CI secret scan integrated on `staging/sprint-3` (#109, `1544ca0`; CI [45962350592](https://github.com/Nuggetkub/cpe334-course-project-management-system/actions/runs/45962350592): self-test 10/10, full history 201 commits, no leaks). Manual TEST-SR2.1 re-run planned before Final |
 
 ## Coverage
 
@@ -243,13 +244,13 @@ Columns follow D2 Part D: requirement → feature or responsibility → sprint �
 |---|---|---|---|---|---|
 | FR | 25 | 21: FR-01 to FR-21 | 1: FR-22 (phase 1 released and accepted in `v0.6.0`, R-S5; AC-11.3 planned) | 3: FR-23, FR-24, FR-25 | 0 |
 | BR | 16 | 14: BR-01 to BR-06, BR-08 to BR-14, BR-16 | 1: BR-15 (F-10 released and verified; F-11 phase 2 and F-13 planned) | 0 | 1: BR-07 |
-| NFR | 12 | 9: NFR-01 to NFR-07, NFR-08 (D1 walkthrough; re-run planned), NFR-11 | 2: NFR-10 (F-12/F-13 and the SR-01 audit planned), NFR-12 (CI secret scan missing, D-09) | 1: NFR-09 | 0 |
+| NFR | 12 | 10: NFR-01 to NFR-07, NFR-08 (D1 walkthrough; re-run planned), NFR-11, NFR-12 (CI secret scan integrated, #109) | 1: NFR-10 (F-12/F-13 and the SR-01 audit planned) | 1: NFR-09 | 0 |
 
 **Uncovered or partly covered at the D2 checkpoint:**
 - **Sprint 2:** none. F-07 to F-10 are released as `v0.5.0` and accepted (R-S3, deployed checks 13/13 PASS).
 - **Sprint 3:** FR-22's AC-11.3 (needs F-10), FR-23, FR-24, FR-25 and NFR-09 (F-12, F-13). Contracts approved, implementation planned for Final. F-11 phase 1 is released as `v0.6.0` and accepted (R-S5) (DEC-15).
-- **Open gaps from the change register:** D-09 (CI secret scan, NFR-12) and D-14 (Minor: Manage milestone panel layout). D-10 and D-11 are resolved.
-- **Re-runs planned before Final:** NFR-07 persistence on each new release, NFR-08 walkthrough, the NFR-10 SR-01 audit.
+- **Open gaps from the change register:** D-14 (Minor: Manage milestone panel layout). D-09 (integrated, #109), D-10 and D-11 are resolved.
+- **Re-runs planned before Final:** NFR-07 persistence on each new release, NFR-08 walkthrough, the NFR-10 SR-01 audit, the NFR-12 manual TEST-SR2.1 (client bundle).
 
 Every baseline FR, BR and NFR still maps to a feature or system responsibility and a sprint. Not traced because they are explicitly out of scope: EX-01 to EX-07 (SRS §3.2).
 
