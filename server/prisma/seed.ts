@@ -3,12 +3,16 @@
 
 import { PrismaClient } from "@prisma/client";
 import { seedDemo, seedFailureMessage } from "./demo-seed.js";
+import { seedPerf } from "./perf-seed.js";
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
   const enabled = await seedDemo(prisma);
   console.log(enabled ? "[seed] Demo fixtures ready." : "[seed] Demo data disabled.");
+  // NFR-09: opt-in scaled data, after the demo step (it needs the demo course).
+  const perf = await seedPerf(prisma);
+  console.log(perf ? "[seed] Perf fixtures ready." : "[seed] Perf data disabled.");
 }
 
 main()
