@@ -77,7 +77,8 @@ function ictDate(date: Date): string {
   return `${new Date(date.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 16).replace("T", " ")} ICT`;
 }
 
-const round = (ms: number) => Math.round(ms * 10) / 10;
+/** Display only: truncated (never rounded up) to 0.1 ms, so a p95 below 500 never shows as 500.0. */
+export const formatMs = (ms: number) => (Math.floor(ms * 10) / 10).toFixed(1);
 
 export async function runPerf(options: PerfOptions): Promise<PerfOutcome> {
   const { email, password, cold } = options;
@@ -85,6 +86,8 @@ export async function runPerf(options: PerfOptions): Promise<PerfOutcome> {
   const warmup = options.warmup ?? 5;
   const samples = options.samples ?? 50;
   const log = options.log ?? (() => {});
+  const fetchImpl = options.fetch ?? globalThis.fetch;
+  const clock = options.clock ?? (() => performance.now());
   const date = ictDate((options.now ?? (() => new Date()))());
   let token: string | null = null;
 
@@ -92,12 +95,12 @@ export async function runPerf(options: PerfOptions): Promise<PerfOutcome> {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     if (init.body !== undefined) headers["Content-Type"] = "application/json";
-    const started = performance.now();
-    const response = await fetch(`${baseUrl}${path}`, {
+    const started = clock();
+    const response = await fetchImpl(`${baseUrl}${path}`, {
       method: init.method ?? "GET", headers, body: init.body === undefined ? undefined : JSON.stringify(init.body),
     });
     const text = await response.text();
-    const ms = performance.now() - started;
+    const ms = clock() - started;
     return { status: response.status, ms, body: () => JSON.parse(text) as Record<string, unknown> };
   }
   async function getJson(path: string, what: string) {
@@ -109,8 +112,8 @@ export async function runPerf(options: PerfOptions): Promise<PerfOutcome> {
   try {
     const ready = await call("/api/ready");
     if (ready.status !== 200) throw new RunError(`GET /api/ready answered ${ready.status}.`);
-    const coldMs = round(ready.ms);
-    log(`Cold start sample: ${coldMs} ms (service ${cold}).`);
+    const coldMs = ready.ms;
+    log(`Cold start sample: ${formatMs(coldMs)} ms (service ${cold}).`);
     const commit = String((await getJson("/api/health", "GET /api/health")).commit ?? "unknown");
 
     const login = await call("/api/auth/login", { method: "POST", body: { email, password } });
@@ -171,9 +174,9 @@ export async function runPerf(options: PerfOptions): Promise<PerfOutcome> {
         if (i >= warmup) times.push(response.ms);
       }
       const summary = summarize(times);
-      const rounded = { n: summary.n, min: round(summary.min), median: round(summary.median), p95: round(summary.p95), max: round(summary.max) };
-      endpoints.push({ id, path, ...rounded, verdict: verdict(summary.p95) });
-      log(`${id}: p95 ${rounded.p95} ms (${verdict(summary.p95)}).`);
+      // The JSON keeps the raw times; the verdict uses the raw p95.
+      endpoints.push({ id, path, ...summary, verdict: verdict(summary.p95) });
+      log(`${id}: p95 ${formatMs(summary.p95)} ms (${verdict(summary.p95)}).`);
     }
     const overall: Verdict = endpoints.every((e) => e.verdict === "PASS") ? "PASS" : "FAIL";
     const report: PerfReport = { date, baseUrl, commit, cold: { ms: coldMs, state: cold }, checks: { passed: true }, endpoints, overall };
@@ -202,11 +205,13 @@ function toMarkdown(report: PerfReport, warmup: number, samples: number): string
     "- Cloud Run revision: (add from the Console)",
     `- Method: ${warmup} warm-up requests discarded, then ${samples} sequential timed requests per endpoint (concurrency 1), as the Perf Supervisor of all 20 teams; p95 by the nearest-rank rule (the ${rank}th of ${samples} sorted); limit p95 < ${P95_LIMIT_MS} ms.`,
     "- Workload checks: passed (20 Perf teams, 200 milestones, 200 submissions, 60 feedback entries, 5 versions on E2).",
-    `- Cold start: ${report.cold.ms} ms (the first request, GET /api/ready; service ${report.cold.state} beforehand). Not counted in p95.`,
+    `- Cold start: ${formatMs(report.cold.ms)} ms (the first request, GET /api/ready; service ${report.cold.state} beforehand). Not counted in p95.`,
     "",
     "| Endpoint | Path | n | min (ms) | median (ms) | p95 (ms) | max (ms) | Result |",
     "| --- | --- | --- | --- | --- | --- | --- | --- |",
-    ...report.endpoints.map((e) => `| ${e.id} | \`${e.path}\` | ${e.n} | ${e.min} | ${e.median} | ${e.p95} | ${e.max} | ${e.verdict} |`),
+    ...report.endpoints.map((e) => `| ${e.id} | \`${e.path}\` | ${e.n} | ${[e.min, e.median, e.p95, e.max].map(formatMs).join(" | ")} | ${e.verdict} |`),
+    "",
+    `Times are truncated to 0.1 ms for display; the JSON file has the raw values, and each verdict uses the raw p95.`,
     "",
     `**Overall: ${report.overall}**`,
     "",
