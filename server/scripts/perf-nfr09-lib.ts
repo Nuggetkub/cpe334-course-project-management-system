@@ -29,6 +29,9 @@ export interface PerfOptions {
   samples?: number;
   now?: () => Date;
   log?: (line: string) => void;
+  /** For tests: a scripted transport and clock (TEST-P.5u). Defaults: global fetch, performance.now. */
+  fetch?: typeof globalThis.fetch;
+  clock?: () => number;
 }
 
 export interface PerfOutcome {
