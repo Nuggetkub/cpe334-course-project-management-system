@@ -19,3 +19,7 @@ __pycache__/
 
 # Machine-generated CI JSON reports; retained by Actions artifacts, not Git.
 artifacts/ci/
+
+# NFR-09 timing reports (npm run perf:nfr09); attached to #87, not committed.
+perf-nfr09-*.md
+perf-nfr09-*.json

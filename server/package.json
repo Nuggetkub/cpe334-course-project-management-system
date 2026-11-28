@@ -17,6 +17,7 @@
     "prisma:deploy-seed": "prisma migrate deploy && prisma db seed",
     "test": "vitest run",
     "e2e:server": "tsx scripts/e2e-prepare.ts && tsx src/index.ts",
+    "perf:nfr09": "tsx scripts/perf-nfr09.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
